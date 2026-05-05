@@ -68,7 +68,13 @@ class AuthRepositoryImpl implements AuthRepository {
       );
 
       return Right(token);
+    } on Exception catch (e) {
+      // Log the actual error for debugging
+      print('Registration error: $e');
+      return Left(InvalidCredentialsFailure());
     } catch (e) {
+      // Log unexpected errors
+      print('Unexpected registration error: $e');
       return Left(InvalidCredentialsFailure());
     }
   }

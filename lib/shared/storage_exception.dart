@@ -1,8 +1,1 @@
-class StorageException implements Exception {
-  final String message;
-
-  const StorageException(this.message);
-
-  @override
-  String toString() => 'StorageException: $message';
-}
+export 'package:memilogistics_app/core/error/exceptions.dart' show StorageException;

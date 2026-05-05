@@ -83,7 +83,7 @@ class _RegisterScreenState extends State<RegisterScreen> {
                       ),
                       const SizedBox(height: 12),
                       const Text(
-                        "Join MemoLogistics",
+                        "Join MemiLogistics",
                         style: TextStyle(
                           color: Colors.white,
                           fontSize: 28,
