@@ -26,9 +26,15 @@ class FakeApiClient implements ApiClient {
       return _handleLogin<T>();
     } else if (path.contains('/auth/refresh')) {
       return _handleRefresh<T>();
+    } else if (path.contains('/user/me')) {
+      return _handleGetCurrentUser<T>();
+    } else if (path.contains('/user/') && path.contains('/permissions')) {
+      return _handleGetPermissions<T>();
+    } else if (path.contains('/user/')) {
+      return _handleGetUserProfile<T>();
     } else if (path.contains('/loads')) {
       return _handleGetLoads<T>();
-    } else if (path.contains('/user/profile')) {
+    } else if (path.contains('/profile')) {
       return _handleGetProfile<T>();
     }
     
@@ -48,6 +54,8 @@ class FakeApiClient implements ApiClient {
       return _handleLogin<T>();
     } else if (path.contains('/auth/register')) {
       return _handleRegister<T>();
+    } else if (path.contains('/shipments')) {
+      return _handleCreateShipment<T>();
     } else if (path.contains('/loads/create')) {
       return _handleCreateLoad<T>();
     }
@@ -64,7 +72,11 @@ class FakeApiClient implements ApiClient {
   }) async {
     await _delay();
     
-    if (path.contains('/loads/')) {
+    if (path.contains('/user/') && path.contains('/avatar')) {
+      return _handleUpdateAvatar<T>();
+    } else if (path.contains('/user/')) {
+      return _handleUpdateProfile<T>(data);
+    } else if (path.contains('/loads/')) {
       return _handleUpdateLoad<T>();
     }
     
@@ -164,6 +176,16 @@ class FakeApiClient implements ApiClient {
     return ApiResponse<T>.success(response as T);
   }
 
+  ApiResponse<T> _handleCreateShipment<T>() {
+    final response = {
+      'id': _random.nextInt(1000) + 1,
+      'message': 'Shipment created successfully',
+      'status': 'pending',
+      'tracking_number': 'SHIP${_random.nextInt(100000).toString().padLeft(5, '0')}',
+    };
+    return ApiResponse<T>.success(response as T);
+  }
+
   ApiResponse<T> _handleUpdateLoad<T>() {
     final response = {
       'message': 'Load updated successfully',
@@ -200,5 +222,128 @@ class FakeApiClient implements ApiClient {
       'San Jose, CA',
     ];
     return cities[_random.nextInt(cities.length)];
+  }
+
+  // User endpoints
+  ApiResponse<T> _handleGetCurrentUser<T>() {
+    final response = {
+      'profile': {
+        'id': '1',
+        'email': 'user@example.com',
+        'name': 'John Doe',
+        'phone': '+1-555-123-4567',
+        'company': 'ABC Logistics',
+        'address': '123 Main St, New York, NY 10001',
+        'avatar_url': null,
+        'role': 'driver',
+        'status': 'active',
+        'created_at': DateTime.now().subtract(const Duration(days: 30)).toIso8601String(),
+        'updated_at': DateTime.now().toIso8601String(),
+      },
+      'permissions': [
+        {
+          'id': 'view_shipments',
+          'name': 'View Shipments',
+          'description': 'Can view all shipments',
+          'granted': true,
+        },
+        {
+          'id': 'create_shipments',
+          'name': 'Create Shipments',
+          'description': 'Can create new shipments',
+          'granted': true,
+        },
+        {
+          'id': 'manage_users',
+          'name': 'Manage Users',
+          'description': 'Can manage user accounts',
+          'granted': false,
+        },
+      ],
+      'access_token': 'fake_access_token_${_random.nextInt(10000)}',
+      'last_login': DateTime.now().toIso8601String(),
+    };
+    return ApiResponse<T>.success(response as T);
+  }
+
+  ApiResponse<T> _handleGetUserProfile<T>() {
+    final response = {
+      'id': '1',
+      'email': 'user@example.com',
+      'name': 'John Doe',
+      'phone': '+1-555-123-4567',
+      'company': 'ABC Logistics',
+      'address': '123 Main St, New York, NY 10001',
+      'avatar_url': null,
+      'role': 'driver',
+      'status': 'active',
+      'created_at': DateTime.now().subtract(const Duration(days: 30)).toIso8601String(),
+      'updated_at': DateTime.now().toIso8601String(),
+    };
+    return ApiResponse<T>.success(response as T);
+  }
+
+  ApiResponse<T> _handleUpdateProfile<T>(dynamic data) {
+    final updates = data as Map<String, dynamic>? ?? {};
+    final response = {
+      'id': '1',
+      'email': 'user@example.com',
+      'name': updates['name'] ?? 'John Doe',
+      'phone': updates['phone'] ?? '+1-555-123-4567',
+      'company': updates['company'] ?? 'ABC Logistics',
+      'address': updates['address'] ?? '123 Main St, New York, NY 10001',
+      'avatar_url': updates['avatar_url'],
+      'role': 'driver',
+      'status': 'active',
+      'created_at': DateTime.now().subtract(const Duration(days: 30)).toIso8601String(),
+      'updated_at': DateTime.now().toIso8601String(),
+    };
+    return ApiResponse<T>.success(response as T);
+  }
+
+  ApiResponse<T> _handleGetPermissions<T>() {
+    final response = {
+      'permissions': [
+        {
+          'id': 'view_shipments',
+          'name': 'View Shipments',
+          'description': 'Can view all shipments',
+          'granted': true,
+        },
+        {
+          'id': 'create_shipments',
+          'name': 'Create Shipments',
+          'description': 'Can create new shipments',
+          'granted': true,
+        },
+        {
+          'id': 'edit_shipments',
+          'name': 'Edit Shipments',
+          'description': 'Can edit existing shipments',
+          'granted': true,
+        },
+        {
+          'id': 'delete_shipments',
+          'name': 'Delete Shipments',
+          'description': 'Can delete shipments',
+          'granted': false,
+        },
+        {
+          'id': 'manage_users',
+          'name': 'Manage Users',
+          'description': 'Can manage user accounts',
+          'granted': false,
+        },
+      ],
+    };
+    return ApiResponse<T>.success(response as T);
+  }
+
+  ApiResponse<T> _handleUpdateAvatar<T>() {
+    final response = {
+      'message': 'Avatar updated successfully',
+      'avatar_url': 'https://example.com/avatars/user_${_random.nextInt(1000)}.jpg',
+    };
+    return ApiResponse<T>.success(response as T);
   }
 }

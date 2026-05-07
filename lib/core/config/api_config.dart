@@ -49,7 +49,6 @@ class ApiConfig {
 				break;
 			case AppEnvironment.staging:
 			case AppEnvironment.production:
-			default:
 				current = ApiConfig._(
 					env: env,
 					baseUrl: 'https://api.example.com/',

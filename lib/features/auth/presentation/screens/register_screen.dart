@@ -42,7 +42,8 @@ class _RegisterScreenState extends State<RegisterScreen> {
         ),
         child: SafeArea(
           child: SingleChildScrollView(
-            padding: const EdgeInsets.all(24),
+            padding: EdgeInsets.fromLTRB(
+                24, 24, 24, 24 + MediaQuery.of(context).viewInsets.bottom),
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.center,
               children: [
@@ -197,8 +198,8 @@ class _RegisterScreenState extends State<RegisterScreen> {
                             suffixIcon: IconButton(
                               icon: Icon(
                                 _obscurePassword
-                                    ? Icons.visibility_outlined
-                                    : Icons.visibility_off_outlined,
+                                    ? Icons.visibility_off_outlined
+                                    : Icons.visibility_outlined,
                                 color: Colors.blue.shade600,
                               ),
                               onPressed: () {
@@ -249,8 +250,8 @@ class _RegisterScreenState extends State<RegisterScreen> {
                             suffixIcon: IconButton(
                               icon: Icon(
                                 _obscureConfirm
-                                    ? Icons.visibility_outlined
-                                    : Icons.visibility_off_outlined,
+                                    ? Icons.visibility_off_outlined
+                                    : Icons.visibility_outlined,
                                 color: Colors.blue.shade600,
                               ),
                               onPressed: () {
