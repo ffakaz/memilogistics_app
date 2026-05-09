@@ -9,35 +9,35 @@ abstract class AppException implements Exception {
 }
 
 class NetworkException extends AppException {
-	const NetworkException([String message = 'Network error']) : super(message);
+	const NetworkException([super.message = 'Network error']);
 }
 
 class TimeoutException extends AppException {
-	const TimeoutException([String message = 'Request timed out']) : super(message);
+	const TimeoutException([super.message = 'Request timed out']);
 }
 
 class RequestCancelledException extends AppException {
-	const RequestCancelledException([String message = 'Request cancelled']) : super(message);
+	const RequestCancelledException([super.message = 'Request cancelled']);
 }
 
 class MissingTokenException extends AppException {
-	const MissingTokenException([String message = 'Missing refresh token']) : super(message);
+	const MissingTokenException([super.message = 'Missing refresh token']);
 }
 
 class StorageException extends AppException {
-	const StorageException([String message = 'Storage error']) : super(message);
+	const StorageException([super.message = 'Storage error']);
 }
 
 class CacheNotFoundException extends AppException {
-	const CacheNotFoundException([String message = 'Cache not found']) : super(message);
+	const CacheNotFoundException([super.message = 'Cache not found']);
 }
 
 class UnauthorisedException extends AppException {
-	UnauthorisedException([String message = 'Unauthorised']) : super(message);
+	UnauthorisedException([super.message = 'Unauthorised']);
 }
 
 class ForbiddenException extends AppException {
-	ForbiddenException([String message = 'Forbidden']) : super(message);
+	ForbiddenException([super.message = 'Forbidden']);
 }
 
 class HttpException extends AppException {

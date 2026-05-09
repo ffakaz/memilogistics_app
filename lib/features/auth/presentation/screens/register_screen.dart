@@ -307,7 +307,7 @@ class _RegisterScreenState extends State<RegisterScreen> {
                                       await auth.register(email, password, confirmPassword);
 
                                       if (auth.isAuthenticated && mounted) {
-                                        Navigator.pushReplacementNamed(context, '/home');
+                                        Navigator.pushReplacementNamed(context, '/select-role');
                                       }
                                     }
                                   },

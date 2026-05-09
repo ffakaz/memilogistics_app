@@ -3,6 +3,7 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import 'package:memilogistics_app/features/user/user.dart';
+import 'package:memilogistics_app/core/widgets/core_widgets.dart';
 import '../providers/shipment_provider.dart';
 
 class ShipmentDashboardScreen extends StatefulWidget {
@@ -49,105 +50,120 @@ class _ShipmentDashboardScreenState extends State<ShipmentDashboardScreen> {
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                // User Profile Card
-                Card(
-                  elevation: 4,
-                  child: Padding(
-                    padding: const EdgeInsets.all(16),
-                    child: Row(
-                      children: [
-                        ProfileAvatar(
-                          avatarUrl: user?.profile.avatarUrl,
-                          initials: user?.profile.initials ?? '?',
-                          size: 60,
-                        ),
-                        const SizedBox(width: 16),
-                        Expanded(
-                          child: Column(
-                            crossAxisAlignment: CrossAxisAlignment.start,
-                            children: [
-                              Text(
-                                user?.profile.name ?? 'Loading...',
-                                style: const TextStyle(
-                                  fontSize: 20,
-                                  fontWeight: FontWeight.bold,
-                                ),
+                // User Profile Card (clean, muted)
+                AppCard(
+                  child: Row(
+                    children: [
+                      AppAvatar(
+                        url: user?.profile.avatarUrl,
+                        initials: user?.profile.initials ?? '?',
+                      ),
+                      const SizedBox(width: AppSpacing.md),
+                      Expanded(
+                        child: Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            Text(
+                              user?.profile.name ?? 'Loading...',
+                              style: const TextStyle(
+                                fontSize: 20,
+                                fontWeight: FontWeight.w700,
+                                color: Colors.black87,
                               ),
-                              const SizedBox(height: 4),
-                              Text(
-                                user?.profile.email ?? '',
-                                style: TextStyle(
-                                  color: Colors.grey[600],
-                                ),
+                            ),
+                            const SizedBox(height: AppSpacing.xs),
+                            Text(
+                              user?.profile.email ?? '',
+                              style: TextStyle(
+                                color: Colors.grey[700],
+                                fontSize: 13,
                               ),
-                              const SizedBox(height: 8),
-                              if (user != null)
-                                RoleBadge(role: user.profile.role),
-                            ],
-                          ),
+                            ),
+                            const SizedBox(height: AppSpacing.sm),
+                            if (user != null)
+                              Chip(
+                                label: Text(user.profile.role.toString().split('.').last.toUpperCase()),
+                                backgroundColor: Colors.grey.shade100,
+                              ),
+                          ],
                         ),
-                      ],
-                    ),
+                      ),
+                    ],
                   ),
                 ),
 
-                const SizedBox(height: 24),
+                const SizedBox(height: AppSpacing.lg),
 
-                // Quick Stats
-                Row(
-                  children: [
-                    Expanded(
-                      child: _buildStatCard(
-                        'Active Shipments',
-                        '12',
-                        Icons.local_shipping,
-                        Colors.blue,
-                      ),
-                    ),
-                    const SizedBox(width: 16),
-                    Expanded(
-                      child: _buildStatCard(
-                        'Completed',
-                        '45',
-                        Icons.check_circle,
-                        Colors.green,
-                      ),
-                    ),
-                  ],
+                // Quick Stats (responsive)
+                LayoutBuilder(
+                  builder: (context, constraints) {
+                    final isNarrow = constraints.maxWidth < 600;
+                    if (isNarrow) {
+                      return Column(
+                        children: [
+                          _buildStatCard('Active Shipments', '12', Icons.local_shipping, Colors.blue),
+                          const SizedBox(height: 12),
+                          _buildStatCard('Completed', '45', Icons.check_circle, Colors.green),
+                          const SizedBox(height: 12),
+                          _buildStatCard('Pending', '8', Icons.pending, Colors.orange),
+                          const SizedBox(height: 12),
+                          _buildStatCard('Total', '65', Icons.inventory, Colors.purple),
+                        ],
+                      );
+                    }
+
+                    return Column(
+                      children: [
+                        Row(
+                          children: [
+                            Expanded(
+                              child: _buildStatCard(
+                                'Active Shipments',
+                                '12',
+                                Icons.local_shipping,
+                                Colors.blue,
+                              ),
+                            ),
+                            const SizedBox(width: 16),
+                            Expanded(
+                              child: _buildStatCard(
+                                'Completed',
+                                '45',
+                                Icons.check_circle,
+                                Colors.green,
+                              ),
+                            ),
+                          ],
+                        ),
+                        const SizedBox(height: 16),
+                        Row(
+                          children: [
+                            Expanded(
+                              child: _buildStatCard(
+                                'Pending',
+                                '8',
+                                Icons.pending,
+                                Colors.orange,
+                              ),
+                            ),
+                            const SizedBox(width: 16),
+                            Expanded(
+                              child: _buildStatCard(
+                                'Total',
+                                '65',
+                                Icons.inventory,
+                                Colors.purple,
+                              ),
+                            ),
+                          ],
+                        ),
+                      ],
+                    );
+                  },
                 ),
 
-                const SizedBox(height: 16),
-
-                Row(
-                  children: [
-                    Expanded(
-                      child: _buildStatCard(
-                        'Pending',
-                        '8',
-                        Icons.pending,
-                        Colors.orange,
-                      ),
-                    ),
-                    const SizedBox(width: 16),
-                    Expanded(
-                      child: _buildStatCard(
-                        'Total',
-                        '65',
-                        Icons.inventory,
-                        Colors.purple,
-                      ),
-                    ),
-                  ],
-                ),
-
-                const SizedBox(height: 24),
-
-                // Actions
-                Text(
-                  'Quick Actions',
-                  style: Theme.of(context).textTheme.titleLarge,
-                ),
-                const SizedBox(height: 16),
+                const SectionTitle('Quick Actions'),
+                const SizedBox(height: AppSpacing.md),
 
                 _buildActionButton(
                   context,
@@ -187,14 +203,10 @@ class _ShipmentDashboardScreenState extends State<ShipmentDashboardScreen> {
                   },
                 ),
 
-                const SizedBox(height: 24),
+                const SizedBox(height: AppSpacing.lg),
 
-                // Recent Activity
-                Text(
-                  'Recent Activity',
-                  style: Theme.of(context).textTheme.titleLarge,
-                ),
-                const SizedBox(height: 16),
+                const SectionTitle('Recent Activity'),
+                const SizedBox(height: AppSpacing.md),
 
                 _buildActivityItem(
                   'Shipment #12345 created',
@@ -230,35 +242,7 @@ class _ShipmentDashboardScreenState extends State<ShipmentDashboardScreen> {
   }
 
   Widget _buildStatCard(String title, String value, IconData icon, Color color) {
-    return Card(
-      elevation: 2,
-      child: Padding(
-        padding: const EdgeInsets.all(16),
-        child: Column(
-          children: [
-            Icon(icon, size: 32, color: color),
-            const SizedBox(height: 8),
-            Text(
-              value,
-              style: TextStyle(
-                fontSize: 24,
-                fontWeight: FontWeight.bold,
-                color: color,
-              ),
-            ),
-            const SizedBox(height: 4),
-            Text(
-              title,
-              textAlign: TextAlign.center,
-              style: TextStyle(
-                fontSize: 12,
-                color: Colors.grey[600],
-              ),
-            ),
-          ],
-        ),
-      ),
-    );
+    return StatsCard(label: title, value: value);
   }
 
   Widget _buildActionButton(
@@ -268,15 +252,10 @@ class _ShipmentDashboardScreenState extends State<ShipmentDashboardScreen> {
     Color color,
     VoidCallback onTap,
   ) {
-    return InkWell(
-      onTap: onTap,
-      child: Container(
-        padding: const EdgeInsets.all(16),
-        decoration: BoxDecoration(
-          color: color.withOpacity(0.1),
-          borderRadius: BorderRadius.circular(12),
-          border: Border.all(color: color.withOpacity(0.3)),
-        ),
+    return AppOutlinedButton(
+      onPressed: onTap,
+      child: Padding(
+        padding: const EdgeInsets.symmetric(vertical: 12, horizontal: 8),
         child: Row(
           children: [
             Icon(icon, color: color),
@@ -284,14 +263,10 @@ class _ShipmentDashboardScreenState extends State<ShipmentDashboardScreen> {
             Expanded(
               child: Text(
                 title,
-                style: TextStyle(
-                  fontSize: 16,
-                  fontWeight: FontWeight.w500,
-                  color: color,
-                ),
+                style: TextStyle(fontSize: 15, fontWeight: FontWeight.w600, color: Colors.grey[850]),
               ),
             ),
-            Icon(Icons.arrow_forward_ios, size: 16, color: color),
+            Icon(Icons.arrow_forward_ios, size: 16, color: Colors.grey[600]),
           ],
         ),
       ),
@@ -299,16 +274,19 @@ class _ShipmentDashboardScreenState extends State<ShipmentDashboardScreen> {
   }
 
   Widget _buildActivityItem(String title, String time, IconData icon, Color color) {
-    return Card(
-      margin: const EdgeInsets.only(bottom: 8),
-      child: ListTile(
-        leading: CircleAvatar(
-          backgroundColor: color.withOpacity(0.1),
-          child: Icon(icon, color: color, size: 20),
+    return Padding(
+      padding: const EdgeInsets.only(bottom: AppSpacing.sm),
+      child: AppCard(
+        child: ListTile(
+          contentPadding: const EdgeInsets.symmetric(vertical: 6, horizontal: 12),
+          leading: CircleAvatar(
+            backgroundColor: color.withOpacity(0.12),
+            child: Icon(icon, color: color, size: 18),
+          ),
+          title: Text(title, style: const TextStyle(fontWeight: FontWeight.w600)),
+          subtitle: Text(time, style: TextStyle(color: Colors.grey[600], fontSize: 12)),
+          trailing: Icon(Icons.arrow_forward_ios, size: 14, color: Colors.grey[500]),
         ),
-        title: Text(title),
-        subtitle: Text(time),
-        trailing: Icon(Icons.arrow_forward_ios, size: 16, color: Colors.grey),
       ),
     );
   }

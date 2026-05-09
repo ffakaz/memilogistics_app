@@ -1,39 +1,30 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
-import 'package:flutter_secure_storage/flutter_secure_storage.dart';
 
 /// CORE
 import 'package:memilogistics_app/core/core.dart';
+import 'package:memilogistics_app/bootstrap.dart' as bootstrap;
 
-/// AUTH FEATURE
-import 'package:memilogistics_app/features/auth/data/services/fake_auth_api_service_adapter.dart';
-import 'package:memilogistics_app/features/auth/data/storage/token_storage.dart';
-import 'package:memilogistics_app/features/auth/data/repository/auth_repository_impl.dart';
-
-import 'package:memilogistics_app/features/auth/domain/usecases/login_usecase.dart';
-import 'package:memilogistics_app/features/auth/domain/usecases/register_usecase.dart';
-import 'package:memilogistics_app/features/auth/domain/usecases/logout_usecase.dart';
-import 'package:memilogistics_app/features/auth/domain/usecases/is_logged_in_usecase.dart';
-import 'package:memilogistics_app/features/auth/domain/usecases/get_current_token_usecase.dart';
-
-import 'package:memilogistics_app/features/auth/presentation/provider/auth_provider.dart';
-
+/// Features (screens)
 import 'package:memilogistics_app/features/auth/presentation/screens/login_screen.dart';
 import 'package:memilogistics_app/features/auth/presentation/screens/register_screen.dart';
 import 'package:memilogistics_app/features/auth/presentation/screens/logout_screen.dart';
-import 'package:memilogistics_app/features/auth/presentation/screens/home_screen.dart';
-
-/// SHIPMENT FEATURE
+// HomeScreen disabled — removed from imports to avoid accidental use.
 import 'package:memilogistics_app/features/shipment/shipment.dart';
+import 'package:memilogistics_app/features/user/presentation/screens/role_selection_screen.dart';
+import 'package:memilogistics_app/features/user/presentation/screens/role_decider.dart';
 
-/// USER FEATURE
-import 'package:memilogistics_app/features/user/user.dart';
+/// Locator
+import 'package:memilogistics_app/core/di/service_locator.dart';
+import 'package:flutter_secure_storage/flutter_secure_storage.dart';
+
+/// Providers (types used by the root MultiProvider)
+import 'package:memilogistics_app/features/auth/presentation/provider/auth_provider.dart';
+import 'package:memilogistics_app/features/shipment/presentation/providers/shipment_provider.dart';
+import 'package:memilogistics_app/features/user/presentation/providers/user_provider.dart';
 
 void main() async {
-
-  WidgetsFlutterBinding.ensureInitialized();
-
-  ApiConfig.init(AppEnvironment.fake);
+  await bootstrap.initApp(env: AppEnvironment.fake);
 
   runApp(const MyApp());
 }
@@ -45,224 +36,58 @@ class MyApp extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
 
-    return AppInjection.create(
+    // Use the locator to provide singletons to the widget tree. We register
+    // the same core services and ChangeNotifier instances in `setupLocator()`.
+    return MultiProvider(
+      providers: [
+        Provider<FlutterSecureStorage>.value(value: locator<FlutterSecureStorage>()),
+        Provider<SecureStorageService>.value(value: locator<SecureStorageService>()),
+        Provider<AppRouter>.value(value: locator<AppRouter>()),
+        Provider<ApiClient>.value(value: locator<ApiClient>()),
 
-      child: Builder(
-
-        builder: (context) {
-
-          /// CORE DEPENDENCIES
-
-          final apiClient =
-              context.read<ApiClient>();
-
-          final secureStorage =
-              context.read<FlutterSecureStorage>();
-
-          /// AUTH DEPENDENCIES
-
-          final authApiService =
-              FakeAuthApiServiceAdapter(
-            apiClient: apiClient,
-          );
-
-          final tokenStorage =
-              TokenStorage(
-            storage: secureStorage,
-          );
-
-          final authRepository =
-              AuthRepositoryImpl(
-            apiService: authApiService,
-            tokenStorage: tokenStorage,
-          );
-
-          /// AUTH USE CASES
-
-          final loginUseCase =
-              LoginUseCase(authRepository);
-
-          final registerUseCase =
-              RegisterUseCase(authRepository);
-
-          final logoutUseCase =
-              LogoutUseCase(authRepository);
-
-          final isLoggedInUseCase =
-              IsLoggedInUseCase(authRepository);
-
-          final getCurrentTokenUseCase =
-              GetCurrentTokenUseCase(authRepository);
-
-          /// SHIPMENT DEPENDENCIES
-
-          final shipmentApiService =
-              ShipmentApiServiceAdapter(
-            apiClient: apiClient,
-          );
-
-          final shipmentRepository =
-              ShipmentRepositoryImpl(
-            apiService:
-                shipmentApiService,
-          );
-
-          /// USER DEPENDENCIES
-
-          final userApiService = UserApiService(
-            apiClient: apiClient,
-          );
-
-          final userRepository = UserRepositoryImpl(
-            apiService: userApiService,
-          );
-
-          /// USER USE CASES
-
-          final getCurrentUserUseCase = GetCurrentUserUseCase(userRepository);
-          final updateProfileUseCase = UpdateProfileUseCase(userRepository);
-          final getPermissionsUseCase = GetPermissionsUseCase(userRepository);
-
-          return MultiProvider(
-
-            providers: [
-
-              /// AUTH PROVIDER
-
-              ChangeNotifierProvider(
-
-                create: (_) => AuthProvider(
-
-                  loginUseCase:
-                      loginUseCase,
-
-                  registerUseCase:
-                      registerUseCase,
-
-                  logoutUseCase:
-                      logoutUseCase,
-
-                  isLoggedInUseCase:
-                      isLoggedInUseCase,
-
-                  getCurrentTokenUseCase:
-                      getCurrentTokenUseCase,
-
-                )..init(),
+        ChangeNotifierProvider<AuthProvider>.value(value: locator<AuthProvider>()..init()),
+        ChangeNotifierProvider<ShipmentProvider>.value(value: locator<ShipmentProvider>()),
+        ChangeNotifierProvider<UserProvider>.value(value: locator<UserProvider>()),
+      ],
+      child: Consumer2<AuthProvider, UserProvider>(
+        builder: (context, auth, userProvider, _) {
+          if (!auth.initialized) {
+            return const MaterialApp(
+              debugShowCheckedModeBanner: false,
+              home: Scaffold(
+                body: Center(child: CircularProgressIndicator()),
               ),
+            );
+          }
 
-              /// SHIPMENT PROVIDER
+          if (auth.isLoggedIn && !userProvider.hasUser) {
+            userProvider.loadCurrentUser();
+          }
 
-              ChangeNotifierProvider(
-                create: (_) => ShipmentProvider(
-                  repository: shipmentRepository,
-                ),
-              ),
+          Widget getHomeScreen() {
+            if (!auth.isLoggedIn) return const LoginScreen();
+            return const RoleDecider();
+          }
 
-              /// USER PROVIDER
+          final router = locator<AppRouter>();
 
-              ChangeNotifierProvider(
-                create: (_) => UserProvider(
-                  getCurrentUserUseCase: getCurrentUserUseCase,
-                  updateProfileUseCase: updateProfileUseCase,
-                  getPermissionsUseCase: getPermissionsUseCase,
-                ),
-              ),
-            ],
-
-            child: Consumer2<AuthProvider, UserProvider>(
-
-              builder: (
-                context,
-                auth,
-                userProvider,
-                _,
-              ) {
-
-                if (!auth.initialized) {
-
-                  return const MaterialApp(
-
-                    debugShowCheckedModeBanner:
-                        false,
-
-                    home: Scaffold(
-
-                      body: Center(
-                        child:
-                            CircularProgressIndicator(),
-                      ),
-                    ),
-                  );
-                }
-
-                // Load user after login
-                if (auth.isLoggedIn && !userProvider.hasUser) {
-                  userProvider.loadCurrentUser();
-                }
-
-                // Determine home screen based on role
-                Widget getHomeScreen() {
-                  if (!auth.isLoggedIn) {
-                    return const LoginScreen();
-                  }
-
-                  final user = userProvider.currentUser;
-                  if (user == null) {
-                    return const Scaffold(
-                      body: Center(child: CircularProgressIndicator()),
-                    );
-                  }
-
-                  // Route based on role
-                  switch (user.profile.role) {
-                    case AppRole.shipper:
-                    case AppRole.carrier:
-                      return const ShipmentDashboardScreen();
-                    case AppRole.admin:
-                      return const HomeScreen();
-                  }
-                }
-
-                return MaterialApp(
-
-                  debugShowCheckedModeBanner:
-                      false,
-
-                  title:
-                      'Memi Logistics',
-
-                  theme:
-                      AppTheme.lightTheme,
-
-                  darkTheme:
-                      AppTheme.darkTheme,
-
-                  home: getHomeScreen(),
-
-                  routes: {
-
-                    '/login': (_) =>
-                        const LoginScreen(),
-
-                    '/register': (_) =>
-                        const RegisterScreen(),
-
-                    '/logout': (_) =>
-                        const LogoutScreen(),
-
-                    '/home': (_) =>
-                        const HomeScreen(),
-
-                    '/dashboard': (_) =>
-                        const ShipmentDashboardScreen(),
-
-                    '/create-shipment': (_) =>
-                        const CreateShipmentScreen(),
-                  },
-                );
-              },
-            ),
+          return MaterialApp(
+            debugShowCheckedModeBanner: false,
+            title: 'Memi Logistics',
+            theme: AppTheme.lightTheme,
+            darkTheme: AppTheme.darkTheme,
+            navigatorKey: router.navigatorKey,
+            onGenerateRoute: router.onGenerateRoute,
+            home: getHomeScreen(),
+            routes: {
+              '/login': (_) => const LoginScreen(),
+              '/register': (_) => const RegisterScreen(),
+              '/logout': (_) => const LogoutScreen(),
+              // '/home' intentionally removed — users MUST select role first.
+              '/dashboard': (_) => const ShipmentDashboardScreen(),
+              '/select-role': (_) => const RoleSelectionScreen(),
+              '/create-shipment': (_) => const CreateShipmentScreen(),
+            },
           );
         },
       ),

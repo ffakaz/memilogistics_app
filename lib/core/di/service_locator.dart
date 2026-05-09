@@ -1,0 +1,115 @@
+// lib/core/di/service_locator.dart
+import 'package:flutter_secure_storage/flutter_secure_storage.dart';
+
+import 'package:memilogistics_app/core/core.dart';
+import 'package:memilogistics_app/features/auth/data/services/fake_auth_api_service_adapter.dart';
+import 'package:memilogistics_app/features/auth/data/storage/token_storage.dart';
+import 'package:memilogistics_app/features/auth/data/repository/auth_repository_impl.dart';
+import 'package:memilogistics_app/features/auth/domain/usecases/login_usecase.dart';
+import 'package:memilogistics_app/features/auth/domain/usecases/register_usecase.dart';
+import 'package:memilogistics_app/features/auth/domain/usecases/logout_usecase.dart';
+import 'package:memilogistics_app/features/auth/domain/usecases/is_logged_in_usecase.dart';
+import 'package:memilogistics_app/features/auth/domain/usecases/get_current_token_usecase.dart';
+import 'package:memilogistics_app/features/auth/presentation/provider/auth_provider.dart';
+
+import 'package:memilogistics_app/features/shipment/data/services/shipment_api_service_adapter.dart';
+import 'package:memilogistics_app/features/shipment/data/repositories/shipment_repository_impl.dart';
+import 'package:memilogistics_app/features/shipment/presentation/providers/shipment_provider.dart';
+
+import 'package:memilogistics_app/features/user/data/services/user_api_service.dart';
+import 'package:memilogistics_app/features/user/data/repositories/user_repository_impl.dart';
+import 'package:memilogistics_app/features/user/domain/usecases/get_current_user_usecase.dart';
+import 'package:memilogistics_app/features/user/domain/usecases/update_profile_usecase.dart';
+import 'package:memilogistics_app/features/user/domain/usecases/get_permissions_usecase.dart';
+import 'package:memilogistics_app/features/user/presentation/providers/user_provider.dart';
+
+/// Very small service locator used by parts of the app. It intentionally
+/// avoids adding an external dependency and provides only the features the
+/// app uses: registering singletons and factories and retrieving them.
+class _ServiceLocator {
+  final Map<Type, dynamic> _singletons = {};
+  final Map<Type, dynamic Function()> _factories = {};
+
+  void registerSingleton<T>(T instance) {
+    _singletons[T] = instance;
+  }
+
+  void registerFactory<T>(T Function() factory) {
+    _factories[T] = factory;
+  }
+
+  T get<T>() {
+    if (_singletons.containsKey(T)) return _singletons[T] as T;
+    final factory = _factories[T];
+    if (factory != null) return factory() as T;
+    throw StateError('Service of type $T is not registered in the locator');
+  }
+}
+
+final _sl = _ServiceLocator();
+
+/// Public accessor used across the app: `locator<MyType>()`.
+T locator<T>() => _sl.get<T>();
+
+/// Setup function that registers core services used by the app. This mirrors
+/// the wiring that previously appeared in `main.dart` but keeps it in one
+/// place so other modules can rely on the locator.
+Future<void> setupLocator() async {
+  // Secure storage
+  final flutterSecureStorage = const FlutterSecureStorage();
+  _sl.registerSingleton<FlutterSecureStorage>(flutterSecureStorage);
+
+  final secureStorageService = SecureStorageService(storage: flutterSecureStorage);
+  _sl.registerSingleton<SecureStorageService>(secureStorageService);
+
+  // Router
+  final appRouter = AppRouter(storageService: secureStorageService);
+  _sl.registerSingleton<AppRouter>(appRouter);
+
+  // API client
+  final apiClient = ApiClientFactory.create(
+    storageService: secureStorageService,
+    onSessionExpired: () => appRouter.handleSessionExpired(),
+  );
+  _sl.registerSingleton<ApiClient>(apiClient);
+
+  // AUTH wiring
+  final authApiService = FakeAuthApiServiceAdapter(apiClient: apiClient);
+  final tokenStorage = TokenStorage(storage: flutterSecureStorage);
+  final authRepository = AuthRepositoryImpl(apiService: authApiService, tokenStorage: tokenStorage);
+
+  final loginUseCase = LoginUseCase(authRepository);
+  final registerUseCase = RegisterUseCase(authRepository);
+  final logoutUseCase = LogoutUseCase(authRepository);
+  final isLoggedInUseCase = IsLoggedInUseCase(authRepository);
+  final getCurrentTokenUseCase = GetCurrentTokenUseCase(authRepository);
+
+  final authProvider = AuthProvider(
+    loginUseCase: loginUseCase,
+    registerUseCase: registerUseCase,
+    logoutUseCase: logoutUseCase,
+    isLoggedInUseCase: isLoggedInUseCase,
+    getCurrentTokenUseCase: getCurrentTokenUseCase,
+  );
+  _sl.registerSingleton<AuthProvider>(authProvider);
+
+  // Shipment wiring
+  final shipmentApiService = ShipmentApiServiceAdapter(apiClient: apiClient);
+  final shipmentRepository = ShipmentRepositoryImpl(apiService: shipmentApiService);
+  final shipmentProvider = ShipmentProvider(repository: shipmentRepository);
+  _sl.registerSingleton<ShipmentProvider>(shipmentProvider);
+
+  // User wiring
+  final userApiService = UserApiService(apiClient: apiClient);
+  final userRepository = UserRepositoryImpl(apiService: userApiService);
+  final getCurrentUserUseCase = GetCurrentUserUseCase(userRepository);
+  final updateProfileUseCase = UpdateProfileUseCase(userRepository);
+  final getPermissionsUseCase = GetPermissionsUseCase(userRepository);
+
+  final userProvider = UserProvider(
+    getCurrentUserUseCase: getCurrentUserUseCase,
+    updateProfileUseCase: updateProfileUseCase,
+    getPermissionsUseCase: getPermissionsUseCase,
+  );
+  _sl.registerSingleton<UserProvider>(userProvider);
+}

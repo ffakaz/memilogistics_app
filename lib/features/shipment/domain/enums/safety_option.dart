@@ -1,0 +1,4 @@
+enum SafetyOption {
+  normal,
+  fragile,
+}

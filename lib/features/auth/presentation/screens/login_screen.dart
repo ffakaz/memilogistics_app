@@ -125,7 +125,7 @@ class _LoginScreenState extends State<LoginScreen> {
                                         await auth.login(email, password);
 
                                         if (auth.isAuthenticated && mounted) {
-                                          Navigator.pushReplacementNamed(context, '/home');
+                                          Navigator.pushReplacementNamed(context, '/select-role');
                                         }
                                       }
                                     },

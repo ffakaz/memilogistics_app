@@ -11,6 +11,7 @@ export 'package:memilogistics_app/core/network/dio_interceptor.dart';
 export 'package:memilogistics_app/core/network/network_exceptions.dart';
 export 'package:memilogistics_app/core/router/app_router.dart';
 export 'package:memilogistics_app/core/secure_storage/secure_storage_service.dart';
+export 'package:memilogistics_app/core/di/service_locator.dart';
 export 'package:memilogistics_app/core/theme/app_theme.dart';
 export 'package:memilogistics_app/core/utils/constants/api_constants.dart';
 export 'package:memilogistics_app/core/utils/constants/app_constants.dart';
