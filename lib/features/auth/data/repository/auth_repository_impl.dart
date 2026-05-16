@@ -5,6 +5,9 @@ import '../../domain/entities/auth_token.dart';
 import '../../domain/entities/register_credentials.dart';
 import '../../domain/entities/user_credentials.dart';
 import '../../domain/failures/auth_failure.dart';
+import '../models/auth_response_model.dart';
+import '../models/login_request_model.dart';
+import '../models/register_request_model.dart';
 import '../services/auth_api_services.dart';
 import '../storage/token_storage.dart';
 
@@ -12,55 +15,40 @@ class AuthRepositoryImpl implements AuthRepository {
   final AuthApiService apiService;
   final TokenStorage tokenStorage;
 
-  AuthRepositoryImpl({required this.apiService, required this.tokenStorage});
+  AuthRepositoryImpl({
+    required this.apiService,
+    required this.tokenStorage,
+  });
 
   @override
-  Future<Either<AuthFailure, AuthToken>> login(
-    UserCredentials credentials,
-  ) async {
-    try {
-      final response = await apiService.login({
-        'email': credentials.email,
-        'password': credentials.password,
-      });
+Future<Either<AuthFailure, AuthToken>> login(
+  UserCredentials credentials,
+) async {
+  try {
+    final request = LoginRequestModel.fromEntity(credentials);
+    final response = await apiService.login(request.toJson());
+    final token = AuthResponseModel.fromJson(response).toEntity();
 
-      final token = AuthToken(
-        accessToken: response['access_token'],
-        refreshToken: response['refresh_token'],
-        expiry: response['expiry'] != null
-            ? DateTime.parse(response['expiry'])
-            : null,
-      );
+    await tokenStorage.saveTokens(
+      accessToken: token.accessToken,
+      refreshToken: token.refreshToken,
+    );
 
-      await tokenStorage.saveTokens(
-        accessToken: token.accessToken,
-        refreshToken: token.refreshToken,
-      );
-
-      return Right(token);
-    } catch (e) {
-      return Left(InvalidCredentialsFailure());
-    }
+    return Right(token);
+  } catch (e) {
+    return Left(InvalidCredentialsFailure());
   }
+}
+
 
   @override
   Future<Either<AuthFailure, AuthToken>> register(
     RegisterCredentials credentials,
   ) async {
     try {
-      final response = await apiService.register({
-        'email': credentials.email,
-        'password': credentials.password,
-        'password_confirmation': credentials.confirmPassword,
-      });
-
-      final token = AuthToken(
-        accessToken: response['access_token'],
-        refreshToken: response['refresh_token'],
-        expiry: response['expiry'] != null
-            ? DateTime.parse(response['expiry'])
-            : null,
-      );
+      final request = RegisterRequestModel.fromEntity(credentials);
+      final response = await apiService.register(request.toJson());
+      final token = AuthResponseModel.fromJson(response).toEntity();
 
       await tokenStorage.saveTokens(
         accessToken: token.accessToken,
@@ -68,13 +56,9 @@ class AuthRepositoryImpl implements AuthRepository {
       );
 
       return Right(token);
-    } on Exception catch (e) {
-      // Log the actual error for debugging
-      print('Registration error: $e');
+    } on Exception {
       return Left(InvalidCredentialsFailure());
-    } catch (e) {
-      // Log unexpected errors
-      print('Unexpected registration error: $e');
+    } catch (_) {
       return Left(InvalidCredentialsFailure());
     }
   }

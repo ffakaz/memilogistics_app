@@ -1,11 +1,16 @@
 // lib/app/routes/app_routes.dart
+import 'package:memilogistics_app/core/utils/constants/route_constants.dart';
+
 abstract class AppRoutes {
-  static const String splash = '/';
-  static const String login = '/login';
-  static const String register = '/register';
-  static const String logout = '/logout';
-  static const String home = '/home';
-  static const String dashboard = '/dashboard';
-  static const String createShipment = '/create-shipment';
-  static const String selectRole = '/select-role';
+  AppRoutes._();
+
+  static const String splash = RouteConstants.splash;
+  static const String login = RouteConstants.login;
+  static const String register = RouteConstants.register;
+  static const String logout = RouteConstants.logout;
+  static const String home = RouteConstants.home;
+  static const String dashboard = RouteConstants.dashboard;
+  static const String carrierDashboard = RouteConstants.carrierDashboard;
+  static const String createShipment = RouteConstants.createShipment;
+  static const String selectRole = RouteConstants.selectRole;
 }

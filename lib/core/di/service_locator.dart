@@ -1,7 +1,11 @@
 // lib/core/di/service_locator.dart
 import 'package:flutter_secure_storage/flutter_secure_storage.dart';
 
-import 'package:memilogistics_app/core/core.dart';
+import 'package:memilogistics_app/core/network/api_client.dart';
+import 'package:memilogistics_app/core/network/api_client_factory.dart';
+import 'package:memilogistics_app/core/router/app_router.dart';
+import 'package:memilogistics_app/core/secure_storage/secure_storage_service.dart';
+import 'package:memilogistics_app/core/utils/constants/route_constants.dart';
 import 'package:memilogistics_app/features/auth/data/services/fake_auth_api_service_adapter.dart';
 import 'package:memilogistics_app/features/auth/data/storage/token_storage.dart';
 import 'package:memilogistics_app/features/auth/data/repository/auth_repository_impl.dart';
@@ -11,9 +15,23 @@ import 'package:memilogistics_app/features/auth/domain/usecases/logout_usecase.d
 import 'package:memilogistics_app/features/auth/domain/usecases/is_logged_in_usecase.dart';
 import 'package:memilogistics_app/features/auth/domain/usecases/get_current_token_usecase.dart';
 import 'package:memilogistics_app/features/auth/presentation/provider/auth_provider.dart';
+import 'package:memilogistics_app/features/auth/presentation/screens/home_screen.dart';
+import 'package:memilogistics_app/features/auth/presentation/screens/login_screen.dart';
+import 'package:memilogistics_app/features/auth/presentation/screens/logout_screen.dart';
+import 'package:memilogistics_app/features/auth/presentation/screens/register_screen.dart';
+
+import 'package:memilogistics_app/features/carrier/data/datasources/carrier_company_remote_datasource_impl.dart';
+import 'package:memilogistics_app/features/carrier/data/repositories/carrier_company_repository_impl.dart';
+import 'package:memilogistics_app/features/carrier/domain/usecases/create_carrier_company.dart';
+import 'package:memilogistics_app/features/carrier/domain/usecases/get_carrier_company.dart';
+import 'package:memilogistics_app/features/carrier/domain/usecases/update_carrier_company.dart';
+import 'package:memilogistics_app/features/carrier/presentation/providers/carrier_company_provider.dart';
+import 'package:memilogistics_app/features/carrier/presentation/screens/carrier_dashboard_screen.dart';
 
 import 'package:memilogistics_app/features/shipment/data/services/shipment_api_service_adapter.dart';
 import 'package:memilogistics_app/features/shipment/data/repositories/shipment_repository_impl.dart';
+import 'package:memilogistics_app/features/shipment/presentation/screens/create_shipment_screen.dart';
+import 'package:memilogistics_app/features/shipment/presentation/screens/shipment_dashboard_screen.dart';
 import 'package:memilogistics_app/features/shipment/presentation/providers/shipment_provider.dart';
 
 import 'package:memilogistics_app/features/user/data/services/user_api_service.dart';
@@ -22,6 +40,7 @@ import 'package:memilogistics_app/features/user/domain/usecases/get_current_user
 import 'package:memilogistics_app/features/user/domain/usecases/update_profile_usecase.dart';
 import 'package:memilogistics_app/features/user/domain/usecases/get_permissions_usecase.dart';
 import 'package:memilogistics_app/features/user/presentation/providers/user_provider.dart';
+import 'package:memilogistics_app/features/user/presentation/screens/role_selection_screen.dart';
 
 /// Very small service locator used by parts of the app. It intentionally
 /// avoids adding an external dependency and provides only the features the
@@ -59,12 +78,24 @@ Future<void> setupLocator() async {
   final flutterSecureStorage = const FlutterSecureStorage();
   _sl.registerSingleton<FlutterSecureStorage>(flutterSecureStorage);
 
-  final secureStorageService = SecureStorageService(storage: flutterSecureStorage);
+  final secureStorageService = SecureStorageService(
+    storage: flutterSecureStorage,
+  );
   _sl.registerSingleton<SecureStorageService>(secureStorageService);
 
   // Router
   final appRouter = AppRouter(storageService: secureStorageService);
   _sl.registerSingleton<AppRouter>(appRouter);
+  AppRouter.registerRoutes({
+    RouteConstants.login: (_) => const LoginScreen(),
+    RouteConstants.register: (_) => const RegisterScreen(),
+    RouteConstants.logout: (_) => const LogoutScreen(),
+    RouteConstants.home: (_) => const HomeScreen(),
+    RouteConstants.dashboard: (_) => const ShipmentDashboardScreen(),
+    RouteConstants.carrierDashboard: (_) => const CarrierDashboardScreen(),
+    RouteConstants.createShipment: (_) => const CreateShipmentScreen(),
+    RouteConstants.selectRole: (_) => const RoleSelectionScreen(),
+  });
 
   // API client
   final apiClient = ApiClientFactory.create(
@@ -76,7 +107,10 @@ Future<void> setupLocator() async {
   // AUTH wiring
   final authApiService = FakeAuthApiServiceAdapter(apiClient: apiClient);
   final tokenStorage = TokenStorage(storage: flutterSecureStorage);
-  final authRepository = AuthRepositoryImpl(apiService: authApiService, tokenStorage: tokenStorage);
+  final authRepository = AuthRepositoryImpl(
+    apiService: authApiService,
+    tokenStorage: tokenStorage,
+  );
 
   final loginUseCase = LoginUseCase(authRepository);
   final registerUseCase = RegisterUseCase(authRepository);
@@ -95,7 +129,10 @@ Future<void> setupLocator() async {
 
   // Shipment wiring
   final shipmentApiService = ShipmentApiServiceAdapter(apiClient: apiClient);
-  final shipmentRepository = ShipmentRepositoryImpl(apiService: shipmentApiService);
+  final shipmentRepository = ShipmentRepositoryImpl(
+    apiService: shipmentApiService,
+    tokenStorage: tokenStorage,
+  );
   final shipmentProvider = ShipmentProvider(repository: shipmentRepository);
   _sl.registerSingleton<ShipmentProvider>(shipmentProvider);
 
@@ -112,4 +149,18 @@ Future<void> setupLocator() async {
     getPermissionsUseCase: getPermissionsUseCase,
   );
   _sl.registerSingleton<UserProvider>(userProvider);
+
+  // Carrier wiring
+  final carrierRemoteDataSource = CarrierCompanyRemoteDataSourceImpl(apiClient: apiClient);
+  final carrierRepository = CarrierCompanyRepositoryImpl(carrierRemoteDataSource);
+  final createCarrierCompanyUseCase = CreateCarrierCompany(carrierRepository);
+  final getCarrierCompanyUseCase = GetCarrierCompany(carrierRepository);
+  final updateCarrierCompanyUseCase = UpdateCarrierCompany(carrierRepository);
+
+  final carrierProvider = CarrierCompanyProvider(
+    createCarrierCompanyUseCase: createCarrierCompanyUseCase,
+    getCarrierCompanyUseCase: getCarrierCompanyUseCase,
+    updateCarrierCompanyUseCase: updateCarrierCompanyUseCase,
+  );
+  _sl.registerSingleton<CarrierCompanyProvider>(carrierProvider);
 }

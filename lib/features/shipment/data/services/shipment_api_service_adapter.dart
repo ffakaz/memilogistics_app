@@ -2,15 +2,14 @@
 //
 // Adapter that connects ShipmentApiService to the new ApiClient
 
-import 'package:memilogistics_app/core/core.dart';
+import 'package:memilogistics_app/core/network/api_client.dart';
 import 'shipment_api_service.dart';
 
 class ShipmentApiServiceAdapter implements ShipmentApiService {
   final ApiClient _apiClient;
 
-  ShipmentApiServiceAdapter({
-    required ApiClient apiClient,
-  }) : _apiClient = apiClient;
+  ShipmentApiServiceAdapter({required ApiClient apiClient})
+    : _apiClient = apiClient;
 
   @override
   Future<void> createShipment({
@@ -20,9 +19,7 @@ class ShipmentApiServiceAdapter implements ShipmentApiService {
     final response = await _apiClient.post<Map<String, dynamic>>(
       '/shipments',
       data: body,
-      headers: {
-        'Authorization': 'Bearer $accessToken',
-      },
+      headers: {'Authorization': 'Bearer $accessToken'},
     );
 
     if (!response.isSuccess) {

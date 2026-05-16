@@ -35,7 +35,11 @@ class _RegisterScreenState extends State<RegisterScreen> {
       body: Container(
         decoration: BoxDecoration(
           gradient: LinearGradient(
-            colors: [Colors.blue.shade900, Colors.blue.shade600, Colors.blue.shade400],
+            colors: [
+              Colors.blue.shade900,
+              Colors.blue.shade600,
+              Colors.blue.shade400,
+            ],
             begin: Alignment.topCenter,
             end: Alignment.bottomCenter,
           ),
@@ -43,7 +47,11 @@ class _RegisterScreenState extends State<RegisterScreen> {
         child: SafeArea(
           child: SingleChildScrollView(
             padding: EdgeInsets.fromLTRB(
-                24, 24, 24, 24 + MediaQuery.of(context).viewInsets.bottom),
+              24,
+              24,
+              24,
+              24 + MediaQuery.of(context).viewInsets.bottom,
+            ),
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.center,
               children: [
@@ -68,20 +76,16 @@ class _RegisterScreenState extends State<RegisterScreen> {
                 Container(
                   padding: const EdgeInsets.all(20),
                   decoration: BoxDecoration(
-                    color: Colors.white.withOpacity(0.2),
+                    color: Colors.white.withValues(alpha: 0.2),
                     borderRadius: BorderRadius.circular(20),
                     border: Border.all(
-                      color: Colors.white.withOpacity(0.3),
+                      color: Colors.white.withValues(alpha: 0.3),
                       width: 1,
                     ),
                   ),
                   child: Column(
                     children: [
-                      Icon(
-                        Icons.local_shipping,
-                        size: 60,
-                        color: Colors.white,
-                      ),
+                      Icon(Icons.local_shipping, size: 60, color: Colors.white),
                       const SizedBox(height: 12),
                       const Text(
                         "Join MemiLogistics",
@@ -96,7 +100,7 @@ class _RegisterScreenState extends State<RegisterScreen> {
                       Text(
                         "Create your logistics account",
                         style: TextStyle(
-                          color: Colors.white.withOpacity(0.8),
+                          color: Colors.white.withValues(alpha: 0.8),
                           fontSize: 14,
                           fontWeight: FontWeight.w300,
                         ),
@@ -115,7 +119,7 @@ class _RegisterScreenState extends State<RegisterScreen> {
                     borderRadius: BorderRadius.circular(24),
                     boxShadow: [
                       BoxShadow(
-                        color: Colors.black.withOpacity(0.1),
+                        color: Colors.black.withValues(alpha: 0.1),
                         blurRadius: 20,
                         offset: const Offset(0, 10),
                       ),
@@ -158,15 +162,22 @@ class _RegisterScreenState extends State<RegisterScreen> {
                             ),
                             border: OutlineInputBorder(
                               borderRadius: BorderRadius.circular(12),
-                              borderSide: BorderSide(color: Colors.grey.shade300),
+                              borderSide: BorderSide(
+                                color: Colors.grey.shade300,
+                              ),
                             ),
                             enabledBorder: OutlineInputBorder(
                               borderRadius: BorderRadius.circular(12),
-                              borderSide: BorderSide(color: Colors.grey.shade300),
+                              borderSide: BorderSide(
+                                color: Colors.grey.shade300,
+                              ),
                             ),
                             focusedBorder: OutlineInputBorder(
                               borderRadius: BorderRadius.circular(12),
-                              borderSide: BorderSide(color: Colors.blue.shade600, width: 2),
+                              borderSide: BorderSide(
+                                color: Colors.blue.shade600,
+                                width: 2,
+                              ),
                             ),
                             filled: true,
                             fillColor: Colors.grey.shade50,
@@ -175,7 +186,9 @@ class _RegisterScreenState extends State<RegisterScreen> {
                             if (value == null || value.isEmpty) {
                               return 'Email is required';
                             }
-                            if (!RegExp(r'^[^@]+@[^@]+\.[^@]+').hasMatch(value)) {
+                            if (!RegExp(
+                              r'^[^@]+@[^@]+\.[^@]+',
+                            ).hasMatch(value)) {
                               return 'Please enter a valid email';
                             }
                             return null;
@@ -210,15 +223,22 @@ class _RegisterScreenState extends State<RegisterScreen> {
                             ),
                             border: OutlineInputBorder(
                               borderRadius: BorderRadius.circular(12),
-                              borderSide: BorderSide(color: Colors.grey.shade300),
+                              borderSide: BorderSide(
+                                color: Colors.grey.shade300,
+                              ),
                             ),
                             enabledBorder: OutlineInputBorder(
                               borderRadius: BorderRadius.circular(12),
-                              borderSide: BorderSide(color: Colors.grey.shade300),
+                              borderSide: BorderSide(
+                                color: Colors.grey.shade300,
+                              ),
                             ),
                             focusedBorder: OutlineInputBorder(
                               borderRadius: BorderRadius.circular(12),
-                              borderSide: BorderSide(color: Colors.blue.shade600, width: 2),
+                              borderSide: BorderSide(
+                                color: Colors.blue.shade600,
+                                width: 2,
+                              ),
                             ),
                             filled: true,
                             fillColor: Colors.grey.shade50,
@@ -262,22 +282,30 @@ class _RegisterScreenState extends State<RegisterScreen> {
                             ),
                             border: OutlineInputBorder(
                               borderRadius: BorderRadius.circular(12),
-                              borderSide: BorderSide(color: Colors.grey.shade300),
+                              borderSide: BorderSide(
+                                color: Colors.grey.shade300,
+                              ),
                             ),
                             enabledBorder: OutlineInputBorder(
                               borderRadius: BorderRadius.circular(12),
-                              borderSide: BorderSide(color: Colors.grey.shade300),
+                              borderSide: BorderSide(
+                                color: Colors.grey.shade300,
+                              ),
                             ),
                             focusedBorder: OutlineInputBorder(
                               borderRadius: BorderRadius.circular(12),
-                              borderSide: BorderSide(color: Colors.blue.shade600, width: 2),
+                              borderSide: BorderSide(
+                                color: Colors.blue.shade600,
+                                width: 2,
+                              ),
                             ),
                             filled: true,
                             fillColor: Colors.grey.shade50,
                           ),
                           validator: (value) {
                             final confirmValue = value?.trim();
-                            final passwordValue = _passwordController.text.trim();
+                            final passwordValue = _passwordController.text
+                                .trim();
 
                             if (confirmValue == null || confirmValue.isEmpty) {
                               return 'Confirm password required';
@@ -300,14 +328,26 @@ class _RegisterScreenState extends State<RegisterScreen> {
                                 ? null
                                 : () async {
                                     if (_formKey.currentState!.validate()) {
-                                      final email = _emailController.text.trim();
+                                      final email = _emailController.text
+                                          .trim();
                                       final password = _passwordController.text;
-                                      final confirmPassword = _confirmPasswordController.text;
+                                      final confirmPassword =
+                                          _confirmPasswordController.text;
 
-                                      await auth.register(email, password, confirmPassword);
+                                      final isAuthenticated = await auth
+                                          .register(
+                                            email,
+                                            password,
+                                            confirmPassword,
+                                          );
 
-                                      if (auth.isAuthenticated && mounted) {
-                                        Navigator.pushReplacementNamed(context, '/select-role');
+                                      if (!context.mounted) return;
+
+                                      if (isAuthenticated) {
+                                        Navigator.pushReplacementNamed(
+                                          context,
+                                          '/select-role',
+                                        );
                                       }
                                     }
                                   },
@@ -326,7 +366,9 @@ class _RegisterScreenState extends State<RegisterScreen> {
                                     width: 20,
                                     child: CircularProgressIndicator(
                                       strokeWidth: 2,
-                                      valueColor: AlwaysStoppedAnimation<Color>(Colors.white),
+                                      valueColor: AlwaysStoppedAnimation<Color>(
+                                        Colors.white,
+                                      ),
                                     ),
                                   )
                                 : const Text(
@@ -382,7 +424,9 @@ class _RegisterScreenState extends State<RegisterScreen> {
                               ),
                             ),
                             Padding(
-                              padding: const EdgeInsets.symmetric(horizontal: 16),
+                              padding: const EdgeInsets.symmetric(
+                                horizontal: 16,
+                              ),
                               child: Text(
                                 'or',
                                 style: TextStyle(

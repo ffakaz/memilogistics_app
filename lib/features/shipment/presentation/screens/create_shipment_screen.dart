@@ -1,39 +1,37 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
+
+import '../../domain/enums/safety_option.dart';
+import '../../domain/enums/shipment_type.dart';
+import '../../domain/enums/weight_unit.dart';
+
 import '../providers/shipment_provider.dart';
 
 class CreateShipmentScreen extends StatefulWidget {
   const CreateShipmentScreen({super.key});
 
   @override
-  State<CreateShipmentScreen> createState() =>
-      _CreateShipmentScreenState();
+  State<CreateShipmentScreen> createState() => _CreateShipmentScreenState();
 }
 
-class _CreateShipmentScreenState
-    extends State<CreateShipmentScreen> {
-
+class _CreateShipmentScreenState extends State<CreateShipmentScreen> {
   final _formKey = GlobalKey<FormState>();
 
-  final TextEditingController _shipperNameController =
-      TextEditingController();
+  final TextEditingController _shipperNameController = TextEditingController();
 
-  final TextEditingController _amountController =
-      TextEditingController();
+  final TextEditingController _amountController = TextEditingController();
 
-  final TextEditingController _pickupController =
-      TextEditingController();
+  final TextEditingController _pickupController = TextEditingController();
 
-  final TextEditingController _destinationController =
-      TextEditingController();
+  final TextEditingController _destinationController = TextEditingController();
 
   DateTime? _pickupDate;
 
-  String _shipmentType = 'dryGoods';
+  ShipmentType _shipmentType = ShipmentType.dryGoods;
 
-  String _weightUnit = 'kg';
+  WeightUnit _weightUnit = WeightUnit.kg;
 
-  String _safetyOption = 'normal';
+  SafetyOption _safetyOption = SafetyOption.normal;
 
   @override
   void dispose() {
@@ -65,11 +63,9 @@ class _CreateShipmentScreenState
     }
 
     if (_pickupDate == null) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(
-          content: Text('Pickup date is required'),
-        ),
-      );
+      ScaffoldMessenger.of(
+        context,
+      ).showSnackBar(const SnackBar(content: Text('Pickup date is required')));
       return;
     }
 
@@ -85,35 +81,29 @@ class _CreateShipmentScreenState
         destination: _destinationController.text.trim(),
         pickupDate: _pickupDate!,
         safetyOption: _safetyOption,
+        // Status will be set to 'pending' by backend automatically
       );
 
       if (!mounted) return;
 
       ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(
-          content: Text('Shipment created successfully'),
-        ),
+        const SnackBar(content: Text('Shipment created successfully')),
       );
     } catch (e) {
       if (!mounted) return;
+
       ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(
-          content: Text('Failed to create shipment: ${e.toString()}'),
-        ),
+        SnackBar(content: Text('Failed to create shipment: ${e.toString()}')),
       );
     }
   }
 
   @override
   Widget build(BuildContext context) {
-
-    final provider =
-        context.watch<ShipmentProvider>();
+    final provider = context.watch<ShipmentProvider>();
 
     return Scaffold(
-      appBar: AppBar(
-        title: const Text('Create Shipment'),
-      ),
+      appBar: AppBar(title: const Text('Create Shipment')),
 
       body: SingleChildScrollView(
         padding: const EdgeInsets.all(16),
@@ -122,13 +112,10 @@ class _CreateShipmentScreenState
           key: _formKey,
 
           child: Column(
-            crossAxisAlignment:
-                CrossAxisAlignment.start,
+            crossAxisAlignment: CrossAxisAlignment.start,
 
             children: [
-
               /// SHIPPER NAME
-
               TextFormField(
                 controller: _shipperNameController,
 
@@ -148,20 +135,19 @@ class _CreateShipmentScreenState
               const SizedBox(height: 16),
 
               /// SHIPMENT TYPE
-
-              DropdownButtonFormField<String>(
-                value: _shipmentType,
+              DropdownButtonFormField<ShipmentType>(
+                initialValue: _shipmentType,
 
                 decoration: const InputDecoration(
                   labelText: 'Shipment Type',
                   border: OutlineInputBorder(),
                 ),
 
-                items: ['dryGoods', 'electronics', 'fuel']
-                    .map((type) => DropdownMenuItem(
-                          value: type,
-                          child: Text(type),
-                        ))
+                items: ShipmentType.values
+                    .map(
+                      (type) =>
+                          DropdownMenuItem(value: type, child: Text(type.name)),
+                    )
                     .toList(),
 
                 onChanged: (value) {
@@ -175,11 +161,9 @@ class _CreateShipmentScreenState
 
               const SizedBox(height: 16),
 
-              /// AMOUNT
-
+              /// AMOUNT + UNIT
               Row(
                 children: [
-
                   Expanded(
                     flex: 2,
 
@@ -197,10 +181,13 @@ class _CreateShipmentScreenState
                         if (value == null || value.isEmpty) {
                           return 'Amount is required';
                         }
+
                         final parsed = double.tryParse(value);
+
                         if (parsed == null || parsed <= 0) {
                           return 'Invalid amount';
                         }
+
                         return null;
                       },
                     ),
@@ -209,19 +196,21 @@ class _CreateShipmentScreenState
                   const SizedBox(width: 12),
 
                   Expanded(
-                    child: DropdownButtonFormField<String>(
-                      value: _weightUnit,
+                    child: DropdownButtonFormField<WeightUnit>(
+                      initialValue: _weightUnit,
 
                       decoration: const InputDecoration(
                         labelText: 'Unit',
                         border: OutlineInputBorder(),
                       ),
 
-                      items: ['kg', 'ton']
-                          .map((u) => DropdownMenuItem(
-                                value: u,
-                                child: Text(u),
-                              ))
+                      items: WeightUnit.values
+                          .map(
+                            (unit) => DropdownMenuItem(
+                              value: unit,
+                              child: Text(unit.name),
+                            ),
+                          )
                           .toList(),
 
                       onChanged: (value) {
@@ -235,10 +224,10 @@ class _CreateShipmentScreenState
                   ),
                 ],
               ),
+
               const SizedBox(height: 16),
 
               /// PICKUP
-
               TextFormField(
                 controller: _pickupController,
 
@@ -249,7 +238,7 @@ class _CreateShipmentScreenState
 
                 validator: (value) {
                   if (value == null || value.trim().isEmpty) {
-                    return 'Address is required';
+                    return 'Pickup address is required';
                   }
                   return null;
                 },
@@ -258,7 +247,6 @@ class _CreateShipmentScreenState
               const SizedBox(height: 16),
 
               /// DESTINATION
-
               TextFormField(
                 controller: _destinationController,
 
@@ -269,7 +257,7 @@ class _CreateShipmentScreenState
 
                 validator: (value) {
                   if (value == null || value.trim().isEmpty) {
-                    return 'Address is required';
+                    return 'Destination is required';
                   }
                   return null;
                 },
@@ -278,7 +266,6 @@ class _CreateShipmentScreenState
               const SizedBox(height: 16),
 
               /// PICKUP DATE
-
               InkWell(
                 onTap: _selectPickupDate,
 
@@ -291,10 +278,7 @@ class _CreateShipmentScreenState
                   child: Text(
                     _pickupDate == null
                         ? 'Select date'
-                        : _pickupDate!
-                            .toLocal()
-                            .toString()
-                            .split(' ')[0],
+                        : _pickupDate!.toLocal().toString().split(' ')[0],
                   ),
                 ),
               ),
@@ -302,76 +286,47 @@ class _CreateShipmentScreenState
               const SizedBox(height: 16),
 
               /// SAFETY OPTION
-
               const Text(
                 'Safety Option',
-                style: TextStyle(
-                  fontWeight: FontWeight.bold,
-                ),
+                style: TextStyle(fontWeight: FontWeight.bold),
               ),
 
-              Row(
-                children: [
+              const SizedBox(height: 8),
 
-                  Expanded(
-                    child: RadioListTile<String>(
-                        title: const Text('Normal'),
-
-                        value: 'normal',
-
-                        groupValue: _safetyOption,
-
-                        onChanged: (value) {
-                          if (value != null) {
-                            setState(() {
-                              _safetyOption = value;
-                            });
-                          }
-                        },
+              SegmentedButton<SafetyOption>(
+                segments: SafetyOption.values
+                    .map(
+                      (option) => ButtonSegment<SafetyOption>(
+                        value: option,
+                        label: Text(option.name),
                       ),
-                  ),
-
-                  Expanded(
-                    child: RadioListTile<String>(
-                      title: const Text('Fragile'),
-
-                      value: 'fragile',
-
-                      groupValue: _safetyOption,
-
-                      onChanged: (value) {
-                        if (value != null) {
-                          setState(() {
-                            _safetyOption = value;
-                          });
-                        }
-                      },
-                    ),
-                  ),
-                ],
+                    )
+                    .toList(),
+                selected: {_safetyOption},
+                onSelectionChanged: (selection) {
+                  setState(() {
+                    _safetyOption = selection.first;
+                  });
+                },
               ),
 
               const SizedBox(height: 24),
 
               /// SUBMIT BUTTON
-
               SizedBox(
                 width: double.infinity,
-
                 height: 50,
 
                 child: ElevatedButton(
-                  onPressed:
-                      provider.isLoading
-                          ? null
-                          : _submit,
+                  onPressed: provider.isLoading ? null : _submit,
 
-                  child:
-                      provider.isLoading
-                          ? const CircularProgressIndicator()
-                          : const Text(
-                              'Create Shipment',
-                            ),
+                  child: provider.isLoading
+                      ? const SizedBox(
+                          width: 24,
+                          height: 24,
+                          child: CircularProgressIndicator(),
+                        )
+                      : const Text('Create Shipment'),
                 ),
               ),
             ],

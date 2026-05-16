@@ -12,9 +12,25 @@ class RoleSelectionScreen extends StatelessWidget {
     final storage = context.read<SecureStorageService>();
     await storage.write(key: _storageKey, value: role);
 
-    // For now, route all roles into the shipment dashboard flow. Home
-    // (multi-tab) screen is disabled while backend integration is pending.
-    Navigator.of(context).pushReplacementNamed('/dashboard');
+    if (!context.mounted) return;
+
+    // Route based on selected role
+    String route;
+    switch (role) {
+      case 'carrier':
+        route = '/carrier-dashboard';
+        break;
+      case 'shipper':
+        route = '/dashboard';
+        break;
+      case 'admin':
+        route = '/dashboard'; // Admin can use shipment dashboard for now
+        break;
+      default:
+        route = '/dashboard';
+    }
+
+    Navigator.of(context).pushReplacementNamed(route);
   }
 
   @override

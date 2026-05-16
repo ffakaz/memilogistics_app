@@ -3,19 +3,18 @@
 // Adapter that connects your existing AuthApiService interface to the new ApiClient
 
 import 'package:http/http.dart' as http;
-import 'package:memilogistics_app/core/core.dart';
+import 'package:memilogistics_app/core/network/api_client.dart';
 import 'package:memilogistics_app/features/auth/data/services/auth_api_services.dart';
 
 class FakeAuthApiServiceAdapter extends AuthApiService {
   final ApiClient _apiClient;
 
-  FakeAuthApiServiceAdapter({
-    required ApiClient apiClient,
-  })  : _apiClient = apiClient,
-        super(
-          baseUrl: 'http://localhost', // Not used with fake API
-          client: http.Client(), // Not used with fake API
-        );
+  FakeAuthApiServiceAdapter({required ApiClient apiClient})
+    : _apiClient = apiClient,
+      super(
+        baseUrl: 'http://localhost', // Not used with fake API
+        client: http.Client(), // Not used with fake API
+      );
 
   @override
   Future<Map<String, dynamic>> login(Map<String, dynamic> body) async {

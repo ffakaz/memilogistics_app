@@ -1,4 +1,8 @@
 enum WeightUnit {
-  kg,
-  ton,
+  kg('kg'),
+  ton('ton');
+
+  const WeightUnit(this.displayName);
+
+  final String displayName;
 }

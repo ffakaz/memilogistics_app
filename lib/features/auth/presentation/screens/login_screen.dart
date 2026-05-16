@@ -1,4 +1,4 @@
-﻿import 'package:flutter/material.dart';
+import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import '../provider/auth_provider.dart';
 
@@ -24,7 +24,9 @@ class _LoginScreenState extends State<LoginScreen> {
     return Scaffold(
       body: SafeArea(
         child: SingleChildScrollView(
-          padding: EdgeInsets.only(bottom: MediaQuery.of(context).viewInsets.bottom),
+          padding: EdgeInsets.only(
+            bottom: MediaQuery.of(context).viewInsets.bottom,
+          ),
           child: Column(
             children: [
               SizedBox(
@@ -91,9 +93,11 @@ class _LoginScreenState extends State<LoginScreen> {
                               labelText: 'Password',
                               prefixIcon: const Icon(Icons.lock),
                               suffixIcon: IconButton(
-                                icon: Icon(_obscurePassword
-                                    ? Icons.visibility_off
-                                    : Icons.visibility),
+                                icon: Icon(
+                                  _obscurePassword
+                                      ? Icons.visibility_off
+                                      : Icons.visibility,
+                                ),
                                 onPressed: () {
                                   setState(() {
                                     _obscurePassword = !_obscurePassword;
@@ -122,10 +126,16 @@ class _LoginScreenState extends State<LoginScreen> {
                                       if (_formKey.currentState!.validate()) {
                                         _formKey.currentState!.save();
 
-                                        await auth.login(email, password);
+                                        final isAuthenticated = await auth
+                                            .login(email, password);
 
-                                        if (auth.isAuthenticated && mounted) {
-                                          Navigator.pushReplacementNamed(context, '/select-role');
+                                        if (!context.mounted) return;
+
+                                        if (isAuthenticated) {
+                                          Navigator.pushReplacementNamed(
+                                            context,
+                                            '/select-role',
+                                          );
                                         }
                                       }
                                     },
@@ -140,7 +150,8 @@ class _LoginScreenState extends State<LoginScreen> {
                             ),
                           ],
                           TextButton(
-                            onPressed: () => Navigator.pushNamed(context, '/register'),
+                            onPressed: () =>
+                                Navigator.pushNamed(context, '/register'),
                             child: const Text('Create an account'),
                           ),
                         ],

@@ -8,6 +8,9 @@ import 'package:memilogistics_app/core/core.dart';
 class FakeApiClient implements ApiClient {
   final Random _random = Random();
   
+  // Store created carrier company (simulating database)
+  Map<String, dynamic>? _carrierCompany;
+  
   // Simulate network delay
   Future<void> _delay() async {
     await Future.delayed(Duration(milliseconds: 200 + _random.nextInt(800)));
@@ -32,6 +35,8 @@ class FakeApiClient implements ApiClient {
       return _handleGetPermissions<T>();
     } else if (path.contains('/user/')) {
       return _handleGetUserProfile<T>();
+    } else if (path.contains('/carrier/company')) {
+      return _handleGetCarrierCompany<T>();
     } else if (path.contains('/loads')) {
       return _handleGetLoads<T>();
     } else if (path.contains('/profile')) {
@@ -54,6 +59,8 @@ class FakeApiClient implements ApiClient {
       return _handleLogin<T>();
     } else if (path.contains('/auth/register')) {
       return _handleRegister<T>();
+    } else if (path.contains('/carrier/company')) {
+      return _handleCreateCarrierCompany<T>(data);
     } else if (path.contains('/shipments')) {
       return _handleCreateShipment<T>();
     } else if (path.contains('/loads/create')) {
@@ -76,6 +83,8 @@ class FakeApiClient implements ApiClient {
       return _handleUpdateAvatar<T>();
     } else if (path.contains('/user/')) {
       return _handleUpdateProfile<T>(data);
+    } else if (path.contains('/carrier/company')) {
+      return _handleUpdateCarrierCompany<T>(data);
     } else if (path.contains('/loads/')) {
       return _handleUpdateLoad<T>();
     }
@@ -232,10 +241,10 @@ class FakeApiClient implements ApiClient {
         'email': 'user@example.com',
         'name': 'John Doe',
         'phone': '+1-555-123-4567',
-        'company': 'ABC Logistics',
-        'address': '123 Main St, New York, NY 10001',
+        'company': 'Swift Transport Solutions',
+        'address': '456 Logistics Blvd, Chicago, IL 60601',
         'avatar_url': null,
-        'role': 'driver',
+        'role': 'carrier', // Changed to carrier for carrier dashboard
         'status': 'active',
         'created_at': DateTime.now().subtract(const Duration(days: 30)).toIso8601String(),
         'updated_at': DateTime.now().toIso8601String(),
@@ -254,10 +263,16 @@ class FakeApiClient implements ApiClient {
           'granted': true,
         },
         {
-          'id': 'manage_users',
-          'name': 'Manage Users',
-          'description': 'Can manage user accounts',
-          'granted': false,
+          'id': 'manage_fleet',
+          'name': 'Manage Fleet',
+          'description': 'Can manage carrier fleet',
+          'granted': true,
+        },
+        {
+          'id': 'manage_drivers',
+          'name': 'Manage Drivers',
+          'description': 'Can manage drivers',
+          'granted': true,
         },
       ],
       'access_token': 'fake_access_token_${_random.nextInt(10000)}',
@@ -345,5 +360,59 @@ class FakeApiClient implements ApiClient {
       'avatar_url': 'https://example.com/avatars/user_${_random.nextInt(1000)}.jpg',
     };
     return ApiResponse<T>.success(response as T);
+  }
+
+  // Carrier Company endpoints
+  ApiResponse<T> _handleGetCarrierCompany<T>() {
+    // Return 404 if no company has been created yet
+    if (_carrierCompany == null) {
+      return ApiResponse<T>.error(
+        'Carrier company not found. Please create your company profile.',
+        statusCode: 404,
+      );
+    }
+    
+    return ApiResponse<T>.success(_carrierCompany as T);
+  }
+
+  ApiResponse<T> _handleCreateCarrierCompany<T>(dynamic data) {
+    final companyData = data as Map<String, dynamic>? ?? {};
+    _carrierCompany = {
+      'manager_user_id': companyData['manager_user_id'] ?? '1',
+      'company_name': companyData['company_name'] ?? 'New Carrier Company',
+      'address': companyData['address'] ?? {
+        'street': '123 Business St',
+        'city': 'New York',
+        'state': 'NY',
+        'zip': '10001',
+        'country': 'USA',
+        'phone_number': '+1-555-000-0000',
+      },
+      'company_email': companyData['company_email'] ?? 'info@carrier.com',
+      'created_at': DateTime.now().toIso8601String(),
+      'updated_at': DateTime.now().toIso8601String(),
+    };
+    return ApiResponse<T>.success(_carrierCompany as T);
+  }
+
+  ApiResponse<T> _handleUpdateCarrierCompany<T>(dynamic data) {
+    // Return 404 if no company exists
+    if (_carrierCompany == null) {
+      return ApiResponse<T>.error(
+        'Carrier company not found. Please create your company profile first.',
+        statusCode: 404,
+      );
+    }
+    
+    final updates = data as Map<String, dynamic>? ?? {};
+    _carrierCompany = {
+      'manager_user_id': updates['manager_user_id'] ?? _carrierCompany!['manager_user_id'],
+      'company_name': updates['company_name'] ?? _carrierCompany!['company_name'],
+      'address': updates['address'] ?? _carrierCompany!['address'],
+      'company_email': updates['company_email'] ?? _carrierCompany!['company_email'],
+      'created_at': _carrierCompany!['created_at'],
+      'updated_at': DateTime.now().toIso8601String(),
+    };
+    return ApiResponse<T>.success(_carrierCompany as T);
   }
 }

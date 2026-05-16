@@ -1,4 +1,4 @@
-﻿import 'package:flutter/material.dart';
+import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import '../provider/auth_provider.dart';
 
@@ -15,6 +15,8 @@ class LogoutScreen extends StatelessWidget {
         child: ElevatedButton(
           onPressed: () async {
             await auth.logout();
+
+            if (!context.mounted) return;
 
             Navigator.pushNamedAndRemoveUntil(
               context,

@@ -1,8 +1,8 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 
-import 'package:memilogistics_app/app/app_guard.dart';
-import 'package:memilogistics_app/app/app_providers.dart';
+import 'app_guard.dart';
+import 'app_providers.dart';
 
 import 'package:memilogistics_app/core/di/service_locator.dart';
 import 'package:memilogistics_app/core/router/app_router.dart';
