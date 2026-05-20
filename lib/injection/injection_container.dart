@@ -7,7 +7,7 @@ import 'package:memilogistics_app/core/core.dart';
 
 // Auth — data layer
 import 'package:memilogistics_app/features/auth/data/repository/auth_repository_impl.dart';
-import 'package:memilogistics_app/features/auth/data/services/fake_auth_api_service_adapter.dart';
+import 'package:memilogistics_app/features/auth/data/services/auth_api_service_real.dart';
 import 'package:memilogistics_app/features/auth/data/storage/token_storage.dart';
 
 // Auth — use cases
@@ -20,8 +20,37 @@ import 'package:memilogistics_app/features/auth/domain/usecases/register_usecase
 // Auth — presentation
 import 'package:memilogistics_app/features/auth/presentation/provider/auth_provider.dart';
 
-// Shipment & User features
-// Shipment & User features (not wired yet)
+// ShipmentOffer — data layer
+import 'package:memilogistics_app/features/shipment_offer/data/services/shipment_offer_api_service.dart';
+
+// ShipmentOffer — presentation
+import 'package:memilogistics_app/features/shipment_offer/presentation/providers/shipment_offer_provider.dart';
+
+// Payment — data layer
+import 'package:memilogistics_app/features/payment/data/services/payment_api_service.dart';
+import 'package:memilogistics_app/features/payment/data/repositories/payment_repository_impl.dart';
+
+// Payment — presentation
+import 'package:memilogistics_app/features/payment/presentation/providers/payment_provider.dart';
+
+// Shipment — data layer
+import 'package:memilogistics_app/features/shipment/data/services/shipment_api_service_real.dart';
+import 'package:memilogistics_app/features/shipment/data/repositories/shipment_repository_impl.dart';
+
+// Shipment — presentation
+import 'package:memilogistics_app/features/shipment/presentation/providers/shipment_provider.dart';
+
+// User — data layer
+import 'package:memilogistics_app/features/user/data/services/user_api_service.dart';
+import 'package:memilogistics_app/features/user/data/repositories/user_repository_impl.dart';
+
+// User — use cases
+import 'package:memilogistics_app/features/user/domain/usecases/get_current_user_usecase.dart';
+import 'package:memilogistics_app/features/user/domain/usecases/update_profile_usecase.dart';
+import 'package:memilogistics_app/features/user/domain/usecases/get_permissions_usecase.dart';
+
+// User — presentation
+import 'package:memilogistics_app/features/user/presentation/providers/user_provider.dart';
 
 class InjectionContainer extends StatelessWidget {
   const InjectionContainer({super.key, required this.child});
@@ -35,7 +64,7 @@ class InjectionContainer extends StatelessWidget {
     final secureStorage  = context.read<FlutterSecureStorage>();
 
     // ── Auth — data layer ─────────────────────────────────────────────────
-    final authApiService = FakeAuthApiServiceAdapter(apiClient: apiClient);
+    final authApiService = AuthApiServiceReal(apiClient);
     final tokenStorage   = TokenStorage(storage: secureStorage);
     final authRepository = AuthRepositoryImpl(
       apiService:   authApiService,
@@ -50,10 +79,25 @@ class InjectionContainer extends StatelessWidget {
     final getCurrentTokenUseCase = GetCurrentTokenUseCase(authRepository);
 
     // ── Shipment dependencies ─────────────────────────────────────────────
-    // TODO: wire ShipmentRepository, ShipmentUseCases
+    final shipmentApiService = ShipmentApiServiceReal(apiClient);
+    final shipmentRepository = ShipmentRepositoryImpl(
+      apiService: shipmentApiService,
+      tokenStorage: tokenStorage,
+    );
+
+    // ── ShipmentOffer dependencies ────────────────────────────────────────
+    final shipmentOfferApiService = ShipmentOfferApiService(apiClient);
+
+    // ── Payment dependencies ──────────────────────────────────────────────
+    final paymentApiService = PaymentApiService(apiClient);
+    final paymentRepository = PaymentRepositoryImpl(paymentApiService);
 
     // ── User dependencies ─────────────────────────────────────────────────
-    // TODO: wire UserRepository, UserUseCases
+    final userApiService = UserApiService(apiClient: apiClient);
+    final userRepository = UserRepositoryImpl(apiService: userApiService);
+    final getCurrentUserUseCase = GetCurrentUserUseCase(userRepository);
+    final updateProfileUseCase = UpdateProfileUseCase(userRepository);
+    final getPermissionsUseCase = GetPermissionsUseCase(userRepository);
 
     // ── Provider tree ─────────────────────────────────────────────────────
     return MultiProvider(
@@ -69,15 +113,29 @@ class InjectionContainer extends StatelessWidget {
           ),
         ),
 
+        // ShipmentOffer provider
+        ChangeNotifierProvider<ShipmentOfferProvider>(
+          create: (_) => ShipmentOfferProvider(shipmentOfferApiService),
+        ),
+
+        // Payment provider
+        ChangeNotifierProvider<PaymentProvider>(
+          create: (_) => PaymentProvider(paymentRepository),
+        ),
+
         // Shipment provider
-        // ChangeNotifierProvider<ShipmentProvider>(
-        //   create: (_) => ShipmentProvider(...),
-        // ),
+        ChangeNotifierProvider<ShipmentProvider>(
+          create: (_) => ShipmentProvider(repository: shipmentRepository),
+        ),
 
         // User provider
-        // ChangeNotifierProvider<UserProvider>(
-        //   create: (_) => UserProvider(...),
-        // ),
+        ChangeNotifierProvider<UserProvider>(
+          create: (_) => UserProvider(
+            getCurrentUserUseCase: getCurrentUserUseCase,
+            updateProfileUseCase: updateProfileUseCase,
+            getPermissionsUseCase: getPermissionsUseCase,
+          ),
+        ),
       ],
       child: child,
     );

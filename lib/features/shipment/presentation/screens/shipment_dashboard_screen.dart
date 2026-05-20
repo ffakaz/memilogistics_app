@@ -97,7 +97,7 @@ class _ShipmentDashboardScreenState extends State<ShipmentDashboardScreen> {
                   Icons.add_circle,
                   Colors.blue,
                   () {
-                    Navigator.pushNamed(context, '/create-shipment');
+                    Navigator.pushNamed(context, RouteConstants.createShipment);
                   },
                 ),
 
@@ -109,7 +109,7 @@ class _ShipmentDashboardScreenState extends State<ShipmentDashboardScreen> {
                   Icons.local_offer,
                   Colors.orange,
                   () {
-                    Navigator.pushNamed(context, '/my-shipments');
+                    Navigator.pushNamed(context, RouteConstants.myShipments);
                   },
                 ),
 
@@ -121,7 +121,7 @@ class _ShipmentDashboardScreenState extends State<ShipmentDashboardScreen> {
                   Icons.list,
                   Colors.green,
                   () {
-                    Navigator.pushNamed(context, '/my-shipments');
+                    Navigator.pushNamed(context, RouteConstants.myShipments);
                   },
                 ),
 
@@ -169,7 +169,7 @@ class _ShipmentDashboardScreenState extends State<ShipmentDashboardScreen> {
       ),
       floatingActionButton: FloatingActionButton.extended(
         onPressed: () {
-          Navigator.pushNamed(context, '/create-shipment');
+          Navigator.pushNamed(context, RouteConstants.createShipment);
         },
         icon: const Icon(Icons.add),
         label: const Text('New Shipment'),

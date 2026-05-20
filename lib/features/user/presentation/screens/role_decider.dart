@@ -1,8 +1,21 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
+import '../providers/user_provider.dart';
+import '../../../auth/presentation/provider/auth_provider.dart';
+import '../../../../core/utils/constants/route_constants.dart';
+import '../../domain/enums/app_role.dart';
 
-import 'package:memilogistics_app/core/secure_storage/secure_storage_service.dart';
-
+/// DEPRECATED: This screen is no longer used in the current navigation flow.
+/// 
+/// Role-based routing is now handled by AppGuard in app_guard.dart, which:
+/// - Checks authentication status
+/// - Loads user profile from backend
+/// - Routes to appropriate dashboard based on user role
+/// 
+/// This file is kept for reference or potential future use, but is not
+/// part of the active navigation flow.
+/// 
+/// If you need role-based routing, use AppGuard.resolveHome() instead.
 class RoleDecider extends StatefulWidget {
   const RoleDecider({super.key});
 
@@ -11,8 +24,6 @@ class RoleDecider extends StatefulWidget {
 }
 
 class _RoleDeciderState extends State<RoleDecider> {
-  static const _storageKey = 'user.selected_role';
-
   @override
   void initState() {
     super.initState();
@@ -20,20 +31,44 @@ class _RoleDeciderState extends State<RoleDecider> {
   }
 
   Future<void> _decide() async {
-    final storage = context.read<SecureStorageService>();
-    final has = await storage.containsKey(_storageKey);
     if (!mounted) return;
 
-    if (!has) {
-      Navigator.of(context).pushReplacementNamed('/select-role');
+    // Get providers
+    final authProvider = context.read<AuthProvider>();
+    final userProvider = context.read<UserProvider>();
+
+    // Check authentication
+    if (!authProvider.isAuthenticated) {
+      Navigator.of(context).pushReplacementNamed(RouteConstants.login);
       return;
     }
 
-    await storage.read(_storageKey);
+    // Load user profile if not already loaded
+    if (!userProvider.hasUser) {
+      await userProvider.loadCurrentUser();
+    }
+
     if (!mounted) return;
 
-    // Home screen not used currently — route everyone into shipment dashboard
-    Navigator.of(context).pushReplacementNamed('/dashboard');
+    final user = userProvider.currentUser;
+    if (user == null) {
+      // If user loading failed, go to login
+      Navigator.of(context).pushReplacementNamed(RouteConstants.login);
+      return;
+    }
+
+    // Route based on user role
+    switch (user.profile.role) {
+      case AppRole.carrier:
+        Navigator.of(context).pushReplacementNamed(RouteConstants.carrierDashboard);
+        break;
+      case AppRole.shipper:
+        Navigator.of(context).pushReplacementNamed(RouteConstants.dashboard);
+        break;
+      case AppRole.admin:
+        Navigator.of(context).pushReplacementNamed(RouteConstants.dashboard);
+        break;
+    }
   }
 
   @override

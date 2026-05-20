@@ -2,7 +2,7 @@ import 'package:flutter/material.dart';
 
 import 'package:memilogistics_app/features/auth/presentation/provider/auth_provider.dart';
 import 'package:memilogistics_app/features/auth/presentation/screens/login_screen.dart';
-import 'package:memilogistics_app/features/carrier/presentation/screens/carrier_dashboard_screen.dart';
+import 'package:memilogistics_app/features/carrier/presentation/screens/carrier_dashboard_improved.dart';
 import 'package:memilogistics_app/features/shipment/presentation/screens/shipment_dashboard_screen.dart';
 import 'package:memilogistics_app/features/user/domain/enums/app_role.dart';
 import 'package:memilogistics_app/features/user/presentation/provider/user_provider.dart';
@@ -36,7 +36,7 @@ class AppGuard {
     // Route based on user role
     switch (user.profile.role) {
       case AppRole.carrier:
-        return const CarrierDashboardScreen();
+        return const CarrierDashboardImproved();
       case AppRole.shipper:
         return const ShipmentDashboardScreen();
       case AppRole.admin:

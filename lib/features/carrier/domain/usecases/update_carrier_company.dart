@@ -4,9 +4,13 @@ import '../repositories/carrier_company_repository.dart';
 class UpdateCarrierCompany {
   final CarrierCompanyRepository repository;
 
-  const UpdateCarrierCompany(this.repository);
+  UpdateCarrierCompany(this.repository);
 
-  Future<CarrierCompany> call(CarrierCompany company) {
-    return repository.updateCarrierCompany(company);
+  Future<CarrierCompany> call(
+    CarrierCompany company,
+  ) async {
+    return await repository.updateCarrierCompany(
+      company,
+    );
   }
 }

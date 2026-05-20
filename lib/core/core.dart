@@ -1,12 +1,10 @@
 
 export 'package:memilogistics_app/core/config/api_config.dart';
-export 'package:memilogistics_app/core/di/dependency_injection.dart';
 export 'package:memilogistics_app/core/error/exceptions.dart';
 export 'package:memilogistics_app/core/error/failures.dart';
 export 'package:memilogistics_app/core/network/api_client.dart';
 export 'package:memilogistics_app/core/network/api_client_factory.dart';
 export 'package:memilogistics_app/core/network/dio_api_client.dart';
-export 'package:memilogistics_app/core/network/fake_api_client.dart';
 export 'package:memilogistics_app/core/network/dio_interceptor.dart';
 export 'package:memilogistics_app/core/network/network_exceptions.dart';
 export 'package:memilogistics_app/core/router/app_router.dart';

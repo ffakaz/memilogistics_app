@@ -21,9 +21,10 @@ class AppRouter {
 
   /// Feature route registry: routeName → page builder.
   /// Features call [AppRouter.registerRoutes] in their DI modules.
-  static final Map<String, WidgetBuilder> _registry = {};
+  /// The builder function receives the route arguments (if any).
+  static final Map<String, Widget Function(dynamic args)> _registry = {};
 
-  static void registerRoutes(Map<String, WidgetBuilder> routes) =>
+  static void registerRoutes(Map<String, Widget Function(dynamic args)> routes) =>
       _registry.addAll(routes);
 
   // ── onGenerateRoute ───────────────────────────────────────────────────────
@@ -33,7 +34,7 @@ class AppRouter {
 
     final builder = _registry[name];
     if (builder != null) {
-      return _page(settings, builder);
+      return _pageWithArgs(settings, builder);
     }
 
     switch (name) {
@@ -49,6 +50,12 @@ class AppRouter {
     WidgetBuilder b,
   ) =>
       MaterialPageRoute(settings: s, builder: b);
+
+  static MaterialPageRoute<dynamic> _pageWithArgs(
+    RouteSettings s,
+    Widget Function(dynamic args) b,
+  ) =>
+      MaterialPageRoute(settings: s, builder: (_) => b(s.arguments));
 
   // ── Auth guard ────────────────────────────────────────────────────────────
 

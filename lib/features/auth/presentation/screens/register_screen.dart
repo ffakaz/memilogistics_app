@@ -18,6 +18,7 @@ class _RegisterScreenState extends State<RegisterScreen> {
 
   bool _obscurePassword = true;
   bool _obscureConfirm = true;
+  String _selectedRole = 'SHIPPER'; // Default role in uppercase
 
   @override
   void dispose() {
@@ -149,10 +150,78 @@ class _RegisterScreenState extends State<RegisterScreen> {
 
                         const SizedBox(height: 32),
 
+                        // Role Selection - Dropdown
+                        DropdownButtonFormField<String>(
+                          initialValue: _selectedRole,
+                          style: const TextStyle(
+                            color: Colors.black87,
+                            fontSize: 16,
+                          ),
+                          decoration: InputDecoration(
+                            labelText: 'Register as',
+                            helperText: 'Select your role: Shipper (send goods) or Carrier (transport goods)',
+                            helperMaxLines: 2,
+                            prefixIcon: Icon(
+                              Icons.badge_outlined,
+                              color: Colors.blue.shade600,
+                            ),
+                            border: OutlineInputBorder(
+                              borderRadius: BorderRadius.circular(12),
+                              borderSide: BorderSide(
+                                color: Colors.grey.shade300,
+                              ),
+                            ),
+                            enabledBorder: OutlineInputBorder(
+                              borderRadius: BorderRadius.circular(12),
+                              borderSide: BorderSide(
+                                color: Colors.grey.shade300,
+                              ),
+                            ),
+                            focusedBorder: OutlineInputBorder(
+                              borderRadius: BorderRadius.circular(12),
+                              borderSide: BorderSide(
+                                color: Colors.blue.shade600,
+                                width: 2,
+                              ),
+                            ),
+                            filled: true,
+                            fillColor: Colors.grey.shade50,
+                          ),
+                          items: const [
+                            DropdownMenuItem(
+                              value: 'SHIPPER',
+                              child: Text('Shipper (I need to ship goods)'),
+                            ),
+                            DropdownMenuItem(
+                              value: 'CARRIER',
+                              child: Text('Carrier (I transport goods)'),
+                            ),
+                          ],
+                          onChanged: (value) {
+                            if (value != null) {
+                              setState(() {
+                                _selectedRole = value;
+                              });
+                            }
+                          },
+                          validator: (value) {
+                            if (value == null || value.isEmpty) {
+                              return 'Please select your role';
+                            }
+                            return null;
+                          },
+                        ),
+
+                        const SizedBox(height: 20),
+
                         // Email Field
                         TextFormField(
                           controller: _emailController,
                           keyboardType: TextInputType.emailAddress,
+                          style: const TextStyle(
+                            color: Colors.black87,
+                            fontSize: 16,
+                          ),
                           decoration: InputDecoration(
                             labelText: 'Email Address',
                             hintText: 'Enter your email',
@@ -201,6 +270,10 @@ class _RegisterScreenState extends State<RegisterScreen> {
                         TextFormField(
                           controller: _passwordController,
                           obscureText: _obscurePassword,
+                          style: const TextStyle(
+                            color: Colors.black87,
+                            fontSize: 16,
+                          ),
                           decoration: InputDecoration(
                             labelText: 'Password',
                             hintText: 'Create a strong password',
@@ -260,6 +333,10 @@ class _RegisterScreenState extends State<RegisterScreen> {
                         TextFormField(
                           controller: _confirmPasswordController,
                           obscureText: _obscureConfirm,
+                          style: const TextStyle(
+                            color: Colors.black87,
+                            fontSize: 16,
+                          ),
                           decoration: InputDecoration(
                             labelText: 'Confirm Password',
                             hintText: 'Re-enter your password',
@@ -339,14 +416,39 @@ class _RegisterScreenState extends State<RegisterScreen> {
                                             email,
                                             password,
                                             confirmPassword,
+                                            role: _selectedRole, // Pass selected role (SHIPPER/CARRIER)
                                           );
 
                                       if (!context.mounted) return;
 
                                       if (isAuthenticated) {
+                                        // Show success message
+                                        ScaffoldMessenger.of(context).showSnackBar(
+                                          SnackBar(
+                                            content: const Row(
+                                              children: [
+                                                Icon(Icons.check_circle, color: Colors.white),
+                                                SizedBox(width: 12),
+                                                Expanded(
+                                                  child: Text(
+                                                    'Registration successful! Logging you in...',
+                                                    style: TextStyle(fontSize: 16),
+                                                  ),
+                                                ),
+                                              ],
+                                            ),
+                                            backgroundColor: Colors.green.shade600,
+                                            duration: const Duration(seconds: 2),
+                                          ),
+                                        );
+                                        
+                                        // Route directly to appropriate dashboard based on role
+                                        final route = _selectedRole == 'CARRIER'
+                                            ? '/carrier-dashboard'
+                                            : '/dashboard';
                                         Navigator.pushReplacementNamed(
                                           context,
-                                          '/select-role',
+                                          route,
                                         );
                                       }
                                     }

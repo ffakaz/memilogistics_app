@@ -9,10 +9,7 @@ class ApiClientFactory {
     required SecureStorageService storageService,
     required void Function() onSessionExpired,
   }) {
-    if (ApiConfig.current.isFake) {
-      return FakeApiClient();
-    }
-
+    // Always use real DioApiClient for backend communication
     return DioApiClient.create(
       storageService: storageService,
       onSessionExpired: onSessionExpired,

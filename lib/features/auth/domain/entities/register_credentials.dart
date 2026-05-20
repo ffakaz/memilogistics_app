@@ -4,11 +4,13 @@ class RegisterCredentials {
   final String email;
   final String password;
   final String confirmPassword;
+  final String role; // Added: User role (shipper/carrier)
 
   const RegisterCredentials({
     required this.email,
     required this.password,
     required this.confirmPassword,
+    required this.role,
   });
 
   bool get isValidEmail {
@@ -37,6 +39,16 @@ class RegisterCredentials {
 
     if (password != confirmPassword) {
       return ValidationResult.invalid('Passwords do not match');
+    }
+
+    if (role.isEmpty) {
+      return ValidationResult.invalid('Role is required');
+    }
+
+    // Backend expects UPPERCASE role (SHIPPER or CARRIER)
+    final roleUpper = role.toUpperCase();
+    if (roleUpper != 'SHIPPER' && roleUpper != 'CARRIER') {
+      return ValidationResult.invalid('Invalid role selected');
     }
 
     return ValidationResult.valid();

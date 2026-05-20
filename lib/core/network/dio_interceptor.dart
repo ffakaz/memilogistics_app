@@ -35,7 +35,7 @@ class AuthDioInterceptor extends Interceptor {
     required SecureStorageService storage,
     required void Function() onSessionExpired,
     // Endpoint used for token refresh — override if your backend differs
-    String refreshPath = '/api/v1/auth/refresh',
+    String refreshPath = '/api/auth/refresh',
   })  : _dio = dio,
         _storage = storage,
         _onSessionExpired = onSessionExpired,

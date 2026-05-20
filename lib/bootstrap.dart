@@ -6,7 +6,7 @@ import 'package:memilogistics_app/core/core.dart';
 
 /// Initializes early app state: bindings, environment and service locator.
 /// Call this from `main()` before `runApp()`.
-Future<void> initApp({AppEnvironment env = AppEnvironment.fake}) async {
+Future<void> initApp({AppEnvironment env = AppEnvironment.development}) async {
   WidgetsFlutterBinding.ensureInitialized();
 
   ApiConfig.init(env);

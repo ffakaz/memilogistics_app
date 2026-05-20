@@ -1,8 +1,16 @@
 enum WeightUnit {
-  kg('kg'),
-  ton('ton');
+  kg,
+  lbs,
+  ton;
 
-  const WeightUnit(this.displayName);
-
-  final String displayName;
+  String get displayName {
+    switch (this) {
+      case WeightUnit.kg:
+        return 'kg';
+      case WeightUnit.lbs:
+        return 'lbs';
+      case WeightUnit.ton:
+        return 'tons';
+    }
+  }
 }

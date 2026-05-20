@@ -75,7 +75,7 @@ class DioApiClient implements ApiClient {
         queryParameters: queryParameters,
         options: Options(headers: headers),
       );
-      return ApiResponse.success(response.data as T, statusCode: response.statusCode ?? 200);
+      return _toApiResponse<T>(response);
     } on DioException catch (e) {
       return _handleDioError<T>(e);
     }
@@ -89,15 +89,38 @@ class DioApiClient implements ApiClient {
     Map<String, String>? headers,
   }) async {
     try {
+      print('🌐 POST Request:');
+      print('  Path: $path');
+      print('  Query: $queryParameters');
+      print('  Data: $data');
+      print('  Headers: $headers');
+      
       final response = await _dio.post<T>(
         path,
         data: data,
         queryParameters: queryParameters,
         options: Options(headers: headers),
       );
-      return ApiResponse.success(response.data as T, statusCode: response.statusCode ?? 200);
+      
+      print('✅ POST Response:');
+      print('  Status: ${response.statusCode}');
+      print('  Data: ${response.data}');
+      
+      return _toApiResponse<T>(response);
     } on DioException catch (e) {
+      print('❌ POST DioException:');
+      print('  Type: ${e.type}');
+      print('  Message: ${e.message}');
+      print('  Response: ${e.response?.data}');
+      print('  Status Code: ${e.response?.statusCode}');
+      
       return _handleDioError<T>(e);
+    } catch (e) {
+      print('❌ POST Unknown Error:');
+      print('  Error: $e');
+      print('  Type: ${e.runtimeType}');
+      
+      return ApiResponse<T>.error('Unexpected error: $e', statusCode: 500);
     }
   }
 
@@ -115,7 +138,27 @@ class DioApiClient implements ApiClient {
         queryParameters: queryParameters,
         options: Options(headers: headers),
       );
-      return ApiResponse.success(response.data as T, statusCode: response.statusCode ?? 200);
+      return _toApiResponse<T>(response);
+    } on DioException catch (e) {
+      return _handleDioError<T>(e);
+    }
+  }
+
+  @override
+  Future<ApiResponse<T>> patch<T>(
+    String path, {
+    dynamic data,
+    Map<String, dynamic>? queryParameters,
+    Map<String, String>? headers,
+  }) async {
+    try {
+      final response = await _dio.patch<T>(
+        path,
+        data: data,
+        queryParameters: queryParameters,
+        options: Options(headers: headers),
+      );
+      return _toApiResponse<T>(response);
     } on DioException catch (e) {
       return _handleDioError<T>(e);
     }
@@ -135,7 +178,7 @@ class DioApiClient implements ApiClient {
         queryParameters: queryParameters,
         options: Options(headers: headers),
       );
-      return ApiResponse.success(response.data as T, statusCode: response.statusCode ?? 200);
+      return _toApiResponse<T>(response);
     } on DioException catch (e) {
       return _handleDioError<T>(e);
     }
@@ -143,8 +186,66 @@ class DioApiClient implements ApiClient {
 
   ApiResponse<T> _handleDioError<T>(DioException error) {
     final statusCode = error.response?.statusCode ?? 500;
-    final message = error.response?.data?['message'] ?? error.message ?? 'Unknown error occurred';
+    
+    // Handle timeout errors specifically
+    if (error.type == DioExceptionType.connectionTimeout) {
+      return ApiResponse<T>.error(
+        'Connection timeout: The server is taking too long to respond. '
+        'This may be because the server is waking up from sleep (Render.com free tier). '
+        'Please wait a moment and try again.',
+        statusCode: 408, // Request Timeout
+      );
+    }
+    
+    if (error.type == DioExceptionType.receiveTimeout) {
+      return ApiResponse<T>.error(
+        'Receive timeout: The server took too long to send a response. '
+        'Please check your internet connection and try again.',
+        statusCode: 408, // Request Timeout
+      );
+    }
+    
+    if (error.type == DioExceptionType.sendTimeout) {
+      return ApiResponse<T>.error(
+        'Send timeout: Failed to send request to server. '
+        'Please check your internet connection and try again.',
+        statusCode: 408, // Request Timeout
+      );
+    }
+    
+    if (error.type == DioExceptionType.connectionError) {
+      return ApiResponse<T>.error(
+        'Connection error: Unable to connect to server. '
+        'Please check your internet connection and try again.',
+        statusCode: 503, // Service Unavailable
+      );
+    }
+    
+    final message = _messageFromBody(error.response?.data) ??
+        error.message ??
+        'Unknown error occurred';
     
     return ApiResponse<T>.error(message, statusCode: statusCode);
+  }
+
+  ApiResponse<T> _toApiResponse<T>(Response<T> response) {
+    final statusCode = response.statusCode ?? 200;
+    if (statusCode >= 400) {
+      return ApiResponse<T>.error(
+        _messageFromBody(response.data) ?? 'Request failed',
+        statusCode: statusCode,
+      );
+    }
+    return ApiResponse.success(response.data as T, statusCode: statusCode);
+  }
+
+  String? _messageFromBody(dynamic data) {
+    if (data is Map<String, dynamic>) {
+      return data['message']?.toString() ??
+          data['error']?.toString() ??
+          data['detail']?.toString();
+    }
+    if (data is String && data.isNotEmpty) return data;
+    return null;
   }
 }

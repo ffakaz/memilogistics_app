@@ -13,28 +13,25 @@ class Location {
     this.country,
   });
 
+  // Convenience getters for display
   String get shortLabel {
-    final parts = [
-      city,
-      state,
-    ].whereType<String>().where((part) => part.trim().isNotEmpty);
-
-    return parts.isEmpty ? address : parts.join(', ');
+    if (city != null && state != null) {
+      return '$city, $state';
+    } else if (city != null) {
+      return city!;
+    } else if (state != null) {
+      return state!;
+    }
+    return address;
   }
 
   String get fullLabel {
-    final locality = [
-      city,
-      state,
-      zipCode,
-    ].whereType<String>().where((part) => part.trim().isNotEmpty).join(', ');
-
-    final parts = [
-      address,
-      locality,
-      country,
-    ].whereType<String>().where((part) => part.trim().isNotEmpty);
-
+    final parts = <String>[];
+    if (address.isNotEmpty) parts.add(address);
+    if (city != null && city!.isNotEmpty) parts.add(city!);
+    if (state != null && state!.isNotEmpty) parts.add(state!);
+    if (zipCode != null && zipCode!.isNotEmpty) parts.add(zipCode!);
+    if (country != null && country!.isNotEmpty) parts.add(country!);
     return parts.join(', ');
   }
 }

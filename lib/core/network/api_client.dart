@@ -24,6 +24,13 @@ abstract class ApiClient {
     Map<String, String>? headers,
   });
 
+  Future<ApiResponse<T>> patch<T>(
+    String path, {
+    dynamic data,
+    Map<String, dynamic>? queryParameters,
+    Map<String, String>? headers,
+  });
+
   Future<ApiResponse<T>> delete<T>(
     String path, {
     dynamic data,

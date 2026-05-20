@@ -4,7 +4,7 @@ import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import '../../../shipment/presentation/providers/shipment_provider.dart';
 import '../../../shipment/domain/entities/shipment.dart';
-import '../widgets/shipment_bid_dialog.dart';
+import '../../../shipment_offer/presentation/widgets/shipment_offer_dialog.dart';
 
 class LoadBoardScreen extends StatefulWidget {
   const LoadBoardScreen({super.key});
@@ -238,7 +238,7 @@ class _LoadBoardScreenState extends State<LoadBoardScreen> {
                 child: ElevatedButton.icon(
                   onPressed: () => _showBidDialog(context, shipment),
                   icon: const Icon(Icons.attach_money),
-                  label: const Text('Submit Bid'),
+                  label: const Text('Submit Offer'),
                   style: ElevatedButton.styleFrom(
                     padding: const EdgeInsets.symmetric(vertical: 12),
                   ),
@@ -331,7 +331,7 @@ class _LoadBoardScreenState extends State<LoadBoardScreen> {
                       _showBidDialog(context, shipment);
                     },
                     icon: const Icon(Icons.attach_money),
-                    label: const Text('Submit Bid'),
+                    label: const Text('Submit Offer'),
                     style: ElevatedButton.styleFrom(
                       padding: const EdgeInsets.symmetric(vertical: 16),
                     ),
@@ -372,7 +372,7 @@ class _LoadBoardScreenState extends State<LoadBoardScreen> {
   void _showBidDialog(BuildContext context, Shipment shipment) {
     showDialog(
       context: context,
-      builder: (context) => ShipmentBidDialog(shipment: shipment),
+      builder: (context) => ShipmentOfferDialog(shipment: shipment),
     );
   }
 

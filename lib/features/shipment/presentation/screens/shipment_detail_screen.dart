@@ -493,6 +493,7 @@ class ShipmentDetailScreen extends StatelessWidget {
     switch (status) {
       case ShipmentStatus.pending:
         return Colors.orange;
+      case ShipmentStatus.accepted:
       case ShipmentStatus.assigned:
         return Colors.blue;
       case ShipmentStatus.pickedUp:
@@ -502,6 +503,8 @@ class ShipmentDetailScreen extends StatelessWidget {
         return Colors.teal;
       case ShipmentStatus.delivered:
         return Colors.green;
+      case ShipmentStatus.completed:
+        return Colors.green.shade800;
       case ShipmentStatus.cancelled:
         return Colors.red;
     }
@@ -511,6 +514,7 @@ class ShipmentDetailScreen extends StatelessWidget {
     switch (status) {
       case ShipmentStatus.pending:
         return Icons.pending;
+      case ShipmentStatus.accepted:
       case ShipmentStatus.assigned:
         return Icons.assignment_turned_in;
       case ShipmentStatus.pickedUp:
@@ -521,6 +525,8 @@ class ShipmentDetailScreen extends StatelessWidget {
         return Icons.place;
       case ShipmentStatus.delivered:
         return Icons.check_circle;
+      case ShipmentStatus.completed:
+        return Icons.verified;
       case ShipmentStatus.cancelled:
         return Icons.cancel;
     }
@@ -530,8 +536,10 @@ class ShipmentDetailScreen extends StatelessWidget {
     switch (status) {
       case ShipmentStatus.pending:
         return 'POSTED';
-      case ShipmentStatus.assigned:
+      case ShipmentStatus.accepted:
         return 'ACCEPTED';
+      case ShipmentStatus.assigned:
+        return 'ASSIGNED';
       case ShipmentStatus.pickedUp:
         return 'PICKED UP';
       case ShipmentStatus.inTransit:
@@ -540,6 +548,8 @@ class ShipmentDetailScreen extends StatelessWidget {
         return 'ARRIVED';
       case ShipmentStatus.delivered:
         return 'DELIVERED';
+      case ShipmentStatus.completed:
+        return 'COMPLETED';
       case ShipmentStatus.cancelled:
         return 'CANCELLED';
     }
@@ -549,8 +559,10 @@ class ShipmentDetailScreen extends StatelessWidget {
     switch (status) {
       case ShipmentStatus.pending:
         return 'Waiting for carrier acceptance';
+      case ShipmentStatus.accepted:
+        return 'Shipment offer has been accepted';
       case ShipmentStatus.assigned:
-        return 'Carrier has accepted this shipment';
+        return 'Carrier has been assigned to this shipment';
       case ShipmentStatus.pickedUp:
         return 'Shipment has been picked up';
       case ShipmentStatus.inTransit:
@@ -559,6 +571,8 @@ class ShipmentDetailScreen extends StatelessWidget {
         return 'Shipment has arrived';
       case ShipmentStatus.delivered:
         return 'Shipment successfully delivered';
+      case ShipmentStatus.completed:
+        return 'Shipment completed after payment confirmation';
       case ShipmentStatus.cancelled:
         return 'Shipment was cancelled';
     }

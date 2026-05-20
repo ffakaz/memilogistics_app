@@ -5,6 +5,8 @@ import 'package:memilogistics_app/core/core.dart';
 import 'package:memilogistics_app/features/auth/presentation/provider/auth_provider.dart';
 import 'package:memilogistics_app/features/carrier/presentation/providers/carrier_company_provider.dart';
 import 'package:memilogistics_app/features/shipment/presentation/providers/shipment_provider.dart';
+import 'package:memilogistics_app/features/shipment_offer/presentation/providers/shipment_offer_provider.dart';
+import 'package:memilogistics_app/features/payment/presentation/providers/payment_provider.dart';
 import 'package:memilogistics_app/features/user/presentation/provider/user_provider.dart';
 
 class AppProviders {
@@ -26,6 +28,12 @@ class AppProviders {
       ),
       ChangeNotifierProvider<CarrierCompanyProvider>.value(
         value: locator<CarrierCompanyProvider>(),
+      ),
+      ChangeNotifierProvider<ShipmentOfferProvider>.value(
+        value: locator<ShipmentOfferProvider>(),
+      ),
+      ChangeNotifierProvider<PaymentProvider>.value(
+        value: locator<PaymentProvider>(),
       ),
     ];
   }

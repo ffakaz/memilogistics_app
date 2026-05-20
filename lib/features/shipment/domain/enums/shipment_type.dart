@@ -1,9 +1,25 @@
 enum ShipmentType {
-  dryGoods('Dry Goods'),
-  electronics('Electronics'),
-  fuel('Fuel');
+  dryGoods,
+  electronics,
+  fuel,
+  fullTruckLoad,
+  lessThanTruckLoad,
+  partialTruckLoad;
 
-  const ShipmentType(this.displayName);
-
-  final String displayName;
+  String get displayName {
+    switch (this) {
+      case ShipmentType.dryGoods:
+        return 'Dry Goods';
+      case ShipmentType.electronics:
+        return 'Electronics';
+      case ShipmentType.fuel:
+        return 'Fuel';
+      case ShipmentType.fullTruckLoad:
+        return 'Full Truck Load (FTL)';
+      case ShipmentType.lessThanTruckLoad:
+        return 'Less Than Truck Load (LTL)';
+      case ShipmentType.partialTruckLoad:
+        return 'Partial Truck Load (PTL)';
+    }
+  }
 }

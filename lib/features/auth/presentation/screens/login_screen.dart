@@ -116,7 +116,23 @@ class _LoginScreenState extends State<LoginScreen> {
                             },
                             onSaved: (value) => password = value!,
                           ),
-                          const SizedBox(height: 24),
+                          // Forgot Password Link
+                          Align(
+                            alignment: Alignment.centerRight,
+                            child: TextButton(
+                              onPressed: () {
+                                Navigator.pushNamed(context, '/forgot-password');
+                              },
+                              child: const Text(
+                                'Forgot Password?',
+                                style: TextStyle(
+                                  fontSize: 14,
+                                  fontWeight: FontWeight.w500,
+                                ),
+                              ),
+                            ),
+                          ),
+                          const SizedBox(height: 8),
                           auth.isLoading
                               ? const Center(child: CircularProgressIndicator())
                               : SizedBox(
@@ -132,9 +148,14 @@ class _LoginScreenState extends State<LoginScreen> {
                                         if (!context.mounted) return;
 
                                         if (isAuthenticated) {
+                                          // Get user role from auth provider and route accordingly
+                                          final userRole = auth.userRole;
+                                          final route = userRole == 'CARRIER'
+                                              ? '/carrier-dashboard'
+                                              : '/dashboard';
                                           Navigator.pushReplacementNamed(
                                             context,
-                                            '/select-role',
+                                            route,
                                           );
                                         }
                                       }

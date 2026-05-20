@@ -27,12 +27,14 @@ class AuthProvider extends ChangeNotifier {
   String? _errorMessage;
   bool _isLoggedIn = false;
   String? _currentToken;
+  String? _userRole; // User role: SHIPPER or CARRIER
   bool _initialized = false;
 
   bool get isLoading => _isLoading;
   String? get errorMessage => _errorMessage;
   bool get isLoggedIn => _isLoggedIn;
   String? get currentToken => _currentToken;
+  String? get userRole => _userRole; // Expose user role
   bool get initialized => _initialized;
   bool get isAuthenticated => _isLoggedIn; // Alias
   String? get error => _errorMessage; // Alias
@@ -42,6 +44,7 @@ class AuthProvider extends ChangeNotifier {
     if (_isLoggedIn) {
       final token = await getCurrentTokenUseCase.call();
       _currentToken = token?.accessToken;
+      _userRole = token?.role; // Load user role
     }
     _initialized = true;
     notifyListeners();
@@ -56,6 +59,7 @@ class AuthProvider extends ChangeNotifier {
       final credentials = UserCredentials(email: email, password: password);
       final token = await loginUseCase.call(credentials);
       _currentToken = token.accessToken;
+      _userRole = token.role; // Store user role
       _isLoggedIn = true;
     } catch (e) {
       _errorMessage = 'Login failed: $e';
@@ -70,23 +74,41 @@ class AuthProvider extends ChangeNotifier {
   Future<bool> register(
     String email,
     String password,
-    String confirmPassword,
-  ) async {
+    String confirmPassword, {
+    required String role, // Added: User role (shipper/carrier)
+  }) async {
     _isLoading = true;
     _errorMessage = null;
     notifyListeners();
 
     try {
+      print('📱 AuthProvider: Starting registration');
+      print('  Email: $email');
+      print('  Role: $role');
+      
       final credentials = RegisterCredentials(
         email: email,
         password: password,
         confirmPassword: confirmPassword,
+        role: role,
       );
+      
+      print('📱 AuthProvider: Calling registerUseCase');
       final token = await registerUseCase.call(credentials);
+      
+      print('📱 AuthProvider: Registration successful');
+      print('  Access Token: ${token.accessToken.substring(0, 20)}...');
+      print('  Role: ${token.role}');
+      
       _currentToken = token.accessToken;
+      _userRole = token.role; // Store user role
       _isLoggedIn = true;
     } catch (e) {
-      _errorMessage = 'Registration failed: $e';
+      print('📱 AuthProvider: Registration failed');
+      print('  Error: $e');
+      print('  Error Type: ${e.runtimeType}');
+      
+      _errorMessage = 'Registration failed: ${e.toString().replaceAll('Exception: ', '')}';
       _isLoggedIn = false;
     }
 
@@ -103,6 +125,7 @@ class AuthProvider extends ChangeNotifier {
       await logoutUseCase.call();
       _isLoggedIn = false;
       _currentToken = null;
+      _userRole = null; // Clear user role
     } catch (e) {
       _errorMessage = 'Logout failed: $e';
     }

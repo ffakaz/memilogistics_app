@@ -6,7 +6,7 @@ import 'package:memilogistics_app/core/network/api_client_factory.dart';
 import 'package:memilogistics_app/core/router/app_router.dart';
 import 'package:memilogistics_app/core/secure_storage/secure_storage_service.dart';
 import 'package:memilogistics_app/core/utils/constants/route_constants.dart';
-import 'package:memilogistics_app/features/auth/data/services/fake_auth_api_service_adapter.dart';
+import 'package:memilogistics_app/features/auth/data/services/auth_api_service_real.dart';
 import 'package:memilogistics_app/features/auth/data/storage/token_storage.dart';
 import 'package:memilogistics_app/features/auth/data/repository/auth_repository_impl.dart';
 import 'package:memilogistics_app/features/auth/domain/usecases/login_usecase.dart';
@@ -19,6 +19,7 @@ import 'package:memilogistics_app/features/auth/presentation/screens/home_screen
 import 'package:memilogistics_app/features/auth/presentation/screens/login_screen.dart';
 import 'package:memilogistics_app/features/auth/presentation/screens/logout_screen.dart';
 import 'package:memilogistics_app/features/auth/presentation/screens/register_screen.dart';
+import 'package:memilogistics_app/features/auth/presentation/screens/forgot_password_screen.dart';
 
 import 'package:memilogistics_app/features/carrier/data/datasources/carrier_company_remote_datasource_impl.dart';
 import 'package:memilogistics_app/features/carrier/data/repositories/carrier_company_repository_impl.dart';
@@ -26,13 +27,17 @@ import 'package:memilogistics_app/features/carrier/domain/usecases/create_carrie
 import 'package:memilogistics_app/features/carrier/domain/usecases/get_carrier_company.dart';
 import 'package:memilogistics_app/features/carrier/domain/usecases/update_carrier_company.dart';
 import 'package:memilogistics_app/features/carrier/presentation/providers/carrier_company_provider.dart';
-import 'package:memilogistics_app/features/carrier/presentation/screens/carrier_dashboard_screen.dart';
+import 'package:memilogistics_app/features/carrier/presentation/screens/carrier_dashboard_improved.dart';
 
-import 'package:memilogistics_app/features/shipment/data/services/shipment_api_service_adapter.dart';
+import 'package:memilogistics_app/features/shipment/data/services/shipment_api_service_real.dart';
 import 'package:memilogistics_app/features/shipment/data/repositories/shipment_repository_impl.dart';
 import 'package:memilogistics_app/features/shipment/presentation/screens/create_shipment_screen.dart';
 import 'package:memilogistics_app/features/shipment/presentation/screens/shipment_dashboard_screen.dart';
+import 'package:memilogistics_app/features/shipment/presentation/screens/my_shipments_screen.dart';
+import 'package:memilogistics_app/features/shipment/presentation/screens/shipment_details_screen.dart';
 import 'package:memilogistics_app/features/shipment/presentation/providers/shipment_provider.dart';
+
+import 'package:memilogistics_app/features/payment/presentation/screens/payment_screen.dart';
 
 import 'package:memilogistics_app/features/user/data/services/user_api_service.dart';
 import 'package:memilogistics_app/features/user/data/repositories/user_repository_impl.dart';
@@ -40,7 +45,14 @@ import 'package:memilogistics_app/features/user/domain/usecases/get_current_user
 import 'package:memilogistics_app/features/user/domain/usecases/update_profile_usecase.dart';
 import 'package:memilogistics_app/features/user/domain/usecases/get_permissions_usecase.dart';
 import 'package:memilogistics_app/features/user/presentation/providers/user_provider.dart';
-import 'package:memilogistics_app/features/user/presentation/screens/role_selection_screen.dart';
+
+import 'package:memilogistics_app/features/shipment_offer/data/services/shipment_offer_api_service.dart';
+import 'package:memilogistics_app/features/shipment_offer/presentation/providers/shipment_offer_provider.dart';
+
+import 'package:memilogistics_app/features/payment/data/services/payment_api_service.dart';
+import 'package:memilogistics_app/features/payment/data/repositories/payment_repository_impl.dart';
+import 'package:memilogistics_app/features/payment/presentation/providers/payment_provider.dart';
+// import 'package:memilogistics_app/features/user/presentation/screens/role_selection_screen.dart'; // REMOVED: Role selection now in registration
 
 /// Very small service locator used by parts of the app. It intentionally
 /// avoids adding an external dependency and provides only the features the
@@ -89,12 +101,26 @@ Future<void> setupLocator() async {
   AppRouter.registerRoutes({
     RouteConstants.login: (_) => const LoginScreen(),
     RouteConstants.register: (_) => const RegisterScreen(),
+    RouteConstants.forgotPassword: (_) => const ForgotPasswordScreen(),
     RouteConstants.logout: (_) => const LogoutScreen(),
     RouteConstants.home: (_) => const HomeScreen(),
     RouteConstants.dashboard: (_) => const ShipmentDashboardScreen(),
-    RouteConstants.carrierDashboard: (_) => const CarrierDashboardScreen(),
+    RouteConstants.carrierDashboard: (_) => const CarrierDashboardImproved(),
     RouteConstants.createShipment: (_) => const CreateShipmentScreen(),
-    RouteConstants.selectRole: (_) => const RoleSelectionScreen(),
+    RouteConstants.myShipments: (_) => const MyShipmentsScreen(), // ADDED
+    RouteConstants.shipmentDetails: (args) {
+      final shipmentId = args as int;
+      return ShipmentDetailsScreen(shipmentId: shipmentId);
+    },
+    RouteConstants.payment: (args) {
+      final params = args as Map<String, dynamic>;
+      return PaymentScreen(
+        shipmentId: params['shipmentId'] as int,
+        amount: params['amount'] as double,
+        currency: params['currency'] as String? ?? 'USD',
+      );
+    },
+    // RouteConstants.selectRole: (_) => const RoleSelectionScreen(), // REMOVED: Role now selected during registration
   });
 
   // API client
@@ -105,7 +131,7 @@ Future<void> setupLocator() async {
   _sl.registerSingleton<ApiClient>(apiClient);
 
   // AUTH wiring
-  final authApiService = FakeAuthApiServiceAdapter(apiClient: apiClient);
+  final authApiService = AuthApiServiceReal(apiClient);
   final tokenStorage = TokenStorage(storage: flutterSecureStorage);
   final authRepository = AuthRepositoryImpl(
     apiService: authApiService,
@@ -128,7 +154,7 @@ Future<void> setupLocator() async {
   _sl.registerSingleton<AuthProvider>(authProvider);
 
   // Shipment wiring
-  final shipmentApiService = ShipmentApiServiceAdapter(apiClient: apiClient);
+  final shipmentApiService = ShipmentApiServiceReal(apiClient);
   final shipmentRepository = ShipmentRepositoryImpl(
     apiService: shipmentApiService,
     tokenStorage: tokenStorage,
@@ -163,4 +189,15 @@ Future<void> setupLocator() async {
     updateCarrierCompanyUseCase: updateCarrierCompanyUseCase,
   );
   _sl.registerSingleton<CarrierCompanyProvider>(carrierProvider);
+
+  // ShipmentOffer wiring
+  final shipmentOfferApiService = ShipmentOfferApiService(apiClient);
+  final shipmentOfferProvider = ShipmentOfferProvider(shipmentOfferApiService);
+  _sl.registerSingleton<ShipmentOfferProvider>(shipmentOfferProvider);
+
+  // Payment wiring
+  final paymentApiService = PaymentApiService(apiClient);
+  final paymentRepository = PaymentRepositoryImpl(paymentApiService);
+  final paymentProvider = PaymentProvider(paymentRepository);
+  _sl.registerSingleton<PaymentProvider>(paymentProvider);
 }

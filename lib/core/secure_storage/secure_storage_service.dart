@@ -14,6 +14,7 @@ abstract class StorageKeys {
   static const String accessTokenExpiry = 'auth.access_token_expiry_ms';
   static const String refreshTokenExpiry = 'auth.refresh_token_expiry_ms';
   static const String cachedUserJson = 'auth.cached_user_json';
+  static const String userRole = 'auth.user_role'; // User role: SHIPPER or CARRIER
 }
 
 /// Exceptions are re-used from `core/error/exceptions.dart` to avoid
@@ -143,6 +144,10 @@ class SecureStorageService {
 
   Future<String?> getRefreshToken() => read(StorageKeys.refreshToken);
 
+  Future<String?> getUserRole() => read(StorageKeys.userRole);
+
+  Future<void> saveUserRole(String role) => write(key: StorageKeys.userRole, value: role);
+
   Future<bool> hasValidSession() async {
     try {
       final refreshToken = await getRefreshToken();
@@ -169,6 +174,7 @@ class SecureStorageService {
       delete(StorageKeys.accessTokenExpiry),
       delete(StorageKeys.refreshTokenExpiry),
       delete(StorageKeys.cachedUserJson),
+      delete(StorageKeys.userRole),
     ]);
   }
 }

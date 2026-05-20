@@ -15,12 +15,17 @@ class TokenStorage {
   Future<void> saveTokens({
     required String accessToken,
     String? refreshToken,
+    String? role,
   }) async {
     try {
       await storage.write(key: StorageKeys.accessToken, value: accessToken);
 
       if (refreshToken != null) {
         await storage.write(key: StorageKeys.refreshToken, value: refreshToken);
+      }
+
+      if (role != null) {
+        await storage.write(key: StorageKeys.userRole, value: role);
       }
     } catch (e) {
       throw StorageException('Failed to save tokens');
@@ -47,6 +52,15 @@ class TokenStorage {
     }
   }
 
+  /// Get user role
+  Future<String?> getUserRole() async {
+    try {
+      return await storage.read(key: StorageKeys.userRole);
+    } catch (e) {
+      throw StorageException('Failed to read user role');
+    }
+  }
+
   /// Clear all tokens
   Future<void> clearTokens() async {
     try {
@@ -55,6 +69,7 @@ class TokenStorage {
         storage.delete(key: StorageKeys.refreshToken),
         storage.delete(key: StorageKeys.accessTokenExpiry),
         storage.delete(key: StorageKeys.refreshTokenExpiry),
+        storage.delete(key: StorageKeys.userRole),
         storage.delete(key: _legacyAccessTokenKey),
         storage.delete(key: _legacyRefreshTokenKey),
       ]);

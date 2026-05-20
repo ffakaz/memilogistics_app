@@ -8,8 +8,10 @@ abstract class AuthFailure {
 }
 
 class InvalidCredentialsFailure extends AuthFailure {
-  const InvalidCredentialsFailure();
+  final String? customMessage;
+  
+  const InvalidCredentialsFailure({this.customMessage});
 
   @override
-  String get message => 'Invalid credentials';
+  String get message => customMessage ?? 'Invalid credentials';
 }
