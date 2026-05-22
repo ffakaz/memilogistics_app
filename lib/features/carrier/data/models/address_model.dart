@@ -1,33 +1,39 @@
-class AddressModel {
-  final String street;
-  final String city;
-  final String state;
-  final String zip;
-  final String country;
-  final String phoneNumber;
+import '../../domain/entities/address.dart';
+import '../../../../core/utils/json_parsing.dart';
 
+class AddressModel extends Address {
   const AddressModel({
-    required this.street,
-    required this.city,
-    required this.state,
-    required this.zip,
-    required this.country,
-    required this.phoneNumber,
-  });
+    int? id,
+    required String street,
+    required String city,
+    required String state,
+    required String zip,
+    required String country,
+    required String phoneNumber,
+  }) : super(
+         id: id,
+         street: street,
+         city: city,
+         state: state,
+         zip: zip,
+         country: country,
+         phoneNumber: phoneNumber,
+       );
 
   factory AddressModel.fromJson(Map<String, dynamic> json) {
     return AddressModel(
-      street: json['street'] as String? ?? '',
-      city: json['city'] as String? ?? '',
-      state: json['state'] as String? ?? '',
-      zip: (json['zip'] ?? json['postalCode']) as String? ?? '',
-      country: json['country'] as String? ?? '',
-      phoneNumber: json['phoneNumber'] as String? ?? '',
+      id: json['id'] == null ? null : JsonParsing.asInt(json['id']),
+      street: JsonParsing.asString(json['street']),
+      city: JsonParsing.asString(json['city']),
+      state: JsonParsing.asString(json['state']),
+      zip: JsonParsing.asString(json['zip'] ?? json['postalCode']),
+      country: JsonParsing.asString(json['country']),
+      phoneNumber: JsonParsing.asString(json['phoneNumber'] ?? json['phone']),
     );
   }
 
   Map<String, dynamic> toJson() {
-    return {
+    final Map<String, dynamic> data = {
       'street': street,
       'city': city,
       'state': state,
@@ -35,5 +41,7 @@ class AddressModel {
       'country': country,
       'phoneNumber': phoneNumber,
     };
+    if (id != null) data['id'] = id;
+    return data;
   }
 }

@@ -1,7 +1,9 @@
 import '../../domain/entities/shipment.dart';
+import '../../domain/entities/dashboard_information.dart';
 import '../../domain/enums/shipment_status.dart';
 import '../../domain/repositories/shipment_repository.dart';
 import '../../../auth/data/storage/token_storage.dart';
+import '../models/dashboard_information_model.dart';
 import '../mappers/shipment_backend_mapper.dart';
 import '../services/shipment_api_service_real.dart';
 
@@ -23,10 +25,10 @@ class ShipmentRepositoryImpl implements ShipmentRepository {
 
     // Convert frontend Shipment to backend CreateShipmentRequest
     final request = ShipmentBackendMapper.toCreateRequest(shipment);
-    
+
     // Call backend API
     final response = await apiService.createShipment(request);
-    
+
     // Convert backend response to frontend Shipment
     return ShipmentBackendMapper.fromResponseModel(response);
   }
@@ -83,7 +85,10 @@ class ShipmentRepositoryImpl implements ShipmentRepository {
     required int carrierId,
   }) async {
     await _requireAccessToken('assign a carrier');
-    await apiService.assignCarrier(shipmentId: shipmentId, carrierId: carrierId);
+    await apiService.assignCarrier(
+      shipmentId: shipmentId,
+      carrierId: carrierId,
+    );
   }
 
   @override
@@ -105,6 +110,13 @@ class ShipmentRepositoryImpl implements ShipmentRepository {
   Future<List<Map<String, dynamic>>> getShipmentEvents(int shipmentId) async {
     await _requireAccessToken('view shipment events');
     return apiService.getShipmentEvents(shipmentId);
+  }
+
+  @override
+  Future<DashboardInformation> getDashboardInformation() async {
+    await _requireAccessToken('view dashboard information');
+    final json = await apiService.getDashboard();
+    return DashboardInformationModel.fromJson(json).toEntity();
   }
 
   Future<void> _requireAccessToken(String action) async {

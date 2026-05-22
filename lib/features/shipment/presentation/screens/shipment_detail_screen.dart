@@ -22,7 +22,9 @@ class ShipmentDetailScreen extends StatelessWidget {
     }
 
     final userProvider = context.watch<UserProvider>();
-    final role = userProvider.currentUser?.profile.role.toString().split('.').last ?? 'unknown';
+    final role =
+        userProvider.currentUser?.profile.role.toString().split('.').last ??
+        'unknown';
     final isCarrier = role.toLowerCase() == 'carrier';
 
     return Scaffold(
@@ -61,9 +63,18 @@ class ShipmentDetailScreen extends StatelessWidget {
                   _buildSectionTitle('Shipment Information'),
                   const SizedBox(height: 12),
                   _buildInfoRow('Type', shipment.shipmentType.displayName),
-                  _buildInfoRow('Weight', '${shipment.weight} ${shipment.weightUnit.displayName}'),
-                  _buildInfoRow('Safety', shipment.safetyOption.name.toUpperCase()),
-                  _buildInfoRow('Pickup Date', _formatDate(shipment.pickupDate)),
+                  _buildInfoRow(
+                    'Weight',
+                    '${shipment.weight} ${shipment.weightUnit.displayName}',
+                  ),
+                  _buildInfoRow(
+                    'Safety',
+                    shipment.safetyOption.name.toUpperCase(),
+                  ),
+                  _buildInfoRow(
+                    'Pickup Date',
+                    _formatDate(shipment.pickupDate),
+                  ),
                   if (shipment.createdAt != null)
                     _buildInfoRow('Posted', _formatDate(shipment.createdAt!)),
                   const SizedBox(height: 24),
@@ -75,7 +86,8 @@ class ShipmentDetailScreen extends StatelessWidget {
                   const SizedBox(height: 24),
 
                   // Action Buttons (Role-based)
-                  if (isCarrier) _buildCarrierActions(context, shipment, provider),
+                  if (isCarrier)
+                    _buildCarrierActions(context, shipment, provider),
                 ],
               ),
             ),
@@ -104,11 +116,7 @@ class ShipmentDetailScreen extends StatelessWidget {
       ),
       child: Column(
         children: [
-          Icon(
-            _getStatusIcon(status),
-            size: 48,
-            color: Colors.white,
-          ),
+          Icon(_getStatusIcon(status), size: 48, color: Colors.white),
           const SizedBox(height: 12),
           Text(
             statusText,
@@ -121,10 +129,7 @@ class ShipmentDetailScreen extends StatelessWidget {
           const SizedBox(height: 4),
           Text(
             _getStatusDescription(status),
-            style: const TextStyle(
-              color: Colors.white70,
-              fontSize: 14,
-            ),
+            style: const TextStyle(color: Colors.white70, fontSize: 14),
           ),
         ],
       ),
@@ -134,10 +139,7 @@ class ShipmentDetailScreen extends StatelessWidget {
   Widget _buildSectionTitle(String title) {
     return Text(
       title,
-      style: const TextStyle(
-        fontSize: 18,
-        fontWeight: FontWeight.bold,
-      ),
+      style: const TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
     );
   }
 
@@ -183,20 +185,11 @@ class ShipmentDetailScreen extends StatelessWidget {
             const SizedBox(height: 16),
             Row(
               children: [
-                Container(
-                  width: 40,
-                  height: 2,
-                  color: Colors.grey[300],
-                ),
+                Container(width: 40, height: 2, color: Colors.grey[300]),
                 const SizedBox(width: 8),
                 Icon(Icons.local_shipping, color: Colors.grey[600], size: 20),
                 const SizedBox(width: 8),
-                Expanded(
-                  child: Container(
-                    height: 2,
-                    color: Colors.grey[300],
-                  ),
-                ),
+                Expanded(child: Container(height: 2, color: Colors.grey[300])),
               ],
             ),
             const SizedBox(height: 16),
@@ -243,10 +236,7 @@ class ShipmentDetailScreen extends StatelessWidget {
       shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
       child: Padding(
         padding: const EdgeInsets.all(16),
-        child: Text(
-          text,
-          style: const TextStyle(fontSize: 14, height: 1.5),
-        ),
+        child: Text(text, style: const TextStyle(fontSize: 14, height: 1.5)),
       ),
     );
   }
@@ -257,16 +247,10 @@ class ShipmentDetailScreen extends StatelessWidget {
       child: Row(
         mainAxisAlignment: MainAxisAlignment.spaceBetween,
         children: [
-          Text(
-            label,
-            style: TextStyle(fontSize: 14, color: Colors.grey[600]),
-          ),
+          Text(label, style: TextStyle(fontSize: 14, color: Colors.grey[600])),
           Text(
             value,
-            style: const TextStyle(
-              fontSize: 14,
-              fontWeight: FontWeight.w600,
-            ),
+            style: const TextStyle(fontSize: 14, fontWeight: FontWeight.w600),
           ),
         ],
       ),
@@ -385,7 +369,12 @@ class ShipmentDetailScreen extends StatelessWidget {
           'Start Transit',
           Icons.local_shipping,
           Colors.blue,
-          () => _updateStatus(context, shipment, provider, ShipmentStatus.inTransit),
+          () => _updateStatus(
+            context,
+            shipment,
+            provider,
+            ShipmentStatus.inTransit,
+          ),
         );
         break;
       case ShipmentStatus.inTransit:
@@ -394,7 +383,12 @@ class ShipmentDetailScreen extends StatelessWidget {
           'Mark as Delivered',
           Icons.done_all,
           Colors.green,
-          () => _updateStatus(context, shipment, provider, ShipmentStatus.delivered),
+          () => _updateStatus(
+            context,
+            shipment,
+            provider,
+            ShipmentStatus.delivered,
+          ),
         );
         break;
       default:
@@ -404,11 +398,7 @@ class ShipmentDetailScreen extends StatelessWidget {
     if (actionButton == null) return const SizedBox.shrink();
 
     return Column(
-      children: [
-        const Divider(),
-        const SizedBox(height: 16),
-        actionButton,
-      ],
+      children: [const Divider(), const SizedBox(height: 16), actionButton],
     );
   }
 

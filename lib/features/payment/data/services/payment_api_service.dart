@@ -19,8 +19,10 @@ class PaymentApiService {
     required int shipmentId,
     required PaymentRequestModel request,
   }) async {
-    final endpoint = ShipmentEndpoints.initiatePayment
-        .replaceAll('{shipmentId}', shipmentId.toString());
+    final endpoint = ShipmentEndpoints.initiatePayment.replaceAll(
+      '{shipmentId}',
+      shipmentId.toString(),
+    );
 
     print('🔵 Initiating payment for shipment $shipmentId');
     print('  Endpoint: ${ApiConstants.apiPrefix}$endpoint');
@@ -36,8 +38,18 @@ class PaymentApiService {
     print('  Status Code: ${response.statusCode}');
     print('  Data: ${response.data}');
 
-    if (!response.isSuccess || response.data == null) {
+    if (!response.isSuccess) {
       throw Exception(response.message ?? 'Failed to initiate payment');
+    }
+
+    if (response.data == null) {
+      return PaymentRecordModel(
+        amount: request.amount,
+        currency: request.currency.currencyCode,
+        paymentStatus: 'PENDING',
+        paymentMethod: request.paymentMethod,
+        createdAt: DateTime.now(),
+      );
     }
 
     return PaymentRecordModel.fromJson(response.data as Map<String, dynamic>);
@@ -48,16 +60,18 @@ class PaymentApiService {
   /// Note: Backend doesn't require request body based on API docs
   Future<PaymentRecordModel> confirmPayment({
     required int shipmentId,
+    PaymentRecordModel? fallbackRecord,
   }) async {
-    final endpoint = ShipmentEndpoints.confirmPayment
-        .replaceAll('{shipmentId}', shipmentId.toString());
+    final endpoint = ShipmentEndpoints.confirmPayment.replaceAll(
+      '{shipmentId}',
+      shipmentId.toString(),
+    );
 
     print('🔵 Confirming payment for shipment $shipmentId');
     print('  Endpoint: ${ApiConstants.apiPrefix}$endpoint');
 
     final response = await _apiClient.post(
       '${ApiConstants.apiPrefix}$endpoint',
-      data: {}, // Empty body as per API docs
     );
 
     print('✅ Payment confirmation response:');
@@ -65,8 +79,22 @@ class PaymentApiService {
     print('  Status Code: ${response.statusCode}');
     print('  Data: ${response.data}');
 
-    if (!response.isSuccess || response.data == null) {
+    if (!response.isSuccess) {
       throw Exception(response.message ?? 'Failed to confirm payment');
+    }
+
+    if (response.data == null) {
+      return PaymentRecordModel(
+        id: fallbackRecord?.id,
+        amount: fallbackRecord?.amount ?? 0,
+        currency: fallbackRecord?.currency ?? 'USD',
+        paymentStatus: 'COMPLETED',
+        paymentMethod: fallbackRecord?.paymentMethod ?? 'BANK_TRANSFER',
+        transactionId: fallbackRecord?.transactionId,
+        paidAt: DateTime.now(),
+        createdAt: fallbackRecord?.createdAt,
+        updatedAt: DateTime.now(),
+      );
     }
 
     return PaymentRecordModel.fromJson(response.data as Map<String, dynamic>);

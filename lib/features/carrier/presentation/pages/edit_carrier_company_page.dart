@@ -52,6 +52,8 @@ class EditCarrierCompanyPage extends StatelessWidget {
 
                 CarrierCompanyForm(
                   isLoading: state.isLoading,
+                  initialCompany: company,
+                  submitLabel: 'Update Profile',
 
                   onSubmit:
                       ({
@@ -65,10 +67,11 @@ class EditCarrierCompanyPage extends StatelessWidget {
                         required postalCode,
                       }) async {
                         final updatedCompany = CarrierCompany(
-                          managerUserId: company.managerUserId,
+                          id: company.id,
                           companyName: companyName,
                           companyEmail: companyEmail,
                           address: Address(
+                            id: company.address.id,
                             street: street,
                             city: city,
                             state: state,

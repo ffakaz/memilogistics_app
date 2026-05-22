@@ -9,7 +9,9 @@ class RouteConstants {
   static const String home = "/home";
   static const String dashboard = "/dashboard";
   static const String carrierDashboard = "/carrier-dashboard";
+  static const String carrierProfile = "/carrier-profile";
   static const String createShipment = "/create-shipment";
+  static const String shipperProfile = "/shipper-profile";
   static const String myShipments = "/my-shipments"; // ADDED
   static const String shipmentDetails = "/shipment-details"; // ADDED
   static const String trackShipment = "/track-shipment"; // ADDED

@@ -4,6 +4,12 @@ import '../enums/shipment_type.dart';
 import '../enums/weight_unit.dart';
 
 import 'location.dart';
+import 'delivery_confirmation.dart';
+import 'payment_record.dart';
+import 'shipper_profile.dart';
+import 'carrier_profile.dart';
+import 'shipment_offer.dart';
+import 'shipment_event.dart';
 
 class Shipment {
   final int? id;
@@ -33,10 +39,22 @@ class Shipment {
   final DateTime? updatedAt;
   final DateTime? completedAt;
   final double? volume;
-  final Map<String, dynamic>? shipper;
-  final dynamic assignedCarrier;
-  final List<dynamic>? shipmentOffers;
-  final List<dynamic>? shipmentEvents;
+
+  // New backend fields (from updated API response)
+  final String? shipmentItem;
+  final double? weightKg;
+  final String? origin; // String location instead of Location object
+  final String? destination; // String location instead of Location object
+  final DateTime? estimatedDeliveryDate;
+  final bool? fragile;
+
+  // Enhanced objects
+  final DeliveryConfirmation? deliveryConfirmation;
+  final PaymentRecord? paymentRecord;
+  final ShipperProfile? shipper;
+  final CarrierProfile? assignedCarrier;
+  final List<ShipmentOffer>? shipmentOffers;
+  final List<ShipmentEvent>? shipmentEvents;
 
   const Shipment({
     this.id,
@@ -55,6 +73,14 @@ class Shipment {
     this.updatedAt,
     this.completedAt,
     this.volume,
+    this.shipmentItem,
+    this.weightKg,
+    this.origin,
+    this.destination,
+    this.estimatedDeliveryDate,
+    this.fragile,
+    this.deliveryConfirmation,
+    this.paymentRecord,
     this.shipper,
     this.assignedCarrier,
     this.shipmentOffers,
@@ -78,10 +104,18 @@ class Shipment {
     DateTime? updatedAt,
     DateTime? completedAt,
     double? volume,
-    Map<String, dynamic>? shipper,
-    dynamic assignedCarrier,
-    List<dynamic>? shipmentOffers,
-    List<dynamic>? shipmentEvents,
+    String? shipmentItem,
+    double? weightKg,
+    String? origin,
+    String? destination,
+    DateTime? estimatedDeliveryDate,
+    bool? fragile,
+    DeliveryConfirmation? deliveryConfirmation,
+    PaymentRecord? paymentRecord,
+    ShipperProfile? shipper,
+    CarrierProfile? assignedCarrier,
+    List<ShipmentOffer>? shipmentOffers,
+    List<ShipmentEvent>? shipmentEvents,
   }) {
     return Shipment(
       id: id ?? this.id,
@@ -90,20 +124,25 @@ class Shipment {
       shipmentType: shipmentType ?? this.shipmentType,
       amount: amount ?? this.amount,
       unit: unit ?? this.unit,
-      pickupLocation:
-          pickupLocation ?? this.pickupLocation,
-      destinationLocation:
-          destinationLocation ??
-              this.destinationLocation,
+      pickupLocation: pickupLocation ?? this.pickupLocation,
+      destinationLocation: destinationLocation ?? this.destinationLocation,
       pickupDate: pickupDate ?? this.pickupDate,
-      safetyOption:
-          safetyOption ?? this.safetyOption,
+      safetyOption: safetyOption ?? this.safetyOption,
       status: status ?? this.status,
       description: description ?? this.description,
       createdAt: createdAt ?? this.createdAt,
       updatedAt: updatedAt ?? this.updatedAt,
       completedAt: completedAt ?? this.completedAt,
       volume: volume ?? this.volume,
+      shipmentItem: shipmentItem ?? this.shipmentItem,
+      weightKg: weightKg ?? this.weightKg,
+      origin: origin ?? this.origin,
+      destination: destination ?? this.destination,
+      estimatedDeliveryDate:
+          estimatedDeliveryDate ?? this.estimatedDeliveryDate,
+      fragile: fragile ?? this.fragile,
+      deliveryConfirmation: deliveryConfirmation ?? this.deliveryConfirmation,
+      paymentRecord: paymentRecord ?? this.paymentRecord,
       shipper: shipper ?? this.shipper,
       assignedCarrier: assignedCarrier ?? this.assignedCarrier,
       shipmentOffers: shipmentOffers ?? this.shipmentOffers,
@@ -112,8 +151,10 @@ class Shipment {
   }
 
   // Compatibility getters expected by some UI code
-  Location get origin => pickupLocation;
-  Location get destination => destinationLocation;
+  // Note: origin and destination fields are strings from backend
+  // These getters provide Location objects for backward compatibility
+  Location get originAsLocation => pickupLocation;
+  Location get destinationAsLocation => destinationLocation;
   double get weight => amount;
   WeightUnit get weightUnit => unit;
 

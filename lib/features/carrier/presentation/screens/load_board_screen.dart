@@ -174,7 +174,7 @@ class _LoadBoardScreenState extends State<LoadBoardScreen> {
                           style: TextStyle(fontSize: 12, color: Colors.grey),
                         ),
                         Text(
-                          shipment.origin.shortLabel,
+                          shipment.originAsLocation.shortLabel,
                           style: const TextStyle(
                             fontSize: 14,
                             fontWeight: FontWeight.w500,
@@ -199,7 +199,7 @@ class _LoadBoardScreenState extends State<LoadBoardScreen> {
                           style: TextStyle(fontSize: 12, color: Colors.grey),
                         ),
                         Text(
-                          shipment.destination.shortLabel,
+                          shipment.destinationAsLocation.shortLabel,
                           style: const TextStyle(
                             fontSize: 14,
                             fontWeight: FontWeight.w500,
@@ -318,8 +318,11 @@ class _LoadBoardScreenState extends State<LoadBoardScreen> {
                   'Weight',
                   '${shipment.weight} ${shipment.weightUnit.displayName}',
                 ),
-                _buildDetailRow('Origin', shipment.origin.fullLabel),
-                _buildDetailRow('Destination', shipment.destination.fullLabel),
+                _buildDetailRow('Origin', shipment.originAsLocation.fullLabel),
+                _buildDetailRow(
+                  'Destination',
+                  shipment.destinationAsLocation.fullLabel,
+                ),
                 if (shipment.description != null)
                   _buildDetailRow('Description', shipment.description!),
                 const SizedBox(height: 24),

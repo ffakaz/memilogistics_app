@@ -36,8 +36,8 @@ class AuthRepositoryImpl implements AuthRepository {
       );
 
       return Right(token);
-    } catch (_) {
-      return Left(InvalidCredentialsFailure());
+    } catch (e) {
+      return Left(InvalidCredentialsFailure(customMessage: e.toString()));
     }
   }
 
@@ -60,8 +60,8 @@ class AuthRepositoryImpl implements AuthRepository {
       );
 
       return Right(token);
-    } catch (_) {
-      return Left(InvalidCredentialsFailure());
+    } catch (e) {
+      return Left(InvalidCredentialsFailure(customMessage: e.toString()));
     }
   }
 
@@ -71,8 +71,8 @@ class AuthRepositoryImpl implements AuthRepository {
       await apiService.logout({});
       await tokenStorage.clearTokens();
       return const Right(unit);
-    } catch (_) {
-      return Left(InvalidCredentialsFailure());
+    } catch (e) {
+      return Left(InvalidCredentialsFailure(customMessage: e.toString()));
     }
   }
 
@@ -92,8 +92,8 @@ class AuthRepositoryImpl implements AuthRepository {
       }
 
       return const Right(null);
-    } catch (_) {
-      return Left(InvalidCredentialsFailure());
+    } catch (e) {
+      return Left(InvalidCredentialsFailure(customMessage: e.toString()));
     }
   }
 
@@ -102,8 +102,8 @@ class AuthRepositoryImpl implements AuthRepository {
     try {
       final token = await tokenStorage.getAccessToken();
       return Right(token != null);
-    } catch (_) {
-      return Left(InvalidCredentialsFailure());
+    } catch (e) {
+      return Left(InvalidCredentialsFailure(customMessage: e.toString()));
     }
   }
 }

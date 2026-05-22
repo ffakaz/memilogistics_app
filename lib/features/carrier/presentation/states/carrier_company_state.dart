@@ -1,22 +1,47 @@
 import '../../domain/entities/carrier_company.dart';
 
-class CarrierCompanyState {
-  final CarrierCompany? company;
-  final bool isLoading;
-  final String? error;
+enum CarrierProfileStatus {
+  initial,
+  loading,
+  loaded,
+  error,
+  loggedOut,
+}
 
-  const CarrierCompanyState({this.company, this.isLoading = false, this.error});
+class CarrierCompanyState {
+  final bool isLoading;
+  final CarrierCompany? company;
+  final String? error;
+  final bool hasAttemptedLoad;
+
+  const CarrierCompanyState({
+    this.isLoading = false,
+    this.company,
+    this.error,
+    this.hasAttemptedLoad = false,
+  });
 
   CarrierCompanyState copyWith({
-    CarrierCompany? company,
     bool? isLoading,
+    CarrierCompany? company,
     String? error,
-    bool clearError = false,
+    bool? hasAttemptedLoad,
   }) {
     return CarrierCompanyState(
-      company: company ?? this.company,
       isLoading: isLoading ?? this.isLoading,
-      error: clearError ? null : error ?? this.error,
+      company: company ?? this.company,
+      error: error ?? this.error,
+      hasAttemptedLoad: hasAttemptedLoad ?? this.hasAttemptedLoad,
     );
   }
+
+  CarrierProfileStatus get status {
+    if (isLoading) return CarrierProfileStatus.loading;
+    if (error != null) return CarrierProfileStatus.error;
+    if (!hasAttemptedLoad) return CarrierProfileStatus.initial;
+    if (company == null) return CarrierProfileStatus.loggedOut;
+    return CarrierProfileStatus.loaded;
+  }
+
+  bool get isMissing => company == null;
 }

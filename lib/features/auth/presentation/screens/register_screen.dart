@@ -1,5 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
+import 'package:memilogistics_app/features/carrier/presentation/providers/carrier_company_provider.dart';
+import 'package:memilogistics_app/features/shipper/presentation/providers/shipper_company_provider.dart';
 import '../provider/auth_provider.dart';
 
 class RegisterScreen extends StatefulWidget {
@@ -159,7 +161,8 @@ class _RegisterScreenState extends State<RegisterScreen> {
                           ),
                           decoration: InputDecoration(
                             labelText: 'Register as',
-                            helperText: 'Select your role: Shipper (send goods) or Carrier (transport goods)',
+                            helperText:
+                                'Select your role: Shipper (send goods) or Carrier (transport goods)',
                             helperMaxLines: 2,
                             prefixIcon: Icon(
                               Icons.badge_outlined,
@@ -411,37 +414,53 @@ class _RegisterScreenState extends State<RegisterScreen> {
                                       final confirmPassword =
                                           _confirmPasswordController.text;
 
-                                      final isAuthenticated = await auth
-                                          .register(
-                                            email,
-                                            password,
-                                            confirmPassword,
-                                            role: _selectedRole, // Pass selected role (SHIPPER/CARRIER)
-                                          );
+                                      final isAuthenticated = await auth.register(
+                                        email,
+                                        password,
+                                        confirmPassword,
+                                        role:
+                                            _selectedRole, // Pass selected role (SHIPPER/CARRIER)
+                                      );
 
                                       if (!context.mounted) return;
 
                                       if (isAuthenticated) {
+                                        context
+                                            .read<ShipperCompanyProvider>()
+                                            .clearProfile();
+                                        context
+                                            .read<CarrierCompanyProvider>()
+                                            .clearProfile();
                                         // Show success message
-                                        ScaffoldMessenger.of(context).showSnackBar(
+                                        ScaffoldMessenger.of(
+                                          context,
+                                        ).showSnackBar(
                                           SnackBar(
                                             content: const Row(
                                               children: [
-                                                Icon(Icons.check_circle, color: Colors.white),
+                                                Icon(
+                                                  Icons.check_circle,
+                                                  color: Colors.white,
+                                                ),
                                                 SizedBox(width: 12),
                                                 Expanded(
                                                   child: Text(
                                                     'Registration successful! Logging you in...',
-                                                    style: TextStyle(fontSize: 16),
+                                                    style: TextStyle(
+                                                      fontSize: 16,
+                                                    ),
                                                   ),
                                                 ),
                                               ],
                                             ),
-                                            backgroundColor: Colors.green.shade600,
-                                            duration: const Duration(seconds: 2),
+                                            backgroundColor:
+                                                Colors.green.shade600,
+                                            duration: const Duration(
+                                              seconds: 2,
+                                            ),
                                           ),
                                         );
-                                        
+
                                         // Route directly to appropriate dashboard based on role
                                         final route = _selectedRole == 'CARRIER'
                                             ? '/carrier-dashboard'

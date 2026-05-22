@@ -26,11 +26,23 @@ import 'package:memilogistics_app/features/carrier/data/repositories/carrier_com
 import 'package:memilogistics_app/features/carrier/domain/usecases/create_carrier_company.dart';
 import 'package:memilogistics_app/features/carrier/domain/usecases/get_carrier_company.dart';
 import 'package:memilogistics_app/features/carrier/domain/usecases/update_carrier_company.dart';
+import 'package:memilogistics_app/features/carrier/presentation/pages/carrier_company_page.dart';
 import 'package:memilogistics_app/features/carrier/presentation/providers/carrier_company_provider.dart';
 import 'package:memilogistics_app/features/carrier/presentation/screens/carrier_dashboard_improved.dart';
+import 'package:memilogistics_app/features/carrier/presentation/widgets/carrier_profile_gate.dart';
+
+import 'package:memilogistics_app/features/shipper/data/datasources/shipper_company_remote_datasource_impl.dart';
+import 'package:memilogistics_app/features/shipper/data/repositories/shipper_company_repository_impl.dart';
+import 'package:memilogistics_app/features/shipper/domain/usecases/create_shipper_company.dart';
+import 'package:memilogistics_app/features/shipper/domain/usecases/get_shipper_company.dart';
+import 'package:memilogistics_app/features/shipper/domain/usecases/update_shipper_company.dart';
+import 'package:memilogistics_app/features/shipper/presentation/pages/shipper_company_page.dart';
+import 'package:memilogistics_app/features/shipper/presentation/providers/shipper_company_provider.dart';
+import 'package:memilogistics_app/features/shipper/presentation/widgets/shipper_profile_gate.dart';
 
 import 'package:memilogistics_app/features/shipment/data/services/shipment_api_service_real.dart';
 import 'package:memilogistics_app/features/shipment/data/repositories/shipment_repository_impl.dart';
+import 'package:memilogistics_app/features/shipment/domain/usecases/get_dashboard_information.dart';
 import 'package:memilogistics_app/features/shipment/presentation/screens/create_shipment_screen.dart';
 import 'package:memilogistics_app/features/shipment/presentation/screens/shipment_dashboard_screen.dart';
 import 'package:memilogistics_app/features/shipment/presentation/screens/my_shipments_screen.dart';
@@ -104,13 +116,21 @@ Future<void> setupLocator() async {
     RouteConstants.forgotPassword: (_) => const ForgotPasswordScreen(),
     RouteConstants.logout: (_) => const LogoutScreen(),
     RouteConstants.home: (_) => const HomeScreen(),
-    RouteConstants.dashboard: (_) => const ShipmentDashboardScreen(),
-    RouteConstants.carrierDashboard: (_) => const CarrierDashboardImproved(),
-    RouteConstants.createShipment: (_) => const CreateShipmentScreen(),
-    RouteConstants.myShipments: (_) => const MyShipmentsScreen(), // ADDED
+    RouteConstants.dashboard: (_) =>
+        const ShipperProfileGate(child: ShipmentDashboardScreen()),
+    RouteConstants.carrierDashboard: (_) =>
+        const CarrierProfileGate(child: CarrierDashboardImproved()),
+    RouteConstants.carrierProfile: (_) => const CarrierCompanyPage(),
+    RouteConstants.createShipment: (_) =>
+        const ShipperProfileGate(child: CreateShipmentScreen()),
+    RouteConstants.shipperProfile: (_) => const ShipperCompanyPage(),
+    RouteConstants.myShipments: (_) =>
+        const ShipperProfileGate(child: MyShipmentsScreen()), // ADDED
     RouteConstants.shipmentDetails: (args) {
       final shipmentId = args as int;
-      return ShipmentDetailsScreen(shipmentId: shipmentId);
+      return ShipperProfileGate(
+        child: ShipmentDetailsScreen(shipmentId: shipmentId),
+      );
     },
     RouteConstants.payment: (args) {
       final params = args as Map<String, dynamic>;
@@ -159,7 +179,13 @@ Future<void> setupLocator() async {
     apiService: shipmentApiService,
     tokenStorage: tokenStorage,
   );
-  final shipmentProvider = ShipmentProvider(repository: shipmentRepository);
+  final getDashboardInformationUseCase = GetDashboardInformation(
+    shipmentRepository,
+  );
+  final shipmentProvider = ShipmentProvider(
+    repository: shipmentRepository,
+    getDashboardInformationUseCase: getDashboardInformationUseCase,
+  );
   _sl.registerSingleton<ShipmentProvider>(shipmentProvider);
 
   // User wiring
@@ -177,8 +203,12 @@ Future<void> setupLocator() async {
   _sl.registerSingleton<UserProvider>(userProvider);
 
   // Carrier wiring
-  final carrierRemoteDataSource = CarrierCompanyRemoteDataSourceImpl(apiClient: apiClient);
-  final carrierRepository = CarrierCompanyRepositoryImpl(carrierRemoteDataSource);
+  final carrierRemoteDataSource = CarrierCompanyRemoteDataSourceImpl(
+    apiClient: apiClient,
+  );
+  final carrierRepository = CarrierCompanyRepositoryImpl(
+    carrierRemoteDataSource,
+  );
   final createCarrierCompanyUseCase = CreateCarrierCompany(carrierRepository);
   final getCarrierCompanyUseCase = GetCarrierCompany(carrierRepository);
   final updateCarrierCompanyUseCase = UpdateCarrierCompany(carrierRepository);
@@ -189,6 +219,24 @@ Future<void> setupLocator() async {
     updateCarrierCompanyUseCase: updateCarrierCompanyUseCase,
   );
   _sl.registerSingleton<CarrierCompanyProvider>(carrierProvider);
+
+  // Shipper wiring
+  final shipperRemoteDataSource = ShipperCompanyRemoteDataSourceImpl(
+    apiClient: apiClient,
+  );
+  final shipperRepository = ShipperCompanyRepositoryImpl(
+    shipperRemoteDataSource,
+  );
+  final createShipperCompanyUseCase = CreateShipperCompany(shipperRepository);
+  final getShipperCompanyUseCase = GetShipperCompany(shipperRepository);
+  final updateShipperCompanyUseCase = UpdateShipperCompany(shipperRepository);
+
+  final shipperProvider = ShipperCompanyProvider(
+    createShipperCompanyUseCase: createShipperCompanyUseCase,
+    getShipperCompanyUseCase: getShipperCompanyUseCase,
+    updateShipperCompanyUseCase: updateShipperCompanyUseCase,
+  );
+  _sl.registerSingleton<ShipperCompanyProvider>(shipperProvider);
 
   // ShipmentOffer wiring
   final shipmentOfferApiService = ShipmentOfferApiService(apiClient);

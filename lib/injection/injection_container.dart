@@ -36,6 +36,7 @@ import 'package:memilogistics_app/features/payment/presentation/providers/paymen
 // Shipment — data layer
 import 'package:memilogistics_app/features/shipment/data/services/shipment_api_service_real.dart';
 import 'package:memilogistics_app/features/shipment/data/repositories/shipment_repository_impl.dart';
+import 'package:memilogistics_app/features/shipment/domain/usecases/get_dashboard_information.dart';
 
 // Shipment — presentation
 import 'package:memilogistics_app/features/shipment/presentation/providers/shipment_provider.dart';
@@ -60,22 +61,22 @@ class InjectionContainer extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     // ── Core ──────────────────────────────────────────────────────────────
-    final apiClient      = context.read<ApiClient>();
-    final secureStorage  = context.read<FlutterSecureStorage>();
+    final apiClient = context.read<ApiClient>();
+    final secureStorage = context.read<FlutterSecureStorage>();
 
     // ── Auth — data layer ─────────────────────────────────────────────────
     final authApiService = AuthApiServiceReal(apiClient);
-    final tokenStorage   = TokenStorage(storage: secureStorage);
+    final tokenStorage = TokenStorage(storage: secureStorage);
     final authRepository = AuthRepositoryImpl(
-      apiService:   authApiService,
+      apiService: authApiService,
       tokenStorage: tokenStorage,
     );
 
     // ── Auth — use cases ──────────────────────────────────────────────────
-    final loginUseCase           = LoginUseCase(authRepository);
-    final registerUseCase        = RegisterUseCase(authRepository);
-    final logoutUseCase          = LogoutUseCase(authRepository);
-    final isLoggedInUseCase      = IsLoggedInUseCase(authRepository);
+    final loginUseCase = LoginUseCase(authRepository);
+    final registerUseCase = RegisterUseCase(authRepository);
+    final logoutUseCase = LogoutUseCase(authRepository);
+    final isLoggedInUseCase = IsLoggedInUseCase(authRepository);
     final getCurrentTokenUseCase = GetCurrentTokenUseCase(authRepository);
 
     // ── Shipment dependencies ─────────────────────────────────────────────
@@ -83,6 +84,9 @@ class InjectionContainer extends StatelessWidget {
     final shipmentRepository = ShipmentRepositoryImpl(
       apiService: shipmentApiService,
       tokenStorage: tokenStorage,
+    );
+    final getDashboardInformationUseCase = GetDashboardInformation(
+      shipmentRepository,
     );
 
     // ── ShipmentOffer dependencies ────────────────────────────────────────
@@ -105,10 +109,10 @@ class InjectionContainer extends StatelessWidget {
         // Auth provider carries all auth use cases
         ChangeNotifierProvider<AuthProvider>(
           create: (_) => AuthProvider(
-            loginUseCase:           loginUseCase,
-            registerUseCase:        registerUseCase,
-            logoutUseCase:          logoutUseCase,
-            isLoggedInUseCase:      isLoggedInUseCase,
+            loginUseCase: loginUseCase,
+            registerUseCase: registerUseCase,
+            logoutUseCase: logoutUseCase,
+            isLoggedInUseCase: isLoggedInUseCase,
             getCurrentTokenUseCase: getCurrentTokenUseCase,
           ),
         ),
@@ -125,7 +129,10 @@ class InjectionContainer extends StatelessWidget {
 
         // Shipment provider
         ChangeNotifierProvider<ShipmentProvider>(
-          create: (_) => ShipmentProvider(repository: shipmentRepository),
+          create: (_) => ShipmentProvider(
+            repository: shipmentRepository,
+            getDashboardInformationUseCase: getDashboardInformationUseCase,
+          ),
         ),
 
         // User provider

@@ -6,6 +6,7 @@ import '../../domain/enums/shipment_type.dart';
 import '../../domain/enums/weight_unit.dart';
 
 import '../providers/shipment_provider.dart';
+import 'package:memilogistics_app/features/shipper/presentation/providers/shipper_company_provider.dart';
 
 class CreateShipmentScreen extends StatefulWidget {
   const CreateShipmentScreen({super.key});
@@ -16,8 +17,6 @@ class CreateShipmentScreen extends StatefulWidget {
 
 class _CreateShipmentScreenState extends State<CreateShipmentScreen> {
   final _formKey = GlobalKey<FormState>();
-
-  final TextEditingController _shipperNameController = TextEditingController();
 
   final TextEditingController _amountController = TextEditingController();
 
@@ -35,7 +34,6 @@ class _CreateShipmentScreenState extends State<CreateShipmentScreen> {
 
   @override
   void dispose() {
-    _shipperNameController.dispose();
     _amountController.dispose();
     _pickupController.dispose();
     _destinationController.dispose();
@@ -70,10 +68,19 @@ class _CreateShipmentScreenState extends State<CreateShipmentScreen> {
     }
 
     final provider = context.read<ShipmentProvider>();
+    final shipperProvider = context.read<ShipperCompanyProvider>();
+
+    final shipperCompany = shipperProvider.state.company;
+    if (shipperCompany == null) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('Complete your shipper profile first.')),
+      );
+      return;
+    }
 
     try {
       await provider.createShipment(
-        shipperName: _shipperNameController.text.trim(),
+        shipperName: shipperCompany.companyName,
         shipmentType: _shipmentType,
         amount: double.parse(_amountController.text.trim()),
         unit: _weightUnit,
@@ -115,20 +122,18 @@ class _CreateShipmentScreenState extends State<CreateShipmentScreen> {
             crossAxisAlignment: CrossAxisAlignment.start,
 
             children: [
-              /// SHIPPER NAME
-              TextFormField(
-                controller: _shipperNameController,
-
-                decoration: const InputDecoration(
-                  labelText: 'Shipper Name',
-                  border: OutlineInputBorder(),
-                ),
-
-                validator: (value) {
-                  if (value == null || value.trim().isEmpty) {
-                    return 'Shipper name is required';
-                  }
-                  return null;
+              Consumer<ShipperCompanyProvider>(
+                builder: (context, shipperProvider, _) {
+                  final company = shipperProvider.state.company;
+                  return Card(
+                    child: ListTile(
+                      leading: const Icon(Icons.business_outlined),
+                      title: Text(company?.companyName ?? 'Verified shipper'),
+                      subtitle: Text(
+                        company?.businessName ?? 'Backend profile verified',
+                      ),
+                    ),
+                  );
                 },
               ),
 

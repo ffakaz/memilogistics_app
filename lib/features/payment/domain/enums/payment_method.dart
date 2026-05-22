@@ -5,23 +5,17 @@ import 'package:json_annotation/json_annotation.dart';
 /// Payment method enum
 @JsonEnum(valueField: 'value')
 enum PaymentMethod {
-  @JsonValue('CREDIT_CARD')
-  creditCard('CREDIT_CARD'),
-
-  @JsonValue('DEBIT_CARD')
-  debitCard('DEBIT_CARD'),
+  @JsonValue('CASH')
+  cash('CASH'),
 
   @JsonValue('BANK_TRANSFER')
   bankTransfer('BANK_TRANSFER'),
 
-  @JsonValue('MOBILE_MONEY')
-  mobileMoney('MOBILE_MONEY'),
+  @JsonValue('CRYPTO_TRANSFER')
+  cryptoTransfer('CRYPTO_TRANSFER'),
 
-  @JsonValue('CASH')
-  cash('CASH'),
-
-  @JsonValue('WALLET')
-  wallet('WALLET');
+  @JsonValue('WALLET_TRANSFER')
+  walletTransfer('WALLET_TRANSFER');
 
   final String value;
   const PaymentMethod(this.value);
@@ -30,59 +24,49 @@ enum PaymentMethod {
   static PaymentMethod fromString(String value) {
     return PaymentMethod.values.firstWhere(
       (method) => method.value == value.toUpperCase(),
-      orElse: () => PaymentMethod.creditCard,
+      orElse: () => PaymentMethod.bankTransfer,
     );
   }
 
   /// Get display name for UI
   String get displayName {
     switch (this) {
-      case PaymentMethod.creditCard:
-        return 'Credit Card';
-      case PaymentMethod.debitCard:
-        return 'Debit Card';
-      case PaymentMethod.bankTransfer:
-        return 'Bank Transfer';
-      case PaymentMethod.mobileMoney:
-        return 'Mobile Money';
       case PaymentMethod.cash:
         return 'Cash';
-      case PaymentMethod.wallet:
-        return 'Wallet';
+      case PaymentMethod.bankTransfer:
+        return 'Bank Transfer';
+      case PaymentMethod.cryptoTransfer:
+        return 'Crypto Transfer';
+      case PaymentMethod.walletTransfer:
+        return 'Wallet Transfer';
     }
   }
 
   /// Get icon name for UI
   String get iconName {
     switch (this) {
-      case PaymentMethod.creditCard:
-        return 'credit_card';
-      case PaymentMethod.debitCard:
-        return 'credit_card';
-      case PaymentMethod.bankTransfer:
-        return 'account_balance';
-      case PaymentMethod.mobileMoney:
-        return 'phone_android';
       case PaymentMethod.cash:
         return 'money';
-      case PaymentMethod.wallet:
+      case PaymentMethod.bankTransfer:
+        return 'account_balance';
+      case PaymentMethod.cryptoTransfer:
+        return 'currency_bitcoin';
+      case PaymentMethod.walletTransfer:
         return 'account_balance_wallet';
     }
   }
 
   /// Check if method requires online processing
   bool get requiresOnlineProcessing {
-    return this == PaymentMethod.creditCard ||
-        this == PaymentMethod.debitCard ||
-        this == PaymentMethod.mobileMoney ||
-        this == PaymentMethod.wallet;
+    return this == PaymentMethod.cryptoTransfer ||
+        this == PaymentMethod.walletTransfer ||
+        this == PaymentMethod.bankTransfer;
   }
 
   /// Check if method is instant
   bool get isInstant {
-    return this == PaymentMethod.creditCard ||
-        this == PaymentMethod.debitCard ||
-        this == PaymentMethod.mobileMoney ||
-        this == PaymentMethod.wallet;
+    return this == PaymentMethod.cash ||
+        this == PaymentMethod.cryptoTransfer ||
+        this == PaymentMethod.walletTransfer;
   }
 }

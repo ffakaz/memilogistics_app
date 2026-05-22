@@ -1,4 +1,5 @@
 import '../entities/shipment.dart';
+import '../entities/dashboard_information.dart';
 import '../enums/shipment_status.dart';
 
 abstract class ShipmentRepository {
@@ -15,4 +16,5 @@ abstract class ShipmentRepository {
     required String location,
   });
   Future<List<Map<String, dynamic>>> getShipmentEvents(int shipmentId);
+  Future<DashboardInformation> getDashboardInformation();
 }

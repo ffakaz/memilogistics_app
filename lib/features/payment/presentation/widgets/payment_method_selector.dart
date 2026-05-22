@@ -54,17 +54,13 @@ class _PaymentMethodTile extends StatelessWidget {
 
   IconData _getMethodIcon() {
     switch (method) {
-      case PaymentMethod.creditCard:
-        return Icons.credit_card;
-      case PaymentMethod.debitCard:
-        return Icons.credit_card;
-      case PaymentMethod.bankTransfer:
-        return Icons.account_balance;
-      case PaymentMethod.mobileMoney:
-        return Icons.phone_android;
       case PaymentMethod.cash:
         return Icons.money;
-      case PaymentMethod.wallet:
+      case PaymentMethod.bankTransfer:
+        return Icons.account_balance;
+      case PaymentMethod.cryptoTransfer:
+        return Icons.currency_bitcoin;
+      case PaymentMethod.walletTransfer:
         return Icons.account_balance_wallet;
     }
   }
@@ -121,7 +117,9 @@ class _PaymentMethodTile extends StatelessWidget {
                     ),
                     const SizedBox(height: 4),
                     Text(
-                      method.isInstant ? 'Instant payment' : 'Processing time may vary',
+                      method.isInstant
+                          ? 'Instant payment'
+                          : 'Processing time may vary',
                       style: TextStyle(
                         fontSize: 12,
                         color: Colors.grey.shade600,
@@ -133,11 +131,7 @@ class _PaymentMethodTile extends StatelessWidget {
 
               // Selection Indicator
               if (isSelected)
-                Icon(
-                  Icons.check_circle,
-                  color: Colors.blue,
-                  size: 24,
-                ),
+                Icon(Icons.check_circle, color: Colors.blue, size: 24),
             ],
           ),
         ),

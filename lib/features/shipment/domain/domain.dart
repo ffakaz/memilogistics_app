@@ -5,6 +5,7 @@
 // Entities
 export 'entities/location.dart';
 export 'entities/shipment.dart';
+export 'entities/dashboard_information.dart';
 
 // Enums
 export 'enums/safety_option.dart';
@@ -14,3 +15,6 @@ export 'enums/weight_unit.dart';
 
 // Repositories
 export 'repositories/shipment_repository.dart';
+
+// Use cases
+export 'usecases/get_dashboard_information.dart';

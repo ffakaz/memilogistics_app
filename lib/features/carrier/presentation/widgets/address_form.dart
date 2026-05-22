@@ -3,7 +3,6 @@
 import 'package:flutter/material.dart';
 
 class AddressForm extends StatelessWidget {
-
   final TextEditingController streetController;
 
   final TextEditingController cityController;
@@ -25,12 +24,9 @@ class AddressForm extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-
     return Column(
       children: [
-
         /// STREET
-
         TextFormField(
           controller: streetController,
 
@@ -40,8 +36,7 @@ class AddressForm extends StatelessWidget {
           ),
 
           validator: (value) {
-            if (value == null ||
-                value.trim().isEmpty) {
+            if (value == null || value.trim().isEmpty) {
               return 'Street is required';
             }
             return null;
@@ -51,7 +46,6 @@ class AddressForm extends StatelessWidget {
         const SizedBox(height: 16),
 
         /// CITY
-
         TextFormField(
           controller: cityController,
 
@@ -61,8 +55,7 @@ class AddressForm extends StatelessWidget {
           ),
 
           validator: (value) {
-            if (value == null ||
-                value.trim().isEmpty) {
+            if (value == null || value.trim().isEmpty) {
               return 'City is required';
             }
             return null;
@@ -72,7 +65,6 @@ class AddressForm extends StatelessWidget {
         const SizedBox(height: 16),
 
         /// STATE
-
         TextFormField(
           controller: stateController,
 
@@ -82,8 +74,7 @@ class AddressForm extends StatelessWidget {
           ),
 
           validator: (value) {
-            if (value == null ||
-                value.trim().isEmpty) {
+            if (value == null || value.trim().isEmpty) {
               return 'State is required';
             }
             return null;
@@ -93,7 +84,6 @@ class AddressForm extends StatelessWidget {
         const SizedBox(height: 16),
 
         /// COUNTRY
-
         TextFormField(
           controller: countryController,
 
@@ -103,8 +93,7 @@ class AddressForm extends StatelessWidget {
           ),
 
           validator: (value) {
-            if (value == null ||
-                value.trim().isEmpty) {
+            if (value == null || value.trim().isEmpty) {
               return 'Country is required';
             }
             return null;
@@ -114,7 +103,6 @@ class AddressForm extends StatelessWidget {
         const SizedBox(height: 16),
 
         /// POSTAL CODE
-
         TextFormField(
           controller: postalCodeController,
 
@@ -124,8 +112,7 @@ class AddressForm extends StatelessWidget {
           ),
 
           validator: (value) {
-            if (value == null ||
-                value.trim().isEmpty) {
+            if (value == null || value.trim().isEmpty) {
               return 'Postal code is required';
             }
             return null;

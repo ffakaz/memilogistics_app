@@ -1,13 +1,14 @@
 // lib/features/shipment_offer/data/models/shipment_offer_model.dart
 
 import 'package:json_annotation/json_annotation.dart';
+import 'package:memilogistics_app/core/utils/json_parsing.dart';
 import 'package:memilogistics_app/features/carrier/data/models/carrier_company_model.dart';
 
 part 'shipment_offer_model.g.dart';
 
 /// ShipmentOffer data model for JSON serialization
 /// Matches backend OpenAPI contract: GET /api/shipments/{shipmentId}/offers
-@JsonSerializable(explicitToJson: true)
+@JsonSerializable(createFactory: false, explicitToJson: true)
 class ShipmentOfferModel {
   final int id; // int64
   final DateTime createdAt;
@@ -25,8 +26,22 @@ class ShipmentOfferModel {
     this.carrierCompany,
   });
 
-  factory ShipmentOfferModel.fromJson(Map<String, dynamic> json) =>
-      _$ShipmentOfferModelFromJson(json);
+  factory ShipmentOfferModel.fromJson(Map<String, dynamic> json) {
+    return ShipmentOfferModel(
+      id: JsonParsing.asInt(json['id']),
+      createdAt: JsonParsing.asDateTime(json['createdAt']) ?? DateTime.now(),
+      price: JsonParsing.asDouble(json['price']),
+      shipmentId: JsonParsing.asInt(json['shipmentId']),
+      shipmentTrackingNumber: JsonParsing.asString(
+        json['shipmentTrackingNumber'],
+      ),
+      carrierCompany: JsonParsing.asMap(json['carrierCompany']) == null
+          ? null
+          : CarrierCompanyModel.fromJson(
+              JsonParsing.asMap(json['carrierCompany'])!,
+            ),
+    );
+  }
 
   Map<String, dynamic> toJson() => _$ShipmentOfferModelToJson(this);
 }

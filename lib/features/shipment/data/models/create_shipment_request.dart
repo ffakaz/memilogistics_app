@@ -9,14 +9,14 @@ class CreateShipmentRequest {
   final String origin;
   final String destination;
   final double weightKg;
-  
+
   @JsonKey(toJson: _dateTimeToJson, fromJson: _dateTimeFromJson)
   final DateTime deliveryDate;
-  
+
   final bool fragile;
-  
+
   // Optional fields
-  final String? shipmentItem;
+  final String shipmentItem;
   final String? description;
 
   const CreateShipmentRequest({
@@ -25,7 +25,7 @@ class CreateShipmentRequest {
     required this.weightKg,
     required this.deliveryDate,
     required this.fragile,
-    this.shipmentItem,
+    required this.shipmentItem,
     this.description,
   });
 
@@ -33,11 +33,12 @@ class CreateShipmentRequest {
       _$CreateShipmentRequestFromJson(json);
 
   Map<String, dynamic> toJson() => _$CreateShipmentRequestToJson(this);
-  
+
   // DateTime serialization helpers
   static String _dateTimeToJson(DateTime dateTime) =>
       '${dateTime.year.toString().padLeft(4, '0')}-'
       '${dateTime.month.toString().padLeft(2, '0')}-'
       '${dateTime.day.toString().padLeft(2, '0')}';
-  static DateTime _dateTimeFromJson(String dateTime) => DateTime.parse(dateTime);
+  static DateTime _dateTimeFromJson(String dateTime) =>
+      DateTime.parse(dateTime);
 }

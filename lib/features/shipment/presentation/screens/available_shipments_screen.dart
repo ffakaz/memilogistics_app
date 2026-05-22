@@ -11,7 +11,8 @@ class AvailableShipmentsScreen extends StatefulWidget {
   const AvailableShipmentsScreen({super.key});
 
   @override
-  State<AvailableShipmentsScreen> createState() => _AvailableShipmentsScreenState();
+  State<AvailableShipmentsScreen> createState() =>
+      _AvailableShipmentsScreenState();
 }
 
 class _AvailableShipmentsScreenState extends State<AvailableShipmentsScreen> {
@@ -128,9 +129,7 @@ class _AvailableShipmentsScreenState extends State<AvailableShipmentsScreen> {
           provider.setActiveShipment(shipment);
           Navigator.push(
             context,
-            MaterialPageRoute(
-              builder: (_) => const ShipmentDetailScreen(),
-            ),
+            MaterialPageRoute(builder: (_) => const ShipmentDetailScreen()),
           );
         },
         borderRadius: BorderRadius.circular(12),
@@ -180,7 +179,7 @@ class _AvailableShipmentsScreenState extends State<AvailableShipmentsScreen> {
                   const SizedBox(width: 8),
                   Expanded(
                     child: Text(
-                      shipment.origin.shortLabel,
+                      shipment.originAsLocation.shortLabel,
                       style: const TextStyle(fontSize: 14),
                     ),
                   ),
@@ -193,7 +192,7 @@ class _AvailableShipmentsScreenState extends State<AvailableShipmentsScreen> {
                   const SizedBox(width: 8),
                   Expanded(
                     child: Text(
-                      shipment.destination.shortLabel,
+                      shipment.destinationAsLocation.shortLabel,
                       style: const TextStyle(fontSize: 14),
                     ),
                   ),
@@ -216,7 +215,8 @@ class _AvailableShipmentsScreenState extends State<AvailableShipmentsScreen> {
               SizedBox(
                 width: double.infinity,
                 child: ElevatedButton.icon(
-                  onPressed: () => _showAcceptDialog(context, shipment, provider),
+                  onPressed: () =>
+                      _showAcceptDialog(context, shipment, provider),
                   icon: const Icon(Icons.check_circle),
                   label: const Text('Accept Shipment'),
                   style: ElevatedButton.styleFrom(
@@ -243,7 +243,7 @@ class _AvailableShipmentsScreenState extends State<AvailableShipmentsScreen> {
       builder: (context) => AlertDialog(
         title: const Text('Accept Shipment'),
         content: Text(
-          'Do you want to accept this shipment from ${shipment.origin.shortLabel} to ${shipment.destination.shortLabel}?',
+          'Do you want to accept this shipment from ${shipment.originAsLocation.shortLabel} to ${shipment.destinationAsLocation.shortLabel}?',
         ),
         actions: [
           TextButton(

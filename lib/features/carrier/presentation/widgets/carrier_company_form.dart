@@ -19,11 +19,15 @@ class CarrierCompanyForm
   }) onSubmit;
 
   final bool isLoading;
+  final String? submitLabel;
+  final dynamic initialCompany;
 
   const CarrierCompanyForm({
     super.key,
     required this.onSubmit,
     this.isLoading = false,
+    this.submitLabel,
+    this.initialCompany,
   });
 
   @override
@@ -273,13 +277,32 @@ class _CarrierCompanyFormState
                           child:
                               CircularProgressIndicator(),
                         )
-                      : const Text(
-                          'Save Carrier Company',
-                        ),
+                          : Text(
+                              widget.submitLabel ?? 'Save Carrier Company',
+                            ),
             ),
           ),
         ],
       ),
     );
   }
+
+      @override
+      void initState() {
+        super.initState();
+
+        final c = widget.initialCompany;
+        if (c != null) {
+          _companyNameController.text = c.companyName ?? '';
+          _companyEmailController.text = c.companyEmail ?? '';
+          if (c.address != null) {
+            _phoneNumberController.text = c.address.phoneNumber ?? '';
+            _streetController.text = c.address.street ?? '';
+            _cityController.text = c.address.city ?? '';
+            _stateController.text = c.address.state ?? '';
+            _countryController.text = c.address.country ?? '';
+            _postalCodeController.text = c.address.zip ?? '';
+          }
+        }
+      }
 }

@@ -4,88 +4,87 @@ import '../models/carrier_company_model.dart';
 import 'carrier_company_remote_datasource.dart';
 
 /// Remote datasource for carrier company operations
-/// 
-/// FUTURE FEATURE: Carrier Company Management
-/// 
-/// Status: NOT IMPLEMENTED - Endpoints not available in backend
-/// 
-/// The endpoints used here (/carrier/company) are NOT documented in the
-/// backend OpenAPI contract. This is a future feature for managing carrier
-/// company profiles, fleet information, and business details.
-/// 
-/// Current Implementation:
-/// - Code structure is ready for future use
-/// - CarrierCompanyProvider is registered but not actively used
-/// - Carrier dashboard works without these endpoints
-/// 
-/// Future Implementation Plan:
-/// - Coordinate with backend team on endpoint design
-/// - Decide if carrier companies should be:
-///   * Separate entity with dedicated endpoints
-///   * Part of user profile (embedded in user data)
-///   * Created during carrier registration
-/// - Add company management UI when backend is ready
-class CarrierCompanyRemoteDataSourceImpl implements CarrierCompanyRemoteDataSource {
+///
+/// Carrier Profile Management
+///
+/// Status: IMPLEMENTED - Connected to backend API
+///
+/// Endpoints:
+/// - POST /api/carriers/profile/create - Create carrier profile
+/// - GET /api/carriers/profile/me - Get current carrier profile
+/// - PATCH /api/carriers/profile/update - Update carrier profile
+///
+/// This datasource handles carrier company profile operations including
+/// creating, retrieving, and updating carrier company information.
+class CarrierCompanyRemoteDataSourceImpl
+    implements CarrierCompanyRemoteDataSource {
   final ApiClient apiClient;
 
   CarrierCompanyRemoteDataSourceImpl({required this.apiClient});
 
   @override
-  Future<CarrierCompanyModel> createCarrierCompany(CarrierCompanyModel company) async {
+  Future<CarrierCompanyModel> createCarrierCompany(
+    CarrierCompanyModel company,
+  ) async {
     try {
-      final response = await apiClient.post<Map<String, dynamic>>(
-        '${ApiConstants.apiPrefix}/carrier/company',
-        data: company.toJson(),
+      final response = await apiClient.post<dynamic>(
+        '${ApiConstants.apiPrefix}${CarrierCompanyEndpoints.create}',
+        data: company.toJsonForCreate(),
       );
 
-      if (response.isSuccess && response.data != null) {
-        return CarrierCompanyModel.fromJson(response.data!);
-      } else {
-        throw Exception(response.message ?? 'Failed to create carrier company');
+      if (response.isSuccess) {
+        if (response.data == null) return company;
+        return CarrierCompanyModel.fromJson(_profileBody(response.data));
       }
+      throw Exception(response.message ?? 'Failed to create carrier company');
     } catch (e) {
-      // Add context to error for debugging
-      throw Exception('Carrier company creation failed: $e. '
-          'Note: This endpoint may not exist in the backend.');
+      throw Exception('Carrier company creation failed: $e');
     }
   }
 
   @override
   Future<CarrierCompanyModel> getCarrierCompany() async {
     try {
-      final response = await apiClient.get<Map<String, dynamic>>(
-        '${ApiConstants.apiPrefix}/carrier/company',
+      final response = await apiClient.get<dynamic>(
+        '${ApiConstants.apiPrefix}${CarrierCompanyEndpoints.get}',
       );
 
-      if (response.isSuccess && response.data != null) {
-        return CarrierCompanyModel.fromJson(response.data!);
-      } else {
-        throw Exception(response.message ?? 'Failed to get carrier company');
+      if (response.isSuccess) {
+        return CarrierCompanyModel.fromJson(_profileBody(response.data));
       }
+      throw Exception(response.message ?? 'Failed to get carrier company');
     } catch (e) {
-      // Add context to error for debugging
-      throw Exception('Failed to get carrier company: $e. '
-          'Note: This endpoint may not exist in the backend.');
+      throw Exception('Failed to get carrier company: $e');
     }
   }
 
   @override
-  Future<CarrierCompanyModel> updateCarrierCompany(CarrierCompanyModel company) async {
+  Future<CarrierCompanyModel> updateCarrierCompany(
+    CarrierCompanyModel company,
+  ) async {
     try {
-      final response = await apiClient.put<Map<String, dynamic>>(
-        '${ApiConstants.apiPrefix}/carrier/company',
-        data: company.toJson(),
+      final response = await apiClient.patch<dynamic>(
+        '${ApiConstants.apiPrefix}${CarrierCompanyEndpoints.update}',
+        data: company.toJsonForUpdate(),
       );
 
-      if (response.isSuccess && response.data != null) {
-        return CarrierCompanyModel.fromJson(response.data!);
-      } else {
-        throw Exception(response.message ?? 'Failed to update carrier company');
+      if (response.isSuccess) {
+        if (response.data == null) return company;
+        return CarrierCompanyModel.fromJson(_profileBody(response.data));
       }
+      throw Exception(response.message ?? 'Failed to update carrier company');
     } catch (e) {
-      // Add context to error for debugging
-      throw Exception('Carrier company update failed: $e. '
-          'Note: This endpoint may not exist in the backend.');
+      throw Exception('Carrier company update failed: $e');
     }
+  }
+
+  Map<String, dynamic> _profileBody(dynamic data) {
+    if (data is Map) {
+      final payload = Map<String, dynamic>.from(data);
+      final nested = payload['data'] ?? payload['result'] ?? payload['profile'];
+      if (nested is Map) return Map<String, dynamic>.from(nested);
+      return payload;
+    }
+    throw Exception('Backend returned an invalid carrier profile response');
   }
 }

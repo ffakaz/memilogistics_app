@@ -2,11 +2,16 @@
 
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
-import 'package:memilogistics_app/features/user/user.dart';
-import 'package:memilogistics_app/core/widgets/core_widgets.dart';
-import '../providers/shipment_provider.dart';
-import '../../../auth/presentation/provider/auth_provider.dart';
-import '../../../../core/utils/constants/route_constants.dart';
+
+import 'package:memilogistics_app/core/utils/constants/route_constants.dart';
+import 'package:memilogistics_app/features/auth/presentation/provider/auth_provider.dart';
+import 'package:memilogistics_app/features/shipment/domain/entities/dashboard_information.dart';
+import 'package:memilogistics_app/features/shipment/domain/entities/shipment.dart';
+import 'package:memilogistics_app/features/shipment/presentation/providers/shipment_provider.dart';
+import 'package:memilogistics_app/features/shipper/domain/entities/shipper_company.dart';
+import 'package:memilogistics_app/features/shipper/presentation/pages/edit_shipper_company_page.dart';
+import 'package:memilogistics_app/features/shipper/presentation/providers/shipper_company_provider.dart';
+import 'package:memilogistics_app/features/shipper/presentation/widgets/shipper_profile_avatar.dart';
 
 class ShipmentDashboardScreen extends StatefulWidget {
   const ShipmentDashboardScreen({super.key});
@@ -20,572 +25,495 @@ class _ShipmentDashboardScreenState extends State<ShipmentDashboardScreen> {
   @override
   void initState() {
     super.initState();
-    // Load user data
     WidgetsBinding.instance.addPostFrameCallback((_) {
-      final userProvider = context.read<UserProvider>();
-      if (userProvider.currentUser == null) {
-        userProvider.loadCurrentUser();
-      }
+      context.read<ShipmentProvider>()
+        ..getDashboardInformation()
+        ..getMyShipments();
     });
+  }
+
+  Future<void> _refresh() async {
+    await Future.wait([
+      context.read<ShipperCompanyProvider>().ensureProfileLoaded(
+        forceRefresh: true,
+      ),
+      context.read<ShipmentProvider>().getDashboardInformation(),
+      context.read<ShipmentProvider>().getMyShipments(),
+    ]);
   }
 
   @override
   Widget build(BuildContext context) {
-    return Scaffold(
-      backgroundColor: Colors.grey[100],
-      appBar: AppBar(
-        title: const Text('Shipment Dashboard'),
-        elevation: 0,
-        actions: [
-          IconButton(
-            icon: const Icon(Icons.notifications_outlined),
-            onPressed: () {
-              ScaffoldMessenger.of(context).showSnackBar(
-                const SnackBar(content: Text('Notifications coming soon')),
-              );
-            },
-          ),
-          PopupMenuButton<String>(
-            icon: const Icon(Icons.more_vert),
-            onSelected: (value) {
-              if (value == 'logout') {
-                _showLogoutDialog(context);
-              }
-            },
-            itemBuilder: (BuildContext context) => [
-              const PopupMenuItem<String>(
-                value: 'logout',
-                child: Row(
-                  children: [
-                    Icon(Icons.logout, size: 20),
-                    SizedBox(width: 12),
-                    Text('Logout'),
-                  ],
-                ),
-              ),
+    return Consumer2<ShipperCompanyProvider, ShipmentProvider>(
+      builder: (context, shipperProvider, shipmentProvider, _) {
+        final profile = shipperProvider.state.company;
+
+        return Scaffold(
+          backgroundColor: const Color(0xFFF6F8FB),
+          appBar: AppBar(
+            title: const Text('Dashboard'),
+            actions: [
+              _ProfileMenu(profile: profile),
+              const SizedBox(width: 10),
             ],
           ),
-        ],
-      ),
-      body: Consumer2<UserProvider, ShipmentProvider>(
-        builder: (context, userProvider, shipmentProvider, _) {
-          final user = userProvider.currentUser;
-
-          if (userProvider.isLoading) {
-            return const Center(child: CircularProgressIndicator());
-          }
-
-          return SingleChildScrollView(
-            padding: const EdgeInsets.all(16),
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
+          body: RefreshIndicator(
+            onRefresh: _refresh,
+            child: ListView(
+              padding: const EdgeInsets.all(16),
               children: [
-                // Enhanced User Profile Card
-                _buildEnhancedProfileCard(user),
-
-                const SizedBox(height: AppSpacing.lg),
-
-                // Quick Stats
-                _buildStatsSection(),
-
-                const SectionTitle('Quick Actions'),
-                const SizedBox(height: AppSpacing.md),
-
-                _buildActionButton(
-                  context,
-                  'Create New Shipment',
-                  Icons.add_circle,
-                  Colors.blue,
-                  () {
+                _WelcomePanel(profile: profile),
+                const SizedBox(height: 18),
+                _SectionTitle(
+                  title: 'Shipment Overview',
+                  actionLabel: shipmentProvider.isDashboardLoading
+                      ? 'Loading'
+                      : null,
+                ),
+                const SizedBox(height: 12),
+                _DashboardStatsGrid(
+                  info: shipmentProvider.dashboardInformation,
+                ),
+                const SizedBox(height: 20),
+                _SectionTitle(title: 'Quick Actions'),
+                const SizedBox(height: 12),
+                _QuickActions(
+                  onCreateShipment: () {
                     Navigator.pushNamed(context, RouteConstants.createShipment);
                   },
-                ),
-
-                const SizedBox(height: 12),
-
-                _buildActionButton(
-                  context,
-                  'Review Bids',
-                  Icons.local_offer,
-                  Colors.orange,
-                  () {
+                  onViewShipments: () {
                     Navigator.pushNamed(context, RouteConstants.myShipments);
                   },
                 ),
-
+                const SizedBox(height: 20),
+                _SectionTitle(title: 'Recent Shipments'),
                 const SizedBox(height: 12),
-
-                _buildActionButton(
-                  context,
-                  'View All Shipments',
-                  Icons.list,
-                  Colors.green,
-                  () {
-                    Navigator.pushNamed(context, RouteConstants.myShipments);
-                  },
-                ),
-
-                const SizedBox(height: 12),
-
-                _buildActionButton(
-                  context,
-                  'Track Shipment',
-                  Icons.location_on,
-                  Colors.purple,
-                  () {
-                    ScaffoldMessenger.of(context).showSnackBar(
-                      const SnackBar(content: Text('Tracking coming soon!')),
-                    );
-                  },
-                ),
-
-                const SizedBox(height: AppSpacing.lg),
-
-                const SectionTitle('Recent Activity'),
-                const SizedBox(height: AppSpacing.md),
-
-                _buildActivityItem(
-                  'Shipment #12345 created',
-                  '2 hours ago',
-                  Icons.add_circle_outline,
-                  Colors.blue,
-                ),
-                _buildActivityItem(
-                  'Shipment #12344 delivered',
-                  '5 hours ago',
-                  Icons.check_circle_outline,
-                  Colors.green,
-                ),
-                _buildActivityItem(
-                  'Shipment #12343 in transit',
-                  '1 day ago',
-                  Icons.local_shipping_outlined,
-                  Colors.orange,
+                _RecentShipments(
+                  shipments: shipmentProvider.shipments.take(4).toList(),
                 ),
               ],
             ),
-          );
-        },
-      ),
-      floatingActionButton: FloatingActionButton.extended(
-        onPressed: () {
-          Navigator.pushNamed(context, RouteConstants.createShipment);
-        },
-        icon: const Icon(Icons.add),
-        label: const Text('New Shipment'),
-        backgroundColor: Colors.blue[700],
-      ),
-    );
-  }
-
-  Widget _buildEnhancedProfileCard(dynamic user) {
-    return Container(
-      decoration: BoxDecoration(
-        gradient: LinearGradient(
-          colors: [Colors.blue[700]!, Colors.blue[500]!],
-          begin: Alignment.topLeft,
-          end: Alignment.bottomRight,
-        ),
-        borderRadius: BorderRadius.circular(16),
-        boxShadow: [
-          BoxShadow(
-            color: Colors.blue.withValues(alpha: 0.3),
-            blurRadius: 15,
-            offset: const Offset(0, 5),
           ),
-        ],
-      ),
-      child: Padding(
-        padding: const EdgeInsets.all(20),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            Row(
-              children: [
-                Container(
-                  padding: const EdgeInsets.all(12),
-                  decoration: BoxDecoration(
-                    color: Colors.white,
-                    borderRadius: BorderRadius.circular(12),
-                    boxShadow: [
-                      BoxShadow(
-                        color: Colors.black.withValues(alpha: 0.1),
-                        blurRadius: 8,
-                        offset: const Offset(0, 2),
-                      ),
-                    ],
-                  ),
-                  child: Icon(
-                    Icons.local_shipping,
-                    color: Colors.blue[700],
-                    size: 32,
-                  ),
-                ),
-                const SizedBox(width: 16),
-                Expanded(
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      Text(
-                        user?.profile.name ?? 'Loading...',
-                        style: const TextStyle(
-                          fontSize: 24,
-                          fontWeight: FontWeight.bold,
-                          color: Colors.white,
-                          letterSpacing: 0.5,
-                        ),
-                      ),
-                      const SizedBox(height: 6),
-                      Container(
-                        padding: const EdgeInsets.symmetric(
-                          horizontal: 10,
-                          vertical: 4,
-                        ),
-                        decoration: BoxDecoration(
-                          color: Colors.white.withValues(alpha: 0.25),
-                          borderRadius: BorderRadius.circular(12),
-                        ),
-                        child: Text(
-                          user?.profile.role
-                                  .toString()
-                                  .split('.')
-                                  .last
-                                  .toUpperCase() ??
-                              'SHIPPER',
-                          style: const TextStyle(
-                            color: Colors.white,
-                            fontSize: 11,
-                            fontWeight: FontWeight.w600,
-                            letterSpacing: 1.2,
-                          ),
-                        ),
-                      ),
-                    ],
-                  ),
-                ),
-              ],
-            ),
-            const SizedBox(height: 16),
-            Divider(color: Colors.white.withValues(alpha: 0.3)),
-            const SizedBox(height: 16),
-            // Email
-            Row(
-              children: [
-                Container(
-                  padding: const EdgeInsets.all(8),
-                  decoration: BoxDecoration(
-                    color: Colors.white.withValues(alpha: 0.2),
-                    borderRadius: BorderRadius.circular(8),
-                  ),
-                  child: const Icon(
-                    Icons.email_outlined,
-                    color: Colors.white,
-                    size: 20,
-                  ),
-                ),
-                const SizedBox(width: 12),
-                Expanded(
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      Text(
-                        'Email',
-                        style: TextStyle(
-                          color: Colors.white.withValues(alpha: 0.7),
-                          fontSize: 11,
-                          fontWeight: FontWeight.w600,
-                          letterSpacing: 0.5,
-                        ),
-                      ),
-                      const SizedBox(height: 2),
-                      Text(
-                        user?.profile.email ?? '',
-                        style: const TextStyle(
-                          color: Colors.white,
-                          fontSize: 14,
-                          fontWeight: FontWeight.w500,
-                        ),
-                        maxLines: 1,
-                        overflow: TextOverflow.ellipsis,
-                      ),
-                    ],
-                  ),
-                ),
-              ],
-            ),
-          ],
-        ),
-      ),
-    );
-  }
-
-  Widget _buildStatsSection() {
-    return Column(
-      children: [
-        Row(
-          children: [
-            Expanded(
-              child: _buildStatCard(
-                'Active Shipments',
-                '12',
-                Icons.local_shipping,
-                Colors.blue,
-              ),
-            ),
-            const SizedBox(width: 16),
-            Expanded(
-              child: _buildStatCard(
-                'Completed',
-                '45',
-                Icons.check_circle,
-                Colors.green,
-              ),
-            ),
-          ],
-        ),
-        const SizedBox(height: 16),
-        Row(
-          children: [
-            Expanded(
-              child: _buildStatCard(
-                'Pending',
-                '8',
-                Icons.pending,
-                Colors.orange,
-              ),
-            ),
-            const SizedBox(width: 16),
-            Expanded(
-              child: _buildStatCard(
-                'Total',
-                '65',
-                Icons.inventory,
-                Colors.purple,
-              ),
-            ),
-          ],
-        ),
-      ],
-    );
-  }
-
-  Widget _buildStatCard(
-    String title,
-    String value,
-    IconData icon,
-    Color color,
-  ) {
-    return Container(
-      padding: const EdgeInsets.all(16),
-      decoration: BoxDecoration(
-        color: Colors.white,
-        borderRadius: BorderRadius.circular(12),
-        boxShadow: [
-          BoxShadow(
-            color: Colors.black.withValues(alpha: 0.05),
-            blurRadius: 10,
-            offset: const Offset(0, 2),
+          floatingActionButton: FloatingActionButton.extended(
+            onPressed: () =>
+                Navigator.pushNamed(context, RouteConstants.createShipment),
+            icon: const Icon(Icons.add),
+            label: const Text('New Shipment'),
           ),
-        ],
-      ),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Container(
-            padding: const EdgeInsets.all(8),
-            decoration: BoxDecoration(
-              color: color.withValues(alpha: 0.1),
-              borderRadius: BorderRadius.circular(8),
-            ),
-            child: Icon(icon, color: color, size: 20),
-          ),
-          const SizedBox(height: 12),
-          Text(
-            value,
-            style: const TextStyle(
-              fontSize: 24,
-              fontWeight: FontWeight.bold,
-            ),
-          ),
-          const SizedBox(height: 4),
-          Text(
-            title,
-            style: TextStyle(
-              fontSize: 12,
-              color: Colors.grey[600],
-            ),
-          ),
-        ],
-      ),
-    );
-  }
-
-  Widget _buildActionButton(
-    BuildContext context,
-    String title,
-    IconData icon,
-    Color color,
-    VoidCallback onTap,
-  ) {
-    return AppOutlinedButton(
-      onPressed: onTap,
-      child: Padding(
-        padding: const EdgeInsets.symmetric(vertical: 12, horizontal: 8),
-        child: Row(
-          children: [
-            Icon(icon, color: color),
-            const SizedBox(width: 16),
-            Expanded(
-              child: Text(
-                title,
-                style: TextStyle(
-                  fontSize: 15,
-                  fontWeight: FontWeight.w600,
-                  color: Colors.grey[850],
-                ),
-              ),
-            ),
-            Icon(Icons.arrow_forward_ios, size: 16, color: Colors.grey[600]),
-          ],
-        ),
-      ),
-    );
-  }
-
-  Widget _buildActivityItem(
-    String title,
-    String time,
-    IconData icon,
-    Color color,
-  ) {
-    return Padding(
-      padding: const EdgeInsets.only(bottom: AppSpacing.sm),
-      child: AppCard(
-        child: ListTile(
-          contentPadding: const EdgeInsets.symmetric(
-            vertical: 6,
-            horizontal: 12,
-          ),
-          leading: CircleAvatar(
-            backgroundColor: color.withValues(alpha: 0.12),
-            child: Icon(icon, color: color, size: 18),
-          ),
-          title: Text(
-            title,
-            style: const TextStyle(fontWeight: FontWeight.w600),
-          ),
-          subtitle: Text(
-            time,
-            style: TextStyle(color: Colors.grey[600], fontSize: 12),
-          ),
-          trailing: Icon(
-            Icons.arrow_forward_ios,
-            size: 14,
-            color: Colors.grey[500],
-          ),
-        ),
-      ),
-    );
-  }
-
-  void _showLogoutDialog(BuildContext context) {
-    showDialog(
-      context: context,
-      builder: (BuildContext dialogContext) {
-        return AlertDialog(
-          title: const Row(
-            children: [
-              Icon(Icons.logout, color: Colors.red),
-              SizedBox(width: 12),
-              Text('Logout'),
-            ],
-          ),
-          content: const Text(
-            'Are you sure you want to logout?',
-            style: TextStyle(fontSize: 16),
-          ),
-          actions: [
-            TextButton(
-              onPressed: () {
-                Navigator.of(dialogContext).pop();
-              },
-              child: const Text('Cancel'),
-            ),
-            ElevatedButton(
-              onPressed: () async {
-                Navigator.of(dialogContext).pop();
-                await _performLogout(context);
-              },
-              style: ElevatedButton.styleFrom(
-                backgroundColor: Colors.red,
-                foregroundColor: Colors.white,
-              ),
-              child: const Text('Logout'),
-            ),
-          ],
         );
       },
     );
   }
+}
 
-  Future<void> _performLogout(BuildContext context) async {
-    try {
-      showDialog(
-        context: context,
-        barrierDismissible: false,
-        builder: (BuildContext context) {
-          return const Center(
-            child: Card(
-              child: Padding(
-                padding: EdgeInsets.all(24.0),
-                child: Column(
-                  mainAxisSize: MainAxisSize.min,
-                  children: [
-                    CircularProgressIndicator(),
-                    SizedBox(height: 16),
-                    Text('Logging out...'),
+class _ProfileMenu extends StatelessWidget {
+  final ShipperCompany? profile;
+
+  const _ProfileMenu({required this.profile});
+
+  @override
+  Widget build(BuildContext context) {
+    return PopupMenuButton<_ProfileAction>(
+      tooltip: 'Profile menu',
+      offset: const Offset(0, 52),
+      onSelected: (action) async {
+        switch (action) {
+          case _ProfileAction.view:
+            Navigator.pushNamed(context, RouteConstants.shipperProfile);
+            break;
+          case _ProfileAction.edit:
+            final company = profile;
+            if (company == null) return;
+            Navigator.push(
+              context,
+              MaterialPageRoute(
+                builder: (_) => EditShipperCompanyPage(company: company),
+              ),
+            );
+            break;
+          case _ProfileAction.logout:
+            await context.read<AuthProvider>().logout();
+            if (!context.mounted) return;
+            context.read<ShipperCompanyProvider>().clearProfile();
+            Navigator.pushNamedAndRemoveUntil(
+              context,
+              RouteConstants.login,
+              (_) => false,
+            );
+            break;
+        }
+      },
+      itemBuilder: (context) => const [
+        PopupMenuItem(
+          value: _ProfileAction.view,
+          child: ListTile(
+            leading: Icon(Icons.person_outline),
+            title: Text('View Profile'),
+          ),
+        ),
+        PopupMenuItem(
+          value: _ProfileAction.edit,
+          child: ListTile(
+            leading: Icon(Icons.edit_outlined),
+            title: Text('Edit Profile'),
+          ),
+        ),
+        PopupMenuDivider(),
+        PopupMenuItem(
+          value: _ProfileAction.logout,
+          child: ListTile(leading: Icon(Icons.logout), title: Text('Logout')),
+        ),
+      ],
+      child: ShipperProfileAvatar(profile: profile, size: 42),
+    );
+  }
+}
+
+enum _ProfileAction { view, edit, logout }
+
+class _WelcomePanel extends StatelessWidget {
+  final ShipperCompany? profile;
+
+  const _WelcomePanel({required this.profile});
+
+  @override
+  Widget build(BuildContext context) {
+    final company = profile;
+    final firstName = company?.firstName.trim().isNotEmpty == true
+        ? company!.firstName.trim()
+        : 'there';
+    final business = company?.businessName.trim().isNotEmpty == true
+        ? company!.businessName.trim()
+        : company?.companyName ?? 'Your business';
+    final address = company == null
+        ? ''
+        : [
+            company.address.city,
+            company.address.state,
+            company.address.country,
+          ].where((part) => part.trim().isNotEmpty).join(', ');
+
+    return Card(
+      elevation: 1,
+      child: Padding(
+        padding: const EdgeInsets.all(18),
+        child: Row(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            ShipperProfileAvatar(profile: company, size: 58),
+            const SizedBox(width: 16),
+            Expanded(
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text(
+                    'Welcome, $firstName',
+                    style: Theme.of(context).textTheme.titleLarge?.copyWith(
+                      fontWeight: FontWeight.w800,
+                    ),
+                  ),
+                  const SizedBox(height: 6),
+                  Text(
+                    business,
+                    style: Theme.of(context).textTheme.bodyLarge?.copyWith(
+                      fontWeight: FontWeight.w600,
+                      color: Colors.grey.shade800,
+                    ),
+                  ),
+                  if (company?.companyName.trim().isNotEmpty == true &&
+                      company!.companyName != business) ...[
+                    const SizedBox(height: 3),
+                    Text(company.companyName),
                   ],
-                ),
+                  if (address.isNotEmpty) ...[
+                    const SizedBox(height: 8),
+                    Row(
+                      children: [
+                        Icon(
+                          Icons.location_on_outlined,
+                          size: 18,
+                          color: Colors.grey.shade700,
+                        ),
+                        const SizedBox(width: 6),
+                        Expanded(child: Text(address)),
+                      ],
+                    ),
+                  ],
+                ],
               ),
             ),
-          );
-        },
-      );
+          ],
+        ),
+      ),
+    );
+  }
+}
 
-      final authProvider = context.read<AuthProvider>();
-      await authProvider.logout();
+class _DashboardStatsGrid extends StatelessWidget {
+  final DashboardInformation info;
 
-      final userProvider = context.read<UserProvider>();
-      userProvider.clearUser();
+  const _DashboardStatsGrid({required this.info});
 
-      if (context.mounted) {
-        Navigator.of(context).pop();
-      }
+  @override
+  Widget build(BuildContext context) {
+    final cards = [
+      _StatCard(
+        title: 'Pending',
+        value: info.pendingShipments.toString(),
+        icon: Icons.schedule,
+        color: const Color(0xFFB26A00),
+      ),
+      _StatCard(
+        title: 'Completed',
+        value: info.completedShipments.toString(),
+        icon: Icons.verified_outlined,
+        color: const Color(0xFF16794C),
+      ),
+      _StatCard(
+        title: 'Fragile',
+        value: info.fragileShipments.toString(),
+        icon: Icons.inventory_2_outlined,
+        color: const Color(0xFF8B3A8F),
+      ),
+      _StatCard(
+        title: 'Standard',
+        value: info.nonFragileShipments.toString(),
+        icon: Icons.local_shipping_outlined,
+        color: const Color(0xFF1E5AA8),
+      ),
+    ];
 
-      if (context.mounted) {
-        Navigator.of(context).pushNamedAndRemoveUntil(
-          RouteConstants.login,
-          (route) => false,
+    return LayoutBuilder(
+      builder: (context, constraints) {
+        final columns = constraints.maxWidth >= 700 ? 4 : 2;
+        return GridView.count(
+          crossAxisCount: columns,
+          crossAxisSpacing: 12,
+          mainAxisSpacing: 12,
+          shrinkWrap: true,
+          physics: const NeverScrollableScrollPhysics(),
+          childAspectRatio: columns == 4 ? 1.35 : 1.2,
+          children: cards,
         );
-      }
-    } catch (e) {
-      if (context.mounted) {
-        Navigator.of(context).pop();
-      }
+      },
+    );
+  }
+}
 
-      if (context.mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(
-            content: Text('Logout failed: ${e.toString()}'),
-            backgroundColor: Colors.red,
-            action: SnackBarAction(
-              label: 'Retry',
-              textColor: Colors.white,
-              onPressed: () => _performLogout(context),
+class _StatCard extends StatelessWidget {
+  final String title;
+  final String value;
+  final IconData icon;
+  final Color color;
+
+  const _StatCard({
+    required this.title,
+    required this.value,
+    required this.icon,
+    required this.color,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    return Card(
+      elevation: 1,
+      child: Padding(
+        padding: const EdgeInsets.all(14),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          mainAxisAlignment: MainAxisAlignment.spaceBetween,
+          children: [
+            CircleAvatar(
+              backgroundColor: color.withValues(alpha: 0.12),
+              child: Icon(icon, color: color),
+            ),
+            Text(
+              value,
+              style: Theme.of(context).textTheme.headlineSmall?.copyWith(
+                color: color,
+                fontWeight: FontWeight.w900,
+              ),
+            ),
+            Text(
+              title,
+              style: Theme.of(
+                context,
+              ).textTheme.bodyMedium?.copyWith(fontWeight: FontWeight.w700),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+}
+
+class _QuickActions extends StatelessWidget {
+  final VoidCallback onCreateShipment;
+  final VoidCallback onViewShipments;
+
+  const _QuickActions({
+    required this.onCreateShipment,
+    required this.onViewShipments,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    return Row(
+      children: [
+        Expanded(
+          child: _ActionTile(
+            title: 'Create Shipment',
+            subtitle: 'Open a new load',
+            icon: Icons.add_box_outlined,
+            onTap: onCreateShipment,
+          ),
+        ),
+        const SizedBox(width: 12),
+        Expanded(
+          child: _ActionTile(
+            title: 'My Shipments',
+            subtitle: 'Track active work',
+            icon: Icons.list_alt_outlined,
+            onTap: onViewShipments,
+          ),
+        ),
+      ],
+    );
+  }
+}
+
+class _ActionTile extends StatelessWidget {
+  final String title;
+  final String subtitle;
+  final IconData icon;
+  final VoidCallback onTap;
+
+  const _ActionTile({
+    required this.title,
+    required this.subtitle,
+    required this.icon,
+    required this.onTap,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    return Card(
+      child: InkWell(
+        borderRadius: BorderRadius.circular(12),
+        onTap: onTap,
+        child: Padding(
+          padding: const EdgeInsets.all(16),
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Icon(icon, color: Theme.of(context).colorScheme.primary),
+              const SizedBox(height: 14),
+              Text(title, style: const TextStyle(fontWeight: FontWeight.w800)),
+              const SizedBox(height: 4),
+              Text(
+                subtitle,
+                style: TextStyle(color: Colors.grey.shade700, fontSize: 13),
+              ),
+            ],
+          ),
+        ),
+      ),
+    );
+  }
+}
+
+class _RecentShipments extends StatelessWidget {
+  final List<Shipment> shipments;
+
+  const _RecentShipments({required this.shipments});
+
+  @override
+  Widget build(BuildContext context) {
+    if (shipments.isEmpty) {
+      return Card(
+        child: Padding(
+          padding: const EdgeInsets.all(18),
+          child: Row(
+            children: [
+              Icon(Icons.inbox_outlined, color: Colors.grey.shade600),
+              const SizedBox(width: 12),
+              const Expanded(
+                child: Text(
+                  'No shipments yet. Create your first shipment to start tracking operations.',
+                ),
+              ),
+            ],
+          ),
+        ),
+      );
+    }
+
+    return Card(
+      child: Column(
+        children: shipments.map((shipment) {
+          final title = shipment.shipmentItem?.trim().isNotEmpty == true
+              ? shipment.shipmentItem!
+              : shipment.trackingNumber ??
+                    'Shipment ${shipment.id ?? ''}'.trim();
+          final lane = [
+            shipment.origin ?? shipment.pickupLocation.address,
+            shipment.destination ?? shipment.destinationLocation.address,
+          ].where((part) => part.trim().isNotEmpty).join(' to ');
+
+          return ListTile(
+            leading: CircleAvatar(
+              backgroundColor: Theme.of(
+                context,
+              ).colorScheme.primary.withValues(alpha: 0.12),
+              child: const Icon(Icons.local_shipping_outlined),
+            ),
+            title: Text(title),
+            subtitle: Text(lane.isEmpty ? shipment.status.name : lane),
+            trailing: Text(
+              shipment.status.name,
+              style: const TextStyle(fontWeight: FontWeight.w700),
+            ),
+            onTap: shipment.id == null
+                ? null
+                : () => Navigator.pushNamed(
+                    context,
+                    RouteConstants.shipmentDetails,
+                    arguments: shipment.id,
+                  ),
+          );
+        }).toList(),
+      ),
+    );
+  }
+}
+
+class _SectionTitle extends StatelessWidget {
+  final String title;
+  final String? actionLabel;
+
+  const _SectionTitle({required this.title, this.actionLabel});
+
+  @override
+  Widget build(BuildContext context) {
+    return Row(
+      children: [
+        Expanded(
+          child: Text(
+            title,
+            style: Theme.of(
+              context,
+            ).textTheme.titleMedium?.copyWith(fontWeight: FontWeight.w900),
+          ),
+        ),
+        if (actionLabel != null)
+          Text(
+            actionLabel!,
+            style: TextStyle(
+              color: Colors.grey.shade700,
+              fontWeight: FontWeight.w600,
             ),
           ),
-        );
-      }
-    }
+      ],
+    );
   }
 }

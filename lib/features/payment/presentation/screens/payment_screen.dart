@@ -26,7 +26,7 @@ class PaymentScreen extends StatefulWidget {
 }
 
 class _PaymentScreenState extends State<PaymentScreen> {
-  PaymentMethod _selectedMethod = PaymentMethod.creditCard;
+  PaymentMethod _selectedMethod = PaymentMethod.bankTransfer;
 
   @override
   Widget build(BuildContext context) {

@@ -21,9 +21,13 @@ class PaymentRepositoryImpl implements PaymentRepository {
     required PaymentRequest request,
   }) async {
     try {
-      print('🔷 PaymentRepository: Initiating payment for shipment $shipmentId');
+      print(
+        '🔷 PaymentRepository: Initiating payment for shipment $shipmentId',
+      );
       print('🔷 PaymentRepository: Amount: ${request.formattedAmount}');
-      print('🔷 PaymentRepository: Method: ${request.paymentMethod.displayName}');
+      print(
+        '🔷 PaymentRepository: Method: ${request.paymentMethod.displayName}',
+      );
 
       final requestModel = PaymentRequestModel.fromEntity(request);
       final resultModel = await _apiService.initiatePayment(
@@ -35,7 +39,9 @@ class PaymentRepositoryImpl implements PaymentRepository {
 
       print('🔷 PaymentRepository: Payment initiated successfully');
       print('🔷 PaymentRepository: Payment ID: ${paymentRecord.id}');
-      print('🔷 PaymentRepository: Status: ${paymentRecord.paymentStatus.displayName}');
+      print(
+        '🔷 PaymentRepository: Status: ${paymentRecord.paymentStatus.displayName}',
+      );
 
       return Right(paymentRecord);
     } on Exception catch (e) {
@@ -58,9 +64,13 @@ class PaymentRepositoryImpl implements PaymentRepository {
     required String transactionId,
   }) async {
     try {
-      print('🔷 PaymentRepository: Confirming payment for shipment $shipmentId');
+      print(
+        '🔷 PaymentRepository: Confirming payment for shipment $shipmentId',
+      );
       print('🔷 PaymentRepository: Transaction ID: $transactionId');
-      print('🔷 PaymentRepository: Note - Backend confirm-payment endpoint does not require request body');
+      print(
+        '🔷 PaymentRepository: Note - Backend confirm-payment endpoint does not require request body',
+      );
 
       final resultModel = await _apiService.confirmPayment(
         shipmentId: shipmentId,
@@ -70,7 +80,9 @@ class PaymentRepositoryImpl implements PaymentRepository {
 
       print('🔷 PaymentRepository: Payment confirmed successfully');
       print('🔷 PaymentRepository: Payment ID: ${paymentRecord.id}');
-      print('🔷 PaymentRepository: Status: ${paymentRecord.paymentStatus.displayName}');
+      print(
+        '🔷 PaymentRepository: Status: ${paymentRecord.paymentStatus.displayName}',
+      );
 
       return Right(paymentRecord);
     } on Exception catch (e) {
@@ -95,7 +107,11 @@ class PaymentRepositoryImpl implements PaymentRepository {
     // Payment record should be retrieved from shipment details
     print('🔷 PaymentRepository: getPaymentRecord not implemented');
     print('🔷 PaymentRepository: Use shipment.paymentRecord instead');
-    return Left(ServerFailure('Endpoint not available. Get payment record from shipment details.'));
+    return Left(
+      ServerFailure(
+        'Endpoint not available. Get payment record from shipment details.',
+      ),
+    );
   }
 
   @override
@@ -103,7 +119,13 @@ class PaymentRepositoryImpl implements PaymentRepository {
     // This endpoint doesn't exist in the actual backend API
     // Payment history should be retrieved from user's shipments
     print('🔷 PaymentRepository: getPaymentHistory not implemented');
-    print('🔷 PaymentRepository: Use shipments list with payment records instead');
-    return Left(ServerFailure('Endpoint not available. Get payment history from shipments list.'));
+    print(
+      '🔷 PaymentRepository: Use shipments list with payment records instead',
+    );
+    return Left(
+      ServerFailure(
+        'Endpoint not available. Get payment history from shipments list.',
+      ),
+    );
   }
 }

@@ -1,26 +1,36 @@
 import 'package:flutter/material.dart';
 import '../../domain/entities/location.dart';
+import '../../domain/entities/dashboard_information.dart';
 import '../../domain/entities/shipment.dart';
 import '../../domain/enums/safety_option.dart';
 import '../../domain/enums/shipment_status.dart';
 import '../../domain/enums/shipment_type.dart';
 import '../../domain/enums/weight_unit.dart';
 import '../../domain/repositories/shipment_repository.dart';
+import '../../domain/usecases/get_dashboard_information.dart';
 
 class ShipmentProvider extends ChangeNotifier {
   final ShipmentRepository repository;
+  final GetDashboardInformation getDashboardInformationUseCase;
 
-  ShipmentProvider({required this.repository});
+  ShipmentProvider({
+    required this.repository,
+    required this.getDashboardInformationUseCase,
+  });
 
   bool _isLoading = false;
   String? _errorMessage;
   List<Shipment> _shipments = [];
   Shipment? _activeShipment;
+  DashboardInformation _dashboardInformation = DashboardInformation.empty;
+  bool _isDashboardLoading = false;
 
   bool get isLoading => _isLoading;
   String? get errorMessage => _errorMessage;
   List<Shipment> get shipments => _shipments;
   Shipment? get activeShipment => _activeShipment;
+  DashboardInformation get dashboardInformation => _dashboardInformation;
+  bool get isDashboardLoading => _isDashboardLoading;
 
   Future<void> createShipment({
     required String shipperName,
@@ -46,12 +56,13 @@ class ShipmentProvider extends ChangeNotifier {
         destinationLocation: Location(address: destination),
         pickupDate: pickupDate,
         safetyOption: safetyOption,
-        status: ShipmentStatus.pending, // Backend will manage status transitions based on events
+        status: ShipmentStatus
+            .pending, // Backend will manage status transitions based on events
         description: description,
       );
 
       final createdShipment = await repository.createShipment(shipment);
-      
+
       // Add to local list
       _shipments.add(createdShipment);
       notifyListeners();
@@ -70,10 +81,12 @@ class ShipmentProvider extends ChangeNotifier {
     try {
       // Get shipments from backend
       _shipments = await repository.listShipments(page: 0, size: 50);
-      
+
       // Filter to only show pending shipments (available for bidding)
-      _shipments = _shipments.where((s) => s.status == ShipmentStatus.pending).toList();
-      
+      _shipments = _shipments
+          .where((s) => s.status == ShipmentStatus.pending)
+          .toList();
+
       notifyListeners();
     } catch (e) {
       _setError('Failed to load shipments: ${e.toString()}');
@@ -81,6 +94,24 @@ class ShipmentProvider extends ChangeNotifier {
       notifyListeners();
     } finally {
       _setLoading(false);
+    }
+  }
+
+  Future<void> getDashboardInformation() async {
+    _isDashboardLoading = true;
+    _clearError();
+    notifyListeners();
+
+    try {
+      _dashboardInformation = await getDashboardInformationUseCase();
+      notifyListeners();
+    } catch (e) {
+      _setError('Failed to load dashboard information: ${e.toString()}');
+      _dashboardInformation = DashboardInformation.empty;
+      notifyListeners();
+    } finally {
+      _isDashboardLoading = false;
+      notifyListeners();
     }
   }
 
@@ -182,7 +213,10 @@ class ShipmentProvider extends ChangeNotifier {
   }
 
   // Update shipment status (carrier action)
-  Future<void> updateShipmentStatus(int shipmentId, ShipmentStatus newStatus) async {
+  Future<void> updateShipmentStatus(
+    int shipmentId,
+    ShipmentStatus newStatus,
+  ) async {
     _setLoading(true);
     _clearError();
 
@@ -190,7 +224,8 @@ class ShipmentProvider extends ChangeNotifier {
       final updatedShipment = await repository.updateShipmentStatus(
         shipmentId: shipmentId,
         status: newStatus,
-        location: _activeShipment?.destination.shortLabel ?? 'Unknown',
+        location:
+            _activeShipment?.destinationAsLocation.shortLabel ?? 'Unknown',
       );
       final index = _shipments.indexWhere((s) => s.id == shipmentId);
       if (index != -1) {
@@ -218,7 +253,7 @@ class ShipmentProvider extends ChangeNotifier {
     try {
       // Get all shipments from backend (already filtered by user)
       _shipments = await repository.listShipments(page: 0, size: 50);
-      
+
       notifyListeners();
     } catch (e) {
       _setError('Failed to load shipments: ${e.toString()}');

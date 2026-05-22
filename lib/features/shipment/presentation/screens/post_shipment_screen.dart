@@ -6,7 +6,7 @@ import '../../domain/enums/shipment_type.dart';
 import '../../domain/enums/weight_unit.dart';
 import '../../domain/enums/safety_option.dart';
 import '../providers/shipment_provider.dart';
-import '../../../user/presentation/providers/user_provider.dart';
+import '../../../shipper/presentation/providers/shipper_company_provider.dart';
 
 class PostShipmentScreen extends StatefulWidget {
   const PostShipmentScreen({super.key});
@@ -21,7 +21,7 @@ class _PostShipmentScreenState extends State<PostShipmentScreen> {
   final _destinationController = TextEditingController();
   final _descriptionController = TextEditingController();
   final _weightController = TextEditingController();
-  
+
   DateTime? _selectedDeliveryDate;
   bool _isFragile = false;
   ShipmentType _selectedType = ShipmentType.dryGoods;
@@ -42,7 +42,7 @@ class _PostShipmentScreenState extends State<PostShipmentScreen> {
       firstDate: DateTime.now(),
       lastDate: DateTime.now().add(const Duration(days: 365)),
     );
-    
+
     if (picked != null) {
       setState(() {
         _selectedDeliveryDate = picked;
@@ -66,11 +66,17 @@ class _PostShipmentScreenState extends State<PostShipmentScreen> {
     }
 
     final provider = context.read<ShipmentProvider>();
-    final user = context.read<UserProvider>().currentUser;
+    final shipperCompany = context.read<ShipperCompanyProvider>().state.company;
+    if (shipperCompany == null) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('Complete your shipper profile first.')),
+      );
+      return;
+    }
 
     try {
       await provider.createShipment(
-        shipperName: user?.profile.name ?? 'Current User',
+        shipperName: shipperCompany.companyName,
         shipmentType: _selectedType,
         amount: double.parse(_weightController.text.trim()),
         unit: WeightUnit.kg,
@@ -85,7 +91,9 @@ class _PostShipmentScreenState extends State<PostShipmentScreen> {
 
       ScaffoldMessenger.of(context).showSnackBar(
         const SnackBar(
-          content: Text('Shipment posted successfully! Carriers can now submit bids.'),
+          content: Text(
+            'Shipment posted successfully! Carriers can now submit bids.',
+          ),
           backgroundColor: Colors.green,
           duration: Duration(seconds: 4),
         ),
@@ -109,10 +117,7 @@ class _PostShipmentScreenState extends State<PostShipmentScreen> {
     final provider = context.watch<ShipmentProvider>();
 
     return Scaffold(
-      appBar: AppBar(
-        title: const Text('Post New Shipment'),
-        elevation: 0,
-      ),
+      appBar: AppBar(title: const Text('Post New Shipment'), elevation: 0),
       body: SingleChildScrollView(
         padding: const EdgeInsets.all(16),
         child: Form(
@@ -230,7 +235,9 @@ class _PostShipmentScreenState extends State<PostShipmentScreen> {
               // Fragile Checkbox
               CheckboxListTile(
                 title: const Text('Fragile'),
-                subtitle: const Text('Check if shipment requires special handling'),
+                subtitle: const Text(
+                  'Check if shipment requires special handling',
+                ),
                 value: _isFragile,
                 onChanged: (value) {
                   setState(() {
@@ -304,7 +311,9 @@ class _PostShipmentScreenState extends State<PostShipmentScreen> {
                           height: 24,
                           child: CircularProgressIndicator(
                             strokeWidth: 2,
-                            valueColor: AlwaysStoppedAnimation<Color>(Colors.white),
+                            valueColor: AlwaysStoppedAnimation<Color>(
+                              Colors.white,
+                            ),
                           ),
                         )
                       : const Text(

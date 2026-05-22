@@ -11,7 +11,7 @@ export 'repositories/shipment_repository_impl.dart';
 // Models
 export 'models/create_shipment_request.dart';
 export 'models/shipment_response_model.dart';
+export 'models/dashboard_information_model.dart';
 
 // Mappers
 export 'mappers/shipment_backend_mapper.dart';
-

@@ -2,6 +2,7 @@
 
 import '../../../../core/network/api_client.dart';
 import '../../../../core/utils/constants/api_constants.dart';
+import '../../../shipment_offer/data/models/shipment_offer_model.dart';
 import '../models/create_shipment_request.dart';
 import '../models/shipment_response_model.dart';
 
@@ -15,11 +16,11 @@ class ShipmentApiServiceReal {
   Future<ShipmentResponseModel> createShipment(
     CreateShipmentRequest request,
   ) async {
-    final response = await _apiClient.post<Map<String, dynamic>>(
+    final response = await _apiClient.post<dynamic>(
       '${ApiConstants.apiPrefix}${ShipmentEndpoints.create}',
       data: request.toJson(),
     );
-    return ShipmentResponseModel.fromJson(_requireData(response));
+    return ShipmentResponseModel.fromJson(_requireMap(response));
   }
 
   /// Get list of shipments with pagination
@@ -28,12 +29,9 @@ class ShipmentApiServiceReal {
     int page = 0,
     int size = 20,
   }) async {
-    final response = await _apiClient.get<List<dynamic>>(
+    final response = await _apiClient.get<dynamic>(
       '${ApiConstants.apiPrefix}${ShipmentEndpoints.list}',
-      queryParameters: {
-        'page': page,
-        'size': size,
-      },
+      queryParameters: {'page': page, 'size': size},
     );
     return _parseShipmentList(response);
   }
@@ -46,10 +44,10 @@ class ShipmentApiServiceReal {
       shipmentId.toString(),
     );
 
-    final response = await _apiClient.get<Map<String, dynamic>>(
+    final response = await _apiClient.get<dynamic>(
       '${ApiConstants.apiPrefix}$endpoint',
     );
-    return ShipmentResponseModel.fromJson(_requireData(response));
+    return ShipmentResponseModel.fromJson(_requireMap(response));
   }
 
   /// Get shipment by tracking number
@@ -62,10 +60,10 @@ class ShipmentApiServiceReal {
       trackingNumber,
     );
 
-    final response = await _apiClient.get<Map<String, dynamic>>(
+    final response = await _apiClient.get<dynamic>(
       '${ApiConstants.apiPrefix}$endpoint',
     );
-    return ShipmentResponseModel.fromJson(_requireData(response));
+    return ShipmentResponseModel.fromJson(_requireMap(response));
   }
 
   /// Delete shipment
@@ -103,12 +101,9 @@ class ShipmentApiServiceReal {
       Uri.encodeComponent(origin),
     );
 
-    final response = await _apiClient.get<List<dynamic>>(
+    final response = await _apiClient.get<dynamic>(
       '${ApiConstants.apiPrefix}$endpoint',
-      queryParameters: {
-        'page': page,
-        'size': size,
-      },
+      queryParameters: {'page': page, 'size': size},
     );
     return _parseShipmentList(response);
   }
@@ -125,12 +120,9 @@ class ShipmentApiServiceReal {
       Uri.encodeComponent(destination),
     );
 
-    final response = await _apiClient.get<List<dynamic>>(
+    final response = await _apiClient.get<dynamic>(
       '${ApiConstants.apiPrefix}$endpoint',
-      queryParameters: {
-        'page': page,
-        'size': size,
-      },
+      queryParameters: {'page': page, 'size': size},
     );
     return _parseShipmentList(response);
   }
@@ -142,13 +134,9 @@ class ShipmentApiServiceReal {
     int page = 0,
     int size = 20,
   }) async {
-    final response = await _apiClient.get<List<dynamic>>(
+    final response = await _apiClient.get<dynamic>(
       '${ApiConstants.apiPrefix}${ShipmentEndpoints.listByFragile}',
-      queryParameters: {
-        'fragile': fragile,
-        'page': page,
-        'size': size,
-      },
+      queryParameters: {'fragile': fragile, 'page': page, 'size': size},
     );
     return _parseShipmentList(response);
   }
@@ -203,14 +191,24 @@ class ShipmentApiServiceReal {
       '{shipmentId}',
       shipmentId.toString(),
     );
-    final response = await _apiClient.patch<Map<String, dynamic>>(
+    final response = await _apiClient.patch<dynamic>(
       '${ApiConstants.apiPrefix}$endpoint',
-      data: {
-        'location': location,
-        'status': status,
-      },
+      data: {'location': location, 'status': status},
     );
-    return ShipmentResponseModel.fromJson(_requireData(response));
+    return ShipmentResponseModel.fromJson(_requireMap(response));
+  }
+
+  Future<List<ShipmentOfferModel>> getShipmentOffers(int shipmentId) async {
+    final endpoint = ShipmentEndpoints.getOffers.replaceAll(
+      '{shipmentId}',
+      shipmentId.toString(),
+    );
+    final response = await _apiClient.get<dynamic>(
+      '${ApiConstants.apiPrefix}$endpoint',
+    );
+    return _requireList(
+      response,
+    ).map((json) => ShipmentOfferModel.fromJson(_asMap(json))).toList();
   }
 
   Future<List<Map<String, dynamic>>> getShipmentEvents(int shipmentId) async {
@@ -218,20 +216,39 @@ class ShipmentApiServiceReal {
       '{shipmentId}',
       shipmentId.toString(),
     );
-    final response = await _apiClient.get<List<dynamic>>(
+    final response = await _apiClient.get<dynamic>(
       '${ApiConstants.apiPrefix}$endpoint',
     );
-    final data = _requireData(response);
-    return data.cast<Map<String, dynamic>>();
+    return _requireList(response).map(_asMap).toList();
   }
 
   List<ShipmentResponseModel> _parseShipmentList(
-    ApiResponse<List<dynamic>> response,
+    ApiResponse<dynamic> response,
   ) {
+    return _requireList(
+      response,
+    ).map((json) => ShipmentResponseModel.fromJson(_asMap(json))).toList();
+  }
+
+  Map<String, dynamic> _requireMap(ApiResponse<dynamic> response) {
     final data = _requireData(response);
-    return data
-        .map((json) => ShipmentResponseModel.fromJson(json as Map<String, dynamic>))
-        .toList();
+    return _asMap(data);
+  }
+
+  List<dynamic> _requireList(ApiResponse<dynamic> response) {
+    final data = _requireData(response);
+    if (data is List) return data;
+    if (data is Map) {
+      final nested = data['data'] ?? data['result'] ?? data['content'];
+      if (nested is List) return nested;
+    }
+    throw Exception('Backend returned an invalid list response');
+  }
+
+  Map<String, dynamic> _asMap(dynamic data) {
+    if (data is Map<String, dynamic>) return data;
+    if (data is Map) return Map<String, dynamic>.from(data);
+    throw Exception('Backend returned an invalid object response');
   }
 
   T _requireData<T>(ApiResponse<T> response) {
@@ -245,7 +262,9 @@ class ShipmentApiServiceReal {
 
   void _ensureSuccess(ApiResponse<dynamic> response) {
     if (!response.isSuccess) {
-      throw Exception(response.message ?? 'Request failed (${response.statusCode})');
+      throw Exception(
+        response.message ?? 'Request failed (${response.statusCode})',
+      );
     }
   }
 }

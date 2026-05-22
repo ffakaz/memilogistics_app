@@ -11,12 +11,21 @@ import '../providers/carrier_company_provider.dart';
 import '../widgets/carrier_company_form.dart';
 
 class CreateCarrierCompanyPage extends StatelessWidget {
-  const CreateCarrierCompanyPage({super.key});
+  final bool showAppBar;
+  final bool isMandatory;
+
+  const CreateCarrierCompanyPage({
+    super.key,
+    this.showAppBar = true,
+    this.isMandatory = false,
+  });
 
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      appBar: AppBar(title: const Text('Create Carrier Company')),
+      appBar: showAppBar
+          ? AppBar(title: const Text('Create Carrier Profile'))
+          : null,
       body: Consumer<CarrierCompanyProvider>(
         builder: (context, provider, _) {
           final state = provider.state;
@@ -25,6 +34,23 @@ class CreateCarrierCompanyPage extends StatelessWidget {
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
+                if (isMandatory) ...[
+                  const SizedBox(height: 24),
+                  Text(
+                    'Complete your carrier profile',
+                    style: Theme.of(context).textTheme.headlineSmall?.copyWith(
+                      fontWeight: FontWeight.w800,
+                    ),
+                  ),
+                  const SizedBox(height: 8),
+                  Text(
+                    'Your company profile is required before accessing carrier dashboard tools.',
+                    style: Theme.of(context).textTheme.bodyMedium?.copyWith(
+                      color: Colors.grey.shade700,
+                    ),
+                  ),
+                  const SizedBox(height: 24),
+                ],
                 if (state.error != null)
                   Container(
                     width: double.infinity,
@@ -42,6 +68,9 @@ class CreateCarrierCompanyPage extends StatelessWidget {
 
                 CarrierCompanyForm(
                   isLoading: state.isLoading,
+                  submitLabel: isMandatory
+                      ? 'Complete Profile'
+                      : 'Create Profile',
                   onSubmit:
                       ({
                         required companyName,
@@ -54,7 +83,7 @@ class CreateCarrierCompanyPage extends StatelessWidget {
                         required postalCode,
                       }) async {
                         final company = CarrierCompany(
-                          managerUserId: '',
+                          id: 0,
                           companyName: companyName,
                           companyEmail: companyEmail,
                           address: Address(
@@ -80,7 +109,10 @@ class CreateCarrierCompanyPage extends StatelessWidget {
                               ),
                             ),
                           );
-                          Navigator.pop(context);
+
+                          if (showAppBar) {
+                            Navigator.pop(context);
+                          }
                         }
                       },
                 ),

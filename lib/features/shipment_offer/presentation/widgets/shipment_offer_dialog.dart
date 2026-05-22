@@ -102,13 +102,13 @@ class _ShipmentOfferDialogState extends State<ShipmentOfferDialog> {
                       _buildInfoRow(
                         Icons.location_on,
                         'From',
-                        widget.shipment.origin.shortLabel,
+                        widget.shipment.originAsLocation.shortLabel,
                       ),
                       const SizedBox(height: 8),
                       _buildInfoRow(
                         Icons.flag,
                         'To',
-                        widget.shipment.destination.shortLabel,
+                        widget.shipment.destinationAsLocation.shortLabel,
                       ),
                       const SizedBox(height: 8),
                       _buildInfoRow(

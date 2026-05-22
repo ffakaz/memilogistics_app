@@ -6,11 +6,7 @@ class UpdateCarrierCompany {
 
   UpdateCarrierCompany(this.repository);
 
-  Future<CarrierCompany> call(
-    CarrierCompany company,
-  ) async {
-    return await repository.updateCarrierCompany(
-      company,
-    );
+  Future<CarrierCompany> call(CarrierCompany company) async {
+    return await repository.updateCarrierCompany(company);
   }
 }

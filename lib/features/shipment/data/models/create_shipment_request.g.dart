@@ -16,7 +16,7 @@ CreateShipmentRequest _$CreateShipmentRequestFromJson(
     json['deliveryDate'] as String,
   ),
   fragile: json['fragile'] as bool,
-  shipmentItem: json['shipmentItem'] as String?,
+  shipmentItem: json['shipmentItem'] as String,
   description: json['description'] as String?,
 );
 

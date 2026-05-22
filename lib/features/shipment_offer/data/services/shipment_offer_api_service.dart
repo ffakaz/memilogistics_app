@@ -1,6 +1,5 @@
 // lib/features/shipment_offer/data/services/shipment_offer_api_service.dart
 
-import 'package:dio/dio.dart';
 import 'package:memilogistics_app/core/network/api_client.dart';
 import 'package:memilogistics_app/core/utils/constants/api_constants.dart';
 import '../models/shipment_offer_model.dart';
@@ -15,22 +14,23 @@ class ShipmentOfferApiService {
   /// Get carrier's offers
   /// GET /api/shipment-offers/my-offers
   Future<List<ShipmentOfferModel>> getMyOffers() async {
-    try {
-      final endpoint = '${ApiConstants.apiPrefix}/shipment-offers/my-offers';
-      final response = await _apiClient.get(endpoint);
-      
-      if (response.data is List) {
-        final List<dynamic> data = response.data;
-        return data.map((json) => ShipmentOfferModel.fromJson(json as Map<String, dynamic>)).toList();
-      }
-      
-      // If response is not a list, return empty
-      return [];
-    } on DioException catch (e) {
-      throw _handleError(e);
-    } catch (e) {
-      throw Exception('Failed to get offers: $e');
-    }
+    final response = await _apiClient.get<dynamic>(
+      '${ApiConstants.apiPrefix}${ShipmentOfferEndpoints.getMyOffers}',
+    );
+    return _parseOfferList(response);
+  }
+
+  /// Get offers submitted for a shipment.
+  /// GET /api/shipments/{shipmentId}/offers
+  Future<List<ShipmentOfferModel>> getShipmentOffers(int shipmentId) async {
+    final endpoint = ShipmentOfferEndpoints.getShipmentOffers.replaceAll(
+      '{shipmentId}',
+      shipmentId.toString(),
+    );
+    final response = await _apiClient.get<dynamic>(
+      '${ApiConstants.apiPrefix}$endpoint',
+    );
+    return _parseOfferList(response);
   }
 
   /// Create a shipment offer
@@ -39,28 +39,30 @@ class ShipmentOfferApiService {
     required int shipmentId,
     required double price,
   }) async {
-    try {
-      final endpoint = '${ApiConstants.apiPrefix}/shipments/$shipmentId/offer-shipment';
-      
-      await _apiClient.post(
-        endpoint,
-        queryParameters: {'price': price},
-      );
-    } on DioException catch (e) {
-      throw _handleError(e);
-    }
+    final endpoint = ShipmentOfferEndpoints.createOffer.replaceAll(
+      '{shipmentId}',
+      shipmentId.toString(),
+    );
+
+    final response = await _apiClient.post<dynamic>(
+      '${ApiConstants.apiPrefix}$endpoint',
+      queryParameters: {'price': price},
+    );
+    _ensureSuccess(response, 'Failed to create offer');
   }
 
   /// Cancel a shipment offer
   /// POST /api/shipments/{shipmentOfferId}/cancel-shipment-offer
   Future<void> cancelOffer(int shipmentOfferId) async {
-    try {
-      final endpoint = '${ApiConstants.apiPrefix}/shipments/$shipmentOfferId/cancel-shipment-offer';
-      
-      await _apiClient.post(endpoint);
-    } on DioException catch (e) {
-      throw _handleError(e);
-    }
+    final endpoint = ShipmentOfferEndpoints.cancelOffer.replaceAll(
+      '{shipmentOfferId}',
+      shipmentOfferId.toString(),
+    );
+
+    final response = await _apiClient.post<dynamic>(
+      '${ApiConstants.apiPrefix}$endpoint',
+    );
+    _ensureSuccess(response, 'Failed to cancel offer');
   }
 
   /// Assign carrier to shipment (accept offer)
@@ -69,50 +71,43 @@ class ShipmentOfferApiService {
     required int shipmentId,
     required int carrierId,
   }) async {
-    try {
-      final endpoint = '${ApiConstants.apiPrefix}/shipments/$shipmentId/assign-carrier';
-      
-      await _apiClient.post(
-        endpoint,
-        queryParameters: {'carrierId': carrierId},
-      );
-    } on DioException catch (e) {
-      throw _handleError(e);
-    }
+    final endpoint = ShipmentOfferEndpoints.assignCarrier.replaceAll(
+      '{shipmentId}',
+      shipmentId.toString(),
+    );
+
+    final response = await _apiClient.post<dynamic>(
+      '${ApiConstants.apiPrefix}$endpoint',
+      queryParameters: {'carrierId': carrierId},
+    );
+    _ensureSuccess(response, 'Failed to assign carrier');
   }
 
-  Exception _handleError(DioException error) {
-    if (error.response != null) {
-      final statusCode = error.response!.statusCode;
-      final message = error.response!.data?['message'] ?? 'Unknown error';
-
-      switch (statusCode) {
-        case 400:
-          return Exception('Bad Request: $message');
-        case 401:
-          return Exception('Unauthorized: $message');
-        case 403:
-          return Exception('Forbidden: $message');
-        case 404:
-          return Exception('Not Found: $message');
-        case 409:
-          return Exception('Conflict: $message');
-        case 500:
-          return Exception('Server Error: $message');
-        default:
-          return Exception('Error $statusCode: $message');
-      }
+  List<ShipmentOfferModel> _parseOfferList(ApiResponse<dynamic> response) {
+    _ensureSuccess(response, 'Failed to get offers');
+    final data = response.data;
+    final list = data is List
+        ? data
+        : data is Map
+        ? data['data'] ?? data['result'] ?? data['content']
+        : null;
+    if (list is! List) {
+      throw Exception('Backend returned an invalid offers response');
     }
+    return list
+        .map((json) => ShipmentOfferModel.fromJson(_asMap(json)))
+        .toList();
+  }
 
-    if (error.type == DioExceptionType.connectionTimeout ||
-        error.type == DioExceptionType.receiveTimeout) {
-      return Exception('Connection timeout. Please check your internet connection.');
+  Map<String, dynamic> _asMap(dynamic value) {
+    if (value is Map<String, dynamic>) return value;
+    if (value is Map) return Map<String, dynamic>.from(value);
+    throw Exception('Backend returned an invalid offer object');
+  }
+
+  void _ensureSuccess(ApiResponse<dynamic> response, String fallbackMessage) {
+    if (!response.isSuccess) {
+      throw Exception(response.message ?? fallbackMessage);
     }
-
-    if (error.type == DioExceptionType.connectionError) {
-      return Exception('No internet connection. Please check your network.');
-    }
-
-    return Exception('Network error: ${error.message}');
   }
 }

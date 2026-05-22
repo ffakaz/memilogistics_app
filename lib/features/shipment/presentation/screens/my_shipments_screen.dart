@@ -21,7 +21,7 @@ class _MyShipmentsScreenState extends State<MyShipmentsScreen>
   void initState() {
     super.initState();
     _tabController = TabController(length: 4, vsync: this);
-    
+
     // Load shipments when screen opens
     WidgetsBinding.instance.addPostFrameCallback((_) {
       context.read<ShipmentProvider>().getMyShipments();
@@ -133,8 +133,16 @@ class _MyShipmentsScreenState extends State<MyShipmentsScreen>
             children: [
               _buildShipmentList(shipments),
               _buildShipmentList(_filterByStatus(shipments, ['pending'])),
-              _buildShipmentList(_filterByStatus(shipments, ['assigned', 'pickedUp', 'inTransit'])),
-              _buildShipmentList(_filterByStatus(shipments, ['delivered', 'completed'])),
+              _buildShipmentList(
+                _filterByStatus(shipments, [
+                  'assigned',
+                  'pickedUp',
+                  'inTransit',
+                ]),
+              ),
+              _buildShipmentList(
+                _filterByStatus(shipments, ['delivered', 'completed']),
+              ),
             ],
           );
         },
@@ -149,10 +157,15 @@ class _MyShipmentsScreenState extends State<MyShipmentsScreen>
     );
   }
 
-  List<Shipment> _filterByStatus(List<Shipment> shipments, List<String> statuses) {
+  List<Shipment> _filterByStatus(
+    List<Shipment> shipments,
+    List<String> statuses,
+  ) {
     return shipments.where((s) {
       final statusName = s.status.name.toLowerCase();
-      return statuses.any((status) => statusName.contains(status.toLowerCase()));
+      return statuses.any(
+        (status) => statusName.contains(status.toLowerCase()),
+      );
     }).toList();
   }
 
@@ -274,7 +287,11 @@ class _MyShipmentsScreenState extends State<MyShipmentsScreen>
                         children: [
                           Row(
                             children: [
-                              Icon(Icons.trip_origin, size: 16, color: Colors.blue[700]),
+                              Icon(
+                                Icons.trip_origin,
+                                size: 16,
+                                color: Colors.blue[700],
+                              ),
                               const SizedBox(width: 8),
                               Expanded(
                                 child: Text(
@@ -292,7 +309,11 @@ class _MyShipmentsScreenState extends State<MyShipmentsScreen>
                           const SizedBox(height: 12),
                           Row(
                             children: [
-                              Icon(Icons.location_on, size: 16, color: Colors.red[700]),
+                              Icon(
+                                Icons.location_on,
+                                size: 16,
+                                color: Colors.red[700],
+                              ),
                               const SizedBox(width: 8),
                               Expanded(
                                 child: Text(
@@ -356,7 +377,11 @@ class _MyShipmentsScreenState extends State<MyShipmentsScreen>
                     ),
                     child: Row(
                       children: [
-                        Icon(Icons.local_offer, size: 16, color: Colors.orange[700]),
+                        Icon(
+                          Icons.local_offer,
+                          size: 16,
+                          color: Colors.orange[700],
+                        ),
                         const SizedBox(width: 8),
                         Text(
                           '${shipment.offerCount} offer${shipment.offerCount > 1 ? 's' : ''} received',
@@ -458,10 +483,7 @@ class _MyShipmentsScreenState extends State<MyShipmentsScreen>
   String _formatStatus(String status) {
     // Convert camelCase or snake_case to Title Case
     return status
-        .replaceAllMapped(
-          RegExp(r'([A-Z])'),
-          (match) => ' ${match.group(0)}',
-        )
+        .replaceAllMapped(RegExp(r'([A-Z])'), (match) => ' ${match.group(0)}')
         .replaceAll('_', ' ')
         .trim()
         .split(' ')
@@ -482,7 +504,7 @@ class _MyShipmentsScreenState extends State<MyShipmentsScreen>
       'Sep',
       'Oct',
       'Nov',
-      'Dec'
+      'Dec',
     ];
     return '${months[date.month - 1]} ${date.day}';
   }

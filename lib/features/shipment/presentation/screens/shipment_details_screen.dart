@@ -10,16 +10,14 @@ import '../../../../core/utils/constants/route_constants.dart';
 class ShipmentDetailsScreen extends StatefulWidget {
   final int shipmentId;
 
-  const ShipmentDetailsScreen({
-    super.key,
-    required this.shipmentId,
-  });
+  const ShipmentDetailsScreen({super.key, required this.shipmentId});
 
   @override
   State<ShipmentDetailsScreen> createState() => _ShipmentDetailsScreenState();
 }
 
-class _ShipmentDetailsScreenState extends State<ShipmentDetailsScreen> with SingleTickerProviderStateMixin {
+class _ShipmentDetailsScreenState extends State<ShipmentDetailsScreen>
+    with SingleTickerProviderStateMixin {
   late TabController _tabController;
   List<Map<String, dynamic>> _events = [];
   bool _loadingEvents = false;
@@ -40,8 +38,10 @@ class _ShipmentDetailsScreenState extends State<ShipmentDetailsScreen> with Sing
   Future<void> _loadShipmentEvents() async {
     setState(() => _loadingEvents = true);
     try {
-      final events = await context.read<ShipmentProvider>().getShipmentEvents(widget.shipmentId);
-      
+      final events = await context.read<ShipmentProvider>().getShipmentEvents(
+        widget.shipmentId,
+      );
+
       // Parse events from API response
       setState(() {
         _events = events.map((event) {
@@ -50,7 +50,7 @@ class _ShipmentDetailsScreenState extends State<ShipmentDetailsScreen> with Sing
             'description': event['description'] ?? 'Status updated',
             'shipmentStatus': event['shipmentStatus'] ?? 'PENDING',
             'location': event['location'] ?? 'Unknown',
-            'eventTimestamp': event['eventTimestamp'] != null 
+            'eventTimestamp': event['eventTimestamp'] != null
                 ? DateTime.parse(event['eventTimestamp'] as String)
                 : DateTime.now(),
           };
@@ -75,9 +75,7 @@ class _ShipmentDetailsScreenState extends State<ShipmentDetailsScreen> with Sing
           final shipment = provider.getShipmentById(widget.shipmentId);
 
           if (shipment == null) {
-            return const Center(
-              child: Text('Shipment not found'),
-            );
+            return const Center(child: Text('Shipment not found'));
           }
 
           return CustomScrollView(
@@ -219,19 +217,10 @@ class _ShipmentDetailsScreenState extends State<ShipmentDetailsScreen> with Sing
         ),
         labelColor: Colors.white,
         unselectedLabelColor: const Color(0xFF2C3E50),
-        labelStyle: const TextStyle(
-          fontWeight: FontWeight.w600,
-          fontSize: 15,
-        ),
+        labelStyle: const TextStyle(fontWeight: FontWeight.w600, fontSize: 15),
         tabs: const [
-          Tab(
-            icon: Icon(Icons.info_outline),
-            text: 'Details',
-          ),
-          Tab(
-            icon: Icon(Icons.timeline),
-            text: 'Events',
-          ),
+          Tab(icon: Icon(Icons.info_outline), text: 'Details'),
+          Tab(icon: Icon(Icons.timeline), text: 'Events'),
         ],
       ),
     );
@@ -308,7 +297,9 @@ class _ShipmentDetailsScreenState extends State<ShipmentDetailsScreen> with Sing
     final location = event['location'] as String;
 
     return Padding(
-      padding: EdgeInsets.only(bottom: isLast ? 80 : 0), // Space for FAB on last item
+      padding: EdgeInsets.only(
+        bottom: isLast ? 80 : 0,
+      ), // Space for FAB on last item
       child: Row(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
@@ -557,10 +548,7 @@ class _ShipmentDetailsScreenState extends State<ShipmentDetailsScreen> with Sing
           gradient: LinearGradient(
             begin: Alignment.topLeft,
             end: Alignment.bottomRight,
-            colors: [
-              Colors.white,
-              Colors.grey.shade50,
-            ],
+            colors: [Colors.white, Colors.grey.shade50],
           ),
           borderRadius: BorderRadius.circular(16),
           boxShadow: [
@@ -747,18 +735,35 @@ class _ShipmentDetailsScreenState extends State<ShipmentDetailsScreen> with Sing
                 ],
               ),
               const SizedBox(height: 20),
-              _buildInfoRow(Icons.scale, 'Weight', '${shipment.amount} ${shipment.unit.name}'),
-              const Divider(height: 32),
-              _buildInfoRow(Icons.calendar_today, 'Pickup Date', _formatDate(shipment.pickupDate)),
+              _buildInfoRow(
+                Icons.scale,
+                'Weight',
+                '${shipment.amount} ${shipment.unit.name}',
+              ),
               const Divider(height: 32),
               _buildInfoRow(
-                shipment.safetyOption.name == 'fragile' ? Icons.warning_amber : Icons.check_circle_outline,
-                'Safety',
-                shipment.safetyOption.name == 'fragile' ? 'Fragile - Handle with Care' : 'Standard Handling',
+                Icons.calendar_today,
+                'Pickup Date',
+                _formatDate(shipment.pickupDate),
               ),
-              if (shipment.description != null && shipment.description!.isNotEmpty) ...[
+              const Divider(height: 32),
+              _buildInfoRow(
+                shipment.safetyOption.name == 'fragile'
+                    ? Icons.warning_amber
+                    : Icons.check_circle_outline,
+                'Safety',
+                shipment.safetyOption.name == 'fragile'
+                    ? 'Fragile - Handle with Care'
+                    : 'Standard Handling',
+              ),
+              if (shipment.description != null &&
+                  shipment.description!.isNotEmpty) ...[
                 const Divider(height: 32),
-                _buildInfoRow(Icons.description, 'Description', shipment.description!),
+                _buildInfoRow(
+                  Icons.description,
+                  'Description',
+                  shipment.description!,
+                ),
               ],
             ],
           ),
@@ -890,7 +895,9 @@ class _ShipmentDetailsScreenState extends State<ShipmentDetailsScreen> with Sing
                     ),
                     child: Icon(
                       hasPayment ? Icons.check_circle : Icons.payment,
-                      color: hasPayment ? const Color(0xFF27AE60) : const Color(0xFFF39C12),
+                      color: hasPayment
+                          ? const Color(0xFF27AE60)
+                          : const Color(0xFFF39C12),
                       size: 20,
                     ),
                   ),
@@ -908,7 +915,7 @@ class _ShipmentDetailsScreenState extends State<ShipmentDetailsScreen> with Sing
                 ],
               ),
               const SizedBox(height: 20),
-              
+
               // Amount
               Row(
                 mainAxisAlignment: MainAxisAlignment.spaceBetween,
@@ -931,16 +938,24 @@ class _ShipmentDetailsScreenState extends State<ShipmentDetailsScreen> with Sing
                   ),
                 ],
               ),
-              
+
               if (hasPayment) ...[
                 const SizedBox(height: 16),
                 const Divider(),
                 const SizedBox(height: 16),
                 _buildPaymentInfoRow(Icons.payment, 'Method', 'Bank Transfer'),
                 const SizedBox(height: 12),
-                _buildPaymentInfoRow(Icons.calendar_today, 'Paid on', _formatDate(DateTime.now())),
+                _buildPaymentInfoRow(
+                  Icons.calendar_today,
+                  'Paid on',
+                  _formatDate(DateTime.now()),
+                ),
                 const SizedBox(height: 12),
-                _buildPaymentInfoRow(Icons.receipt, 'Transaction ID', 'TXN-${shipment.id}'),
+                _buildPaymentInfoRow(
+                  Icons.receipt,
+                  'Transaction ID',
+                  'TXN-${shipment.id}',
+                ),
               ] else ...[
                 const SizedBox(height: 20),
                 SizedBox(
@@ -970,7 +985,11 @@ class _ShipmentDetailsScreenState extends State<ShipmentDetailsScreen> with Sing
                   ),
                   child: Row(
                     children: [
-                      Icon(Icons.info_outline, size: 18, color: Colors.blue.shade700),
+                      Icon(
+                        Icons.info_outline,
+                        size: 18,
+                        color: Colors.blue.shade700,
+                      ),
                       const SizedBox(width: 8),
                       Expanded(
                         child: Text(
@@ -1013,7 +1032,9 @@ class _ShipmentDetailsScreenState extends State<ShipmentDetailsScreen> with Sing
           Icon(
             isConfirmed ? Icons.check_circle : Icons.pending,
             size: 14,
-            color: isConfirmed ? const Color(0xFF27AE60) : const Color(0xFFF39C12),
+            color: isConfirmed
+                ? const Color(0xFF27AE60)
+                : const Color(0xFFF39C12),
           ),
           const SizedBox(width: 6),
           Text(
@@ -1021,7 +1042,9 @@ class _ShipmentDetailsScreenState extends State<ShipmentDetailsScreen> with Sing
             style: TextStyle(
               fontSize: 12,
               fontWeight: FontWeight.w600,
-              color: isConfirmed ? const Color(0xFF27AE60) : const Color(0xFFF39C12),
+              color: isConfirmed
+                  ? const Color(0xFF27AE60)
+                  : const Color(0xFFF39C12),
             ),
           ),
         ],
@@ -1036,10 +1059,7 @@ class _ShipmentDetailsScreenState extends State<ShipmentDetailsScreen> with Sing
         const SizedBox(width: 12),
         Text(
           '$label: ',
-          style: TextStyle(
-            fontSize: 14,
-            color: Colors.grey.shade600,
-          ),
+          style: TextStyle(fontSize: 14, color: Colors.grey.shade600),
         ),
         Expanded(
           child: Text(
@@ -1087,7 +1107,7 @@ class _ShipmentDetailsScreenState extends State<ShipmentDetailsScreen> with Sing
           duration: const Duration(seconds: 3),
         ),
       );
-      
+
       // Refresh shipment data
       setState(() {
         // Trigger rebuild to show updated payment status
@@ -1135,7 +1155,12 @@ class _ShipmentDetailsScreenState extends State<ShipmentDetailsScreen> with Sing
     );
   }
 
-  Widget _buildLocationRow(IconData icon, String label, String value, Color color) {
+  Widget _buildLocationRow(
+    IconData icon,
+    String label,
+    String value,
+    Color color,
+  ) {
     return Container(
       padding: const EdgeInsets.all(16),
       decoration: BoxDecoration(
@@ -1256,7 +1281,20 @@ class _ShipmentDetailsScreenState extends State<ShipmentDetailsScreen> with Sing
     } else if (difference.inDays < 7) {
       return '${difference.inDays}d ago';
     } else {
-      final months = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
+      final months = [
+        'Jan',
+        'Feb',
+        'Mar',
+        'Apr',
+        'May',
+        'Jun',
+        'Jul',
+        'Aug',
+        'Sep',
+        'Oct',
+        'Nov',
+        'Dec',
+      ];
       return '${months[timestamp.month - 1]} ${timestamp.day}, ${timestamp.year}';
     }
   }
@@ -1294,14 +1332,16 @@ class _ShipmentDetailsScreenState extends State<ShipmentDetailsScreen> with Sing
             const SizedBox(height: 16),
             const Text('Select new status:'),
             const SizedBox(height: 8),
-            ...nextStatuses.map((status) => ListTile(
-                  title: Text(_getStatusLabel(status)),
-                  leading: const Icon(Icons.arrow_forward),
-                  onTap: () {
-                    Navigator.pop(context);
-                    _updateStatus(shipment, status);
-                  },
-                )),
+            ...nextStatuses.map(
+              (status) => ListTile(
+                title: Text(_getStatusLabel(status)),
+                leading: const Icon(Icons.arrow_forward),
+                onTap: () {
+                  Navigator.pop(context);
+                  _updateStatus(shipment, status);
+                },
+              ),
+            ),
           ],
         ),
         actions: [
@@ -1331,12 +1371,15 @@ class _ShipmentDetailsScreenState extends State<ShipmentDetailsScreen> with Sing
     }
   }
 
-  Future<void> _updateStatus(Shipment shipment, ShipmentStatus newStatus) async {
+  Future<void> _updateStatus(
+    Shipment shipment,
+    ShipmentStatus newStatus,
+  ) async {
     try {
       await context.read<ShipmentProvider>().updateShipmentStatus(
-            shipment.id!,
-            newStatus,
-          );
+        shipment.id!,
+        newStatus,
+      );
 
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
@@ -1345,9 +1388,9 @@ class _ShipmentDetailsScreenState extends State<ShipmentDetailsScreen> with Sing
       }
     } catch (e) {
       if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text('Failed to update status: $e')),
-        );
+        ScaffoldMessenger.of(
+          context,
+        ).showSnackBar(SnackBar(content: Text('Failed to update status: $e')));
       }
     }
   }
@@ -1376,15 +1419,31 @@ class _ShipmentDetailsScreenState extends State<ShipmentDetailsScreen> with Sing
   }
 
   String _formatDate(DateTime date) {
-    final months = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
+    final months = [
+      'Jan',
+      'Feb',
+      'Mar',
+      'Apr',
+      'May',
+      'Jun',
+      'Jul',
+      'Aug',
+      'Sep',
+      'Oct',
+      'Nov',
+      'Dec',
+    ];
     return '${months[date.month - 1]} ${date.day}, ${date.year}';
   }
 
   String _formatLocation(String address) {
     if (address.isEmpty) return 'Unknown';
-    return address.split(' ').map((word) {
-      if (word.isEmpty) return word;
-      return word[0].toUpperCase() + word.substring(1).toLowerCase();
-    }).join(' ');
+    return address
+        .split(' ')
+        .map((word) {
+          if (word.isEmpty) return word;
+          return word[0].toUpperCase() + word.substring(1).toLowerCase();
+        })
+        .join(' ');
   }
 }

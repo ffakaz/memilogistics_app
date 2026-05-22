@@ -1,5 +1,4 @@
 class ShipmentValidator {
-
   static String? validateShipperName(String? value) {
     if (value == null || value.trim().isEmpty) {
       return 'Shipper name is required';

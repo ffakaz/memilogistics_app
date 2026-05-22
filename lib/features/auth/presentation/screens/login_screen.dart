@@ -1,5 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
+import 'package:memilogistics_app/features/carrier/presentation/providers/carrier_company_provider.dart';
+import 'package:memilogistics_app/features/shipper/presentation/providers/shipper_company_provider.dart';
 import '../provider/auth_provider.dart';
 
 class LoginScreen extends StatefulWidget {
@@ -121,7 +123,10 @@ class _LoginScreenState extends State<LoginScreen> {
                             alignment: Alignment.centerRight,
                             child: TextButton(
                               onPressed: () {
-                                Navigator.pushNamed(context, '/forgot-password');
+                                Navigator.pushNamed(
+                                  context,
+                                  '/forgot-password',
+                                );
                               },
                               child: const Text(
                                 'Forgot Password?',
@@ -148,6 +153,12 @@ class _LoginScreenState extends State<LoginScreen> {
                                         if (!context.mounted) return;
 
                                         if (isAuthenticated) {
+                                          context
+                                              .read<ShipperCompanyProvider>()
+                                              .clearProfile();
+                                          context
+                                              .read<CarrierCompanyProvider>()
+                                              .clearProfile();
                                           // Get user role from auth provider and route accordingly
                                           final userRole = auth.userRole;
                                           final route = userRole == 'CARRIER'

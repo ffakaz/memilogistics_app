@@ -7,10 +7,12 @@ import '../../domain/enums/shipment_type.dart';
 import '../../domain/enums/weight_unit.dart';
 import '../models/create_shipment_request.dart';
 import '../models/shipment_response_model.dart';
-import '../../../carrier/data/mapper/carrier_company_mapper.dart';
-import '../../../carrier/data/models/carrier_company_model.dart';
-import '../../../shipment_offer/data/mappers/shipment_offer_mapper.dart';
-import '../../../shipment_offer/data/models/shipment_offer_model.dart';
+import 'delivery_confirmation_mapper.dart';
+import 'payment_record_mapper.dart';
+import 'shipper_profile_mapper.dart';
+import 'carrier_profile_mapper.dart';
+import 'shipment_offer_mapper.dart';
+import 'shipment_event_mapper.dart';
 
 class ShipmentBackendMapper {
   /// Convert frontend Shipment to backend CreateShipmentRequest
@@ -31,7 +33,10 @@ class ShipmentBackendMapper {
     return Shipment(
       id: model.id,
       trackingNumber: model.trackingNumber,
-      shipperName: model.shipper?['name'] ?? 'Unknown Shipper',
+      shipperName:
+          model.shipper?['companyName'] as String? ??
+          model.shipper?['businessName'] as String? ??
+          'Unknown Shipper',
       shipmentType: _parseShipmentType(model.shipmentItem),
       amount: model.weightKg,
       unit: WeightUnit.kg,
@@ -53,20 +58,34 @@ class ShipmentBackendMapper {
       updatedAt: model.updatedAt,
       completedAt: model.completedAt,
       volume: model.volume,
-      shipper: model.shipper,
+      shipmentItem: model.shipmentItem,
+      weightKg: model.weightKg,
+      origin: model.origin,
+      destination: model.destination,
+      estimatedDeliveryDate: model.estimatedDeliveryDate,
+      fragile: model.fragile,
+      deliveryConfirmation: model.deliveryConfirmation != null
+          ? DeliveryConfirmationMapper.fromJson(model.deliveryConfirmation!)
+          : null,
+      paymentRecord: model.paymentRecord != null
+          ? PaymentRecordMapper.fromJson(model.paymentRecord!)
+          : null,
+      shipper: model.shipper != null
+          ? ShipperProfileMapper.fromJson(model.shipper!)
+          : null,
       assignedCarrier: model.assignedCarrier != null
-          ? CarrierCompanyMapper.toEntity(
-              CarrierCompanyModel.fromJson(model.assignedCarrier!),
-            )
+          ? CarrierProfileMapper.fromJson(model.assignedCarrier!)
           : null,
       shipmentOffers: model.shipmentOffers != null
           ? model.shipmentOffers!
-              .map((json) => ShipmentOfferMapper.toEntity(
-                    ShipmentOfferModel.fromJson(json),
-                  ))
-              .toList()
+                .map((json) => ShipmentOfferMapper.fromJson(json))
+                .toList()
           : null,
-      shipmentEvents: model.shipmentEvents,
+      shipmentEvents: model.shipmentEvents != null
+          ? model.shipmentEvents!
+                .map((json) => ShipmentEventMapper.fromJson(json))
+                .toList()
+          : null,
     );
   }
 
@@ -103,7 +122,7 @@ class ShipmentBackendMapper {
   /// Parse shipment type from item string
   static ShipmentType _parseShipmentType(String? item) {
     if (item == null) return ShipmentType.dryGoods;
-    
+
     final lowerItem = item.toLowerCase();
     if (lowerItem.contains('dry') || lowerItem.contains('goods')) {
       return ShipmentType.dryGoods;

@@ -1,15 +1,24 @@
 import 'package:flutter/material.dart';
 
 import '../../domain/entities/carrier_company.dart';
+
 import '../../domain/usecases/create_carrier_company.dart';
 import '../../domain/usecases/get_carrier_company.dart';
 import '../../domain/usecases/update_carrier_company.dart';
+
 import '../states/carrier_company_state.dart';
 
-class CarrierCompanyProvider extends ChangeNotifier {
-  final CreateCarrierCompany createCarrierCompanyUseCase;
-  final GetCarrierCompany getCarrierCompanyUseCase;
-  final UpdateCarrierCompany updateCarrierCompanyUseCase;
+class CarrierCompanyProvider
+    extends ChangeNotifier {
+
+  final CreateCarrierCompany
+      createCarrierCompanyUseCase;
+
+  final GetCarrierCompany
+      getCarrierCompanyUseCase;
+
+  final UpdateCarrierCompany
+      updateCarrierCompanyUseCase;
 
   CarrierCompanyProvider({
     required this.createCarrierCompanyUseCase,
@@ -17,45 +26,135 @@ class CarrierCompanyProvider extends ChangeNotifier {
     required this.updateCarrierCompanyUseCase,
   });
 
-  CarrierCompanyState _state = const CarrierCompanyState();
+  CarrierCompanyState _state =
+      const CarrierCompanyState();
 
   CarrierCompanyState get state => _state;
 
   Future<void> getCarrierCompany() async {
-    _setState(_state.copyWith(isLoading: true, clearError: true));
-
     try {
-      final company = await getCarrierCompanyUseCase();
-      _setState(CarrierCompanyState(company: company));
+      _state = _state.copyWith(
+        isLoading: true,
+        error: null,
+        hasAttemptedLoad: true,
+      );
+
+      notifyListeners();
+
+      final company =
+          await getCarrierCompanyUseCase();
+
+      _state = _state.copyWith(
+        isLoading: false,
+        company: company,
+        hasAttemptedLoad: true,
+      );
+
+      notifyListeners();
+
     } catch (e) {
-      _setState(CarrierCompanyState(error: e.toString()));
+
+      _state = _state.copyWith(
+        isLoading: false,
+        error: e.toString(),
+        hasAttemptedLoad: true,
+      );
+
+      notifyListeners();
     }
   }
 
-  Future<void> createCarrierCompany(CarrierCompany company) async {
-    _setState(_state.copyWith(isLoading: true, clearError: true));
+  /// Backwards-compatible wrapper used by UI code.
+  Future<void> ensureProfileLoaded({bool forceRefresh = false}) async {
+    if (forceRefresh) {
+      await getCarrierCompany();
+      return;
+    }
 
-    try {
-      final created = await createCarrierCompanyUseCase(company);
-      _setState(CarrierCompanyState(company: created));
-    } catch (e) {
-      _setState(_state.copyWith(isLoading: false, error: e.toString()));
+    if (_state.company == null && !_state.isLoading) {
+      await getCarrierCompany();
     }
   }
 
-  Future<void> updateCarrierCompany(CarrierCompany company) async {
-    _setState(_state.copyWith(isLoading: true, clearError: true));
-
-    try {
-      final updated = await updateCarrierCompanyUseCase(company);
-      _setState(CarrierCompanyState(company: updated));
-    } catch (e) {
-      _setState(_state.copyWith(isLoading: false, error: e.toString()));
-    }
-  }
-
-  void _setState(CarrierCompanyState state) {
-    _state = state;
+  void clearError() {
+    _state = _state.copyWith(error: null);
     notifyListeners();
+  }
+
+  void clearProfile() {
+    _state = _state.copyWith(company: null, hasAttemptedLoad: true);
+    notifyListeners();
+  }
+
+  Future<void> createCarrierCompany(
+    CarrierCompany company,
+  ) async {
+
+    try {
+
+      _state = _state.copyWith(
+        isLoading: true,
+        error: null,
+      );
+
+      notifyListeners();
+
+      final result =
+          await createCarrierCompanyUseCase(
+        company,
+      );
+
+      _state = _state.copyWith(
+        isLoading: false,
+        company: result,
+      );
+
+      notifyListeners();
+
+    } catch (e) {
+
+      _state = _state.copyWith(
+        isLoading: false,
+        error: e.toString(),
+      );
+
+      notifyListeners();
+    }
+  }
+
+  Future<void> updateCarrierCompany(
+    CarrierCompany company,
+  ) async {
+
+    try {
+
+      _state = _state.copyWith(
+        isLoading: true,
+        error: null,
+      );
+
+      notifyListeners();
+
+      final result =
+          await updateCarrierCompanyUseCase(
+        company,
+      );
+
+      _state = _state.copyWith(
+        isLoading: false,
+        company: result,
+      );
+
+      notifyListeners();
+
+    } catch (e) {
+
+      _state = _state.copyWith(
+        isLoading: false,
+        error: e.toString(),
+      );
+
+      notifyListeners();
+    }
   }
 }
