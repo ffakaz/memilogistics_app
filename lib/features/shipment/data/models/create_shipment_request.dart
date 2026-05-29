@@ -4,7 +4,6 @@
 /// Matches backend API specification
 /// 
 /// Backend expects:
-/// - shipperId: ID of the shipper creating the shipment
 /// - origin, destination: Location strings
 /// - weightKg: Weight in kilograms
 /// - deliveryDate: Expected delivery date (format: "2026-05-24")
@@ -12,7 +11,6 @@
 /// - description: Optional additional details
 /// - fragile: Whether shipment contains fragile items
 class CreateShipmentRequest {
-  final int shipperId;  // Required: Shipper ID from shipper profile
   final String origin;
   final String shipmentItem;
   final String destination;
@@ -22,7 +20,6 @@ class CreateShipmentRequest {
   final bool fragile;
 
   const CreateShipmentRequest({
-    required this.shipperId,
     required this.origin,
     required this.shipmentItem,
     required this.destination,
@@ -34,7 +31,6 @@ class CreateShipmentRequest {
 
   Map<String, dynamic> toJson() {
     return {
-      'shipperId': shipperId,  // Include shipper ID in request
       'origin': origin,
       'shipmentItem': shipmentItem,
       'destination': destination,

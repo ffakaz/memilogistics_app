@@ -22,7 +22,7 @@ class ShipmentOfferApiService {
   }
 
   /// Get offers submitted for a shipment.
-  /// GET /api/shipments/{shipmentId}/offers
+  /// GET /api/shipment/{shipmentId}/offers
   Future<List<ShipmentOfferModel>> getShipmentOffers(int shipmentId) async {
     final url = RequestBuilder.buildFullUrl(ApiRoutes.getShipmentOffers, {'shipmentId': shipmentId});
     final response = await _apiClient.get<dynamic>(url);

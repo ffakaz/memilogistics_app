@@ -21,6 +21,11 @@ class _ShipmentDetailsScreenState extends State<ShipmentDetailsScreen>
   void initState() {
     super.initState();
     _tabController = TabController(length: 2, vsync: this);
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      if (mounted) {
+        context.read<ShipmentProvider>().loadShipmentDetail(widget.shipmentId);
+      }
+    });
   }
 
   @override
@@ -35,45 +40,72 @@ class _ShipmentDetailsScreenState extends State<ShipmentDetailsScreen>
       backgroundColor: const Color(0xFFF5F7FA),
       body: Consumer<ShipmentProvider>(
         builder: (context, provider, _) {
-          final shipment = provider.getShipmentById(widget.shipmentId);
-          if (shipment == null) return const Center(child: Text('Shipment not found'));
-
-          return CustomScrollView(
-            slivers: [
-              SliverAppBar(
-                expandedHeight: 160,
-                pinned: true,
-                backgroundColor: const Color(0xFF2C3E50),
-                flexibleSpace: FlexibleSpaceBar(
-                  title: Text(shipment.trackingNumber ?? 'Shipment'),
-                ),
+          final activeShipment = provider.activeShipment;
+          final shipment = activeShipment?.id == widget.shipmentId
+              ? activeShipment
+              : provider.getShipmentById(widget.shipmentId);
+          if (shipment == null) {
+            if (provider.isLoading) {
+              return const Center(child: CircularProgressIndicator());
+            }
+            return Center(
+              child: Column(
+                mainAxisAlignment: MainAxisAlignment.center,
+                children: [
+                  const Text('Shipment not found'),
+                  const SizedBox(height: 12),
+                  ElevatedButton.icon(
+                    onPressed: () => provider.loadShipmentDetail(widget.shipmentId),
+                    icon: const Icon(Icons.refresh),
+                    label: const Text('Retry'),
+                  ),
+                ],
               ),
-              SliverToBoxAdapter(
-                child: Padding(
-                  padding: const EdgeInsets.all(16.0),
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      _buildStatusBadge(shipment.status),
-                      const SizedBox(height: 12),
-                      Text('Origin: ${_formatLocation(shipment.origin)}'),
-                      const SizedBox(height: 8),
-                      Text('Destination: ${_formatLocation(shipment.destination)}'),
-                      const SizedBox(height: 8),
-                      Text('Pickup: ${_formatDate(shipment.pickupDate)}'),
-                      const SizedBox(height: 8),
-                      Text('Status: ${_getStatusLabel(shipment.status)}'),
-                    ],
+            );
+          }
+
+          return RefreshIndicator(
+            onRefresh: () => provider.loadShipmentDetail(widget.shipmentId),
+            child: CustomScrollView(
+              slivers: [
+                SliverAppBar(
+                  expandedHeight: 160,
+                  pinned: true,
+                  backgroundColor: const Color(0xFF2C3E50),
+                  flexibleSpace: FlexibleSpaceBar(
+                    title: Text(shipment.trackingNumber ?? 'Shipment'),
                   ),
                 ),
-              ),
-            ],
+                SliverToBoxAdapter(
+                  child: Padding(
+                    padding: const EdgeInsets.all(16.0),
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        _buildStatusBadge(shipment.status),
+                        const SizedBox(height: 12),
+                        Text('Origin: ${_formatLocation(shipment.origin)}'),
+                        const SizedBox(height: 8),
+                        Text('Destination: ${_formatLocation(shipment.destination)}'),
+                        const SizedBox(height: 8),
+                        Text('Pickup: ${_formatDate(shipment.pickupDate)}'),
+                        const SizedBox(height: 8),
+                        Text('Status: ${_getStatusLabel(shipment.status)}'),
+                      ],
+                    ),
+                  ),
+                ),
+              ],
+            ),
           );
         },
       ),
       floatingActionButton: Consumer<ShipmentProvider>(
         builder: (context, provider, _) {
-          final shipment = provider.getShipmentById(widget.shipmentId);
+          final activeShipment = provider.activeShipment;
+          final shipment = activeShipment?.id == widget.shipmentId
+              ? activeShipment
+              : provider.getShipmentById(widget.shipmentId);
           if (shipment != null && _canUpdateStatus(shipment)) {
             return FloatingActionButton.extended(
               onPressed: () => _showUpdateStatusDialog(shipment),
@@ -128,6 +160,11 @@ class _ShipmentDetailsScreenState extends State<ShipmentDetailsScreen>
         bgColor = Colors.green.shade100;
         textColor = Colors.green.shade900;
         icon = Icons.check_circle;
+        break;
+      case ShipmentStatus.paymentPending:
+        bgColor = Colors.amber.shade100;
+        textColor = Colors.amber.shade900;
+        icon = Icons.payments;
         break;
       case ShipmentStatus.completed:
         bgColor = Colors.green.shade100;
@@ -186,6 +223,8 @@ class _ShipmentDetailsScreenState extends State<ShipmentDetailsScreen>
       case ShipmentStatus.arrivedAtDestination:
         return [ShipmentStatus.delivered];
       case ShipmentStatus.delivered:
+        return [ShipmentStatus.paymentPending];
+      case ShipmentStatus.paymentPending:
         return [ShipmentStatus.completed];
       default:
         return [];
@@ -217,6 +256,8 @@ class _ShipmentDetailsScreenState extends State<ShipmentDetailsScreen>
         return 'Arrived at Destination';
       case ShipmentStatus.delivered:
         return 'Delivered';
+      case ShipmentStatus.paymentPending:
+        return 'Payment Pending';
       case ShipmentStatus.completed:
         return 'Completed';
     }

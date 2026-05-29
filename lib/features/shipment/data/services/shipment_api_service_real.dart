@@ -20,7 +20,6 @@ class ShipmentApiServiceReal {
     print('=== CREATE SHIPMENT DEBUG ===');
     print('Endpoint: ${ApiConstants.apiPrefix}${ShipmentEndpoints.create}');
     print('Request payload: ${request.toJson()}');
-    print('Shipper ID: ${request.shipperId}');
     
     final response = await _apiClient.post<dynamic>(
       '${ApiConstants.apiPrefix}${ShipmentEndpoints.create}',
@@ -273,8 +272,11 @@ class ShipmentApiServiceReal {
   }
 
   Future<ShipmentModel> updateStatus({required int shipmentId, required String location, required String status}) async {
-    final endpoint = ShipmentEndpoints.updateStatus.replaceAll('{shipmentId}', shipmentId.toString());
-    final response = await _apiClient.patch<dynamic>('${ApiConstants.apiPrefix}$endpoint', data: {'location': location, 'status': status});
+    final url = RequestBuilder.buildFullUrl(
+      ShipmentEndpoints.updateStatus,
+      {'shipmentId': shipmentId},
+    );
+    final response = await _apiClient.patch<dynamic>(url, data: {'location': location, 'status': status});
     return ShipmentModel.fromJson(_requireMap(response));
   }
 

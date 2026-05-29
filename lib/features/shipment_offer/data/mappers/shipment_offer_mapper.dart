@@ -16,6 +16,7 @@ class ShipmentOfferMapper {
       price: model.price,
       shipmentId: model.shipmentId,
       shipmentTrackingNumber: model.shipmentTrackingNumber,
+      carrierCompanyId: model.carrierCompanyId,
       carrierCompany: model.carrierCompany != null
           ? CarrierCompanyMapper.toEntity(model.carrierCompany!)
           : null,
@@ -30,6 +31,7 @@ class ShipmentOfferMapper {
       price: entity.price,
       shipmentId: entity.shipmentId,
       shipmentTrackingNumber: entity.shipmentTrackingNumber,
+      carrierCompanyId: entity.carrierCompanyId,
       carrierCompany: entity.carrierCompany != null
           ? CarrierCompanyMapper.toModel(entity.carrierCompany!)
           : null,

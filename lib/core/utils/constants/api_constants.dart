@@ -45,7 +45,7 @@ class ShipmentEndpoints {
   static const String statistics = "/shipment/dashboard"; // backend exposes dashboard; reuse for statistics
 
   // Tracking
-  static const String tracking = "/shipment/tracking/{trackingNumber}";
+  static const String tracking = "/shipment/{trackingNumber}/track";
 
   // Filtering
   static const String listByOrigin = "/shipment/list-by-origin/{origin}";
@@ -54,8 +54,8 @@ class ShipmentEndpoints {
   static const String listByFragile = "/shipment/list/fragile";
 
   // Status management
-  static const String updateStatus = "/shipment/{shipmentId}/update-status";
-  static const String getEvents = "/shipment/{shipmentId}/events";
+  static const String updateStatus = "/shipments/{shipmentId}/update-status";
+  static const String getEvents = "/shipments/{shipmentId}/events";
 
   // Paginated helpers
   static const String listByShipper = "/shipment/shipper";
@@ -77,10 +77,11 @@ class ShipmentOfferEndpoints {
   ShipmentOfferEndpoints._();
 
   // Shipment offer operations
-  // Note: Backend uses PLURAL "shipments" in paths
+  // Note: backend uses singular "/shipment" for reading offers,
+  // and plural "/shipments" for offer mutations.
   // Backend automatically extracts carrier ID from JWT token
   static const String getMyOffers = "/shipment-offers/my-offers";  // TODO: Backend doesn't have this endpoint yet
-  static const String getShipmentOffers = "/shipments/{shipmentId}/offers"; // GET offers for a shipment - PLURAL
+  static const String getShipmentOffers = "/shipment/{shipmentId}/offers"; // GET offers for a shipment - SINGULAR
   
   // CREATE OFFER - Uses query parameter for price, carrier ID from JWT token
   static const String createOffer = "/shipments/{shipmentId}/offer-shipment"; // POST with ?price=X - PLURAL

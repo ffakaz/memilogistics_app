@@ -14,7 +14,7 @@ class PaymentApiService {
   PaymentApiService(this._apiClient);
 
   /// Initiate payment for a shipment
-  /// POST /api/shipments/{shipmentId}/initiate-payment
+  /// POST /api/payment/{shipmentId}/initiate-payment
   Future<PaymentRecordModel> initiatePayment({
     required int shipmentId,
     required PaymentRequestModel request,
@@ -45,7 +45,7 @@ class PaymentApiService {
     if (response.data == null) {
       return PaymentRecordModel(
         amount: request.amount,
-        currency: request.currency.currencyCode,
+        currency: request.currencyCode,
         paymentStatus: 'PENDING',
         paymentMethod: request.paymentMethod,
         createdAt: DateTime.now(),
@@ -56,7 +56,7 @@ class PaymentApiService {
   }
 
   /// Confirm payment completion
-  /// POST /api/shipments/{shipmentId}/confirm-payment
+  /// POST /api/payment/{shipmentId}/confirm-payment
   /// Note: Backend doesn't require request body based on API docs
   Future<PaymentRecordModel> confirmPayment({
     required int shipmentId,

@@ -112,6 +112,12 @@ class StatusChip extends StatelessWidget {
           color: AppTheme.statusDelivered,
           icon: Icons.check_circle_rounded,
         );
+      case ShipmentStatus.paymentPending:
+        return _StatusConfig(
+          label: 'Payment Pending',
+          color: AppTheme.statusPending,
+          icon: Icons.payments_rounded,
+        );
       case ShipmentStatus.completed:
         return _StatusConfig(
           label: 'Completed',

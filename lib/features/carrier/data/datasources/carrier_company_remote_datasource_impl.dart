@@ -68,7 +68,10 @@ class CarrierCompanyRemoteDataSourceImpl
     try {
       // Build the endpoint explicitly instead of using the constant accessor
       // to avoid potential symbol resolution issues in analyzer.
-      final endpoint = '/carriers/profile/$carrierId';
+      final endpoint = CarrierCompanyEndpoints.getById.replaceAll(
+        '{carrierId}',
+        carrierId.toString(),
+      );
       final response = await apiClient.get<dynamic>(
         '${ApiConstants.apiPrefix}$endpoint',
       );

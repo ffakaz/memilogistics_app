@@ -2,8 +2,11 @@
 
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
+import 'package:intl/intl.dart';
+import 'package:memilogistics_app/core/widgets/premium_load_board_card.dart';
 import '../../../shipment/presentation/providers/shipment_provider.dart';
 import '../../../shipment/domain/entities/shipment.dart';
+import '../../../shipment_offer/presentation/providers/shipment_offer_provider.dart';
 import '../../../shipment_offer/presentation/widgets/shipment_offer_dialog.dart';
 
 class LoadBoardScreen extends StatefulWidget {
@@ -114,143 +117,36 @@ class _LoadBoardScreenState extends State<LoadBoardScreen> {
   }
 
   Widget _buildShipmentCard(BuildContext context, Shipment shipment) {
-    return Card(
-      margin: const EdgeInsets.only(bottom: 16),
-      elevation: 2,
-      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
-      child: InkWell(
-        onTap: () => _showShipmentDetails(context, shipment),
-        borderRadius: BorderRadius.circular(12),
-        child: Padding(
-          padding: const EdgeInsets.all(16),
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              // Header with ID and Status
-              Row(
-                mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                children: [
-                  Text(
-                    'Shipment #${shipment.id}',
-                    style: const TextStyle(
-                      fontWeight: FontWeight.bold,
-                      fontSize: 16,
-                    ),
-                  ),
-                  Container(
-                    padding: const EdgeInsets.symmetric(
-                      horizontal: 12,
-                      vertical: 6,
-                    ),
-                    decoration: BoxDecoration(
-                      color: Colors.green.withValues(alpha: 0.1),
-                      borderRadius: BorderRadius.circular(20),
-                      border: Border.all(color: Colors.green),
-                    ),
-                    child: const Text(
-                      'Available',
-                      style: TextStyle(
-                        color: Colors.green,
-                        fontSize: 12,
-                        fontWeight: FontWeight.w600,
-                      ),
-                    ),
-                  ),
-                ],
-              ),
-              const SizedBox(height: 16),
+    final offerProvider = context.watch<ShipmentOfferProvider>();
+    final shipmentId = shipment.id;
+    final offerSubmitted = shipmentId != null &&
+        offerProvider.hasSubmittedOfferForShipment(shipmentId);
 
-              // Origin and Destination
-              Row(
-                children: [
-                  const Icon(Icons.location_on, size: 20, color: Colors.blue),
-                  const SizedBox(width: 8),
-                  Expanded(
-                    child: Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: [
-                        const Text(
-                          'Origin',
-                          style: TextStyle(fontSize: 12, color: Colors.grey),
-                        ),
-                        Text(
-                          shipment.origin,
-                          style: const TextStyle(
-                            fontSize: 14,
-                            fontWeight: FontWeight.w500,
-                          ),
-                        ),
-                      ],
-                    ),
-                  ),
-                ],
-              ),
-              const SizedBox(height: 8),
-              Row(
-                children: [
-                  const Icon(Icons.flag, size: 20, color: Colors.red),
-                  const SizedBox(width: 8),
-                  Expanded(
-                    child: Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: [
-                        const Text(
-                          'Destination',
-                          style: TextStyle(fontSize: 12, color: Colors.grey),
-                        ),
-                        Text(
-                          shipment.destination,
-                          style: const TextStyle(
-                            fontSize: 14,
-                            fontWeight: FontWeight.w500,
-                          ),
-                        ),
-                      ],
-                    ),
-                  ),
-                ],
-              ),
-              const SizedBox(height: 16),
-
-              // Shipment Details
-              Row(
-                children: [
-                  Expanded(
-                    child: _buildDetailChip(
-                      Icons.scale,
-                      '${shipment.weightKg} kg',
-                    ),
-                  ),
-                  const SizedBox(width: 8),
-                  Expanded(
-                    child: _buildDetailChip(
-                      Icons.local_shipping,
-                      shipment.shipmentItem ?? 'General Cargo',
-                    ),
-                  ),
-                ],
-              ),
-              const SizedBox(height: 16),
-
-              // Action Button
-              SizedBox(
-                width: double.infinity,
-                child: ElevatedButton.icon(
-                  onPressed: () => _showBidDialog(context, shipment),
-                  icon: const Icon(Icons.attach_money),
-                  label: const Text('Submit Offer'),
-                  style: ElevatedButton.styleFrom(
-                    padding: const EdgeInsets.symmetric(vertical: 12),
-                  ),
-                ),
-              ),
-            ],
-          ),
+    return Column(
+      children: [
+        PremiumLoadBoardCard(
+          shipment: shipment,
+          onTap: () => _showShipmentDetails(context, shipment),
+          showOfferButton: !offerSubmitted,
+          onOfferTap: shipmentId == null || offerSubmitted
+              ? null
+              : () => _showBidDialog(context, shipment),
         ),
-      ),
+        if (offerSubmitted)
+          Padding(
+            padding: const EdgeInsets.only(bottom: 16),
+            child: OutlinedButton.icon(
+              onPressed: null,
+              icon: const Icon(Icons.check_circle_rounded),
+              label: const Text('Offer Submitted'),
+            ),
+          ),
+      ],
     );
   }
 
+  // Kept for older detail surfaces that still use compact metadata rows.
+  // ignore: unused_element
   Widget _buildDetailChip(IconData icon, String label) {
     return Container(
       padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
@@ -313,16 +209,23 @@ class _LoadBoardScreenState extends State<LoadBoardScreen> {
                   ),
                 ),
                 const SizedBox(height: 24),
-                _buildDetailRow('Type', shipment.shipmentItem ?? 'General Cargo'),
+                _buildDetailRow('Type', shipment.shipmentItem ?? 'General cargo'),
                 _buildDetailRow(
                   'Weight',
-                  '${shipment.weightKg} kg',
+                  '${shipment.weightKg.toStringAsFixed(1)} kg',
                 ),
                 _buildDetailRow('Origin', shipment.origin),
                 _buildDetailRow(
                   'Destination',
                   shipment.destination,
                 ),
+                _buildDetailRow(
+                  'Delivery date',
+                  shipment.estimatedDeliveryDate != null
+                      ? DateFormat('MMM d, yyyy').format(shipment.estimatedDeliveryDate!)
+                      : 'To be scheduled',
+                ),
+                _buildDetailRow('Handling', shipment.fragile ? 'Fragile' : 'Standard'),
                 if (shipment.description != null)
                   _buildDetailRow('Description', shipment.description!),
                 const SizedBox(height: 24),

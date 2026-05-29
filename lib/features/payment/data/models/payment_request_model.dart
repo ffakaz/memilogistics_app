@@ -1,38 +1,51 @@
-// lib/features/payment/data/models/payment_request_model.dart
-
 import 'package:json_annotation/json_annotation.dart';
+
 import '../../domain/entities/payment_request.dart';
 import '../../domain/enums/payment_method.dart';
-import 'currency_model.dart';
 
 part 'payment_request_model.g.dart';
 
 /// Payment request model for JSON serialization
-@JsonSerializable()
+/// Matches the backend OpenAPI PaymentRequest contract:
+/// { currencyCode, amount, paymentMethod, note }
+@JsonSerializable(createFactory: false)
 class PaymentRequestModel {
-  final CurrencyModel currency;
+  final String currencyCode;
   final double amount;
   final String paymentMethod;
   final String? note;
 
   const PaymentRequestModel({
-    required this.currency,
+    required this.currencyCode,
     required this.amount,
     required this.paymentMethod,
     this.note,
   });
 
-  /// Create model from JSON
-  factory PaymentRequestModel.fromJson(Map<String, dynamic> json) =>
-      _$PaymentRequestModelFromJson(json);
+  /// Create model from the backend request shape.
+  factory PaymentRequestModel.fromJson(Map<String, dynamic> json) {
+    return PaymentRequestModel(
+      currencyCode: json['currencyCode'] as String? ?? 'USD',
+      amount: (json['amount'] as num).toDouble(),
+      paymentMethod: json['paymentMethod'] as String,
+      note: json['note'] as String?,
+    );
+  }
 
-  /// Convert model to JSON
-  Map<String, dynamic> toJson() => _$PaymentRequestModelToJson(this);
+  /// Convert model to backend OpenAPI shape:
+  /// { currencyCode, amount, paymentMethod, note }
+  Map<String, dynamic> toJson() {
+    final json = _$PaymentRequestModelToJson(this);
+    if (note == null || note!.trim().isEmpty) {
+      json.remove('note');
+    }
+    return json;
+  }
 
   /// Create model from entity
   factory PaymentRequestModel.fromEntity(PaymentRequest entity) {
     return PaymentRequestModel(
-      currency: CurrencyModel.fromCode(entity.currency),
+      currencyCode: entity.currency,
       amount: entity.amount,
       paymentMethod: entity.paymentMethod.value,
       note: null, // Optional note
@@ -43,14 +56,14 @@ class PaymentRequestModel {
   PaymentRequest toEntity() {
     return PaymentRequest(
       amount: amount,
-      currency: currency.currencyCode,
+      currency: currencyCode,
       paymentMethod: PaymentMethod.fromString(paymentMethod),
     );
   }
 
   @override
   String toString() {
-    return 'PaymentRequestModel(amount: $amount, currency: ${currency.currencyCode}, '
+    return 'PaymentRequestModel(amount: $amount, currency: $currencyCode, '
         'method: $paymentMethod, note: $note)';
   }
 }

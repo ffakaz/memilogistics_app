@@ -6,6 +6,7 @@ enum ShipmentStatus {
   inTransit('IN_TRANSIT'),
   arrivedAtDestination('ARRIVED_AT_DESTINATION'),
   delivered('DELIVERED'),
+  paymentPending('PAYMENT_PENDING'),
   completed('COMPLETED');
   
   final String backendValue;
@@ -27,6 +28,8 @@ enum ShipmentStatus {
         return 'Arrived';
       case ShipmentStatus.delivered:
         return 'Delivered';
+      case ShipmentStatus.paymentPending:
+        return 'Payment Pending';
       case ShipmentStatus.completed:
         return 'Completed';
     }

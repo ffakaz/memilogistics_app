@@ -1,3 +1,4 @@
+import '../../../../core/utils/json_parsing.dart';
 import '../../domain/enums/shipment_status.dart';
 
 class ShipmentModel {
@@ -41,13 +42,13 @@ class ShipmentModel {
 
   factory ShipmentModel.fromJson(Map<String, dynamic> json) {
     return ShipmentModel(
-      id: (json['id'] ?? json['shipmentId']) as int,  // Handle both 'id' and 'shipmentId'
+      id: JsonParsing.asInt(json['id'] ?? json['shipmentId']),  // Handle both 'id' and 'shipmentId'
       trackingNumber: json['trackingNumber'] as String?,
       origin: json['origin'] as String? ?? '',
       destination: json['destination'] as String? ?? '',
-      weightKg: (json['weightKg'] as num).toDouble(),
-      volume: json['volume'] != null ? (json['volume'] as num).toDouble() : null,
-      status: _parseStatus(json['status'] as String),
+      weightKg: JsonParsing.asDouble(json['weightKg']),
+      volume: json['volume'] != null ? JsonParsing.asDouble(json['volume']) : null,
+      status: _parseStatus(JsonParsing.asString(json['status'], fallback: 'PENDING')),
       pickupDate: json['pickupDate'] as String?,
       estimatedDeliveryDate: json['estimatedDeliveryDate'] as String?,
       shipmentItem: json['shipmentItem'] as String?,
@@ -56,8 +57,8 @@ class ShipmentModel {
       createdAt: json['createdAt'] != null ? DateTime.parse(json['createdAt'] as String) : null,
       updatedAt: json['updatedAt'] != null ? DateTime.parse(json['updatedAt'] as String) : null,
       completedAt: json['completedAt'] != null ? DateTime.parse(json['completedAt'] as String) : null,
-      shipperId: json['shipperId'] as int?,
-      assignedCarrierId: json['assignedCarrierId'] as int?,
+      shipperId: JsonParsing.asIntOrNull(json['shipperId']),
+      assignedCarrierId: JsonParsing.asIntOrNull(json['assignedCarrierId']),
     );
   }
 

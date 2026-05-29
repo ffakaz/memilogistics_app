@@ -16,9 +16,10 @@ void main() {
     WidgetTester tester,
   ) async {
     await tester.pumpWidget(const MemiLogisticsApp());
+    await tester.pump(const Duration(seconds: 3));
     await tester.pumpAndSettle();
 
-    expect(find.text('Welcome Back'), findsOneWidget);
-    expect(find.text('Login'), findsOneWidget);
+    expect(find.text('MEMI LOGISTICS'), findsOneWidget);
+    expect(find.text('Sign in to your workspace'), findsOneWidget);
   });
 }

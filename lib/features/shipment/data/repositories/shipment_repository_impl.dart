@@ -27,13 +27,8 @@ class ShipmentRepositoryImpl implements ShipmentRepository {
       throw Exception('You must be logged in to create a shipment');
     }
 
-    // Validate shipper ID is provided
-    if (shipperId == null) {
-      throw Exception('Shipper ID is required to create a shipment. Please create your shipper profile first.');
-    }
-
     // Convert Shipment entity to CreateShipmentRequest
-    final request = _toCreateRequest(shipment, shipperId);
+    final request = _toCreateRequest(shipment);
 
     // Call backend API
     final model = await apiService.createShipment(request);
@@ -217,7 +212,7 @@ class ShipmentRepositoryImpl implements ShipmentRepository {
   }
 
   // Helper to convert Shipment entity to CreateShipmentRequest
-  CreateShipmentRequest _toCreateRequest(Shipment shipment, int shipperId) {
+  CreateShipmentRequest _toCreateRequest(Shipment shipment) {
     // Format date to string (YYYY-MM-DD)
     String deliveryDate = '';
     if (shipment.pickupDate != null) {
@@ -226,7 +221,6 @@ class ShipmentRepositoryImpl implements ShipmentRepository {
     }
 
     return CreateShipmentRequest(
-      shipperId: shipperId,  // Include shipper ID
       origin: shipment.origin,
       destination: shipment.destination,
       weightKg: shipment.weightKg,

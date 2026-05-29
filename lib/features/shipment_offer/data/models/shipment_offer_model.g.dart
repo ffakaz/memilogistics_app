@@ -13,5 +13,6 @@ Map<String, dynamic> _$ShipmentOfferModelToJson(ShipmentOfferModel instance) =>
       'price': instance.price,
       'shipmentId': instance.shipmentId,
       'shipmentTrackingNumber': instance.shipmentTrackingNumber,
+      'carrierCompanyId': instance.carrierCompanyId,
       'carrierCompany': instance.carrierCompany?.toJson(),
     };

@@ -232,6 +232,7 @@ class AppTheme {
             borderRadius: BorderRadius.circular(radiusMedium),
           ),
           textStyle: const TextStyle(
+            inherit: false,
             fontSize: 16,
             fontWeight: FontWeight.w600,
             letterSpacing: 0.5,
@@ -250,6 +251,7 @@ class AppTheme {
             borderRadius: BorderRadius.circular(radiusMedium),
           ),
           textStyle: const TextStyle(
+            inherit: false,
             fontSize: 16,
             fontWeight: FontWeight.w600,
             letterSpacing: 0.5,
@@ -264,6 +266,7 @@ class AppTheme {
             vertical: spacing12,
           ),
           textStyle: const TextStyle(
+            inherit: false,
             fontSize: 14,
             fontWeight: FontWeight.w600,
             letterSpacing: 0.5,

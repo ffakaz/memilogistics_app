@@ -21,6 +21,7 @@ class ShipmentOffer {
   final double price;
   final int shipmentId; // ADDED to match backend
   final String shipmentTrackingNumber; // ADDED to match backend
+  final int? carrierCompanyId;
   final CarrierCompany? carrierCompany;
 
   const ShipmentOffer({
@@ -29,6 +30,7 @@ class ShipmentOffer {
     required this.price,
     required this.shipmentId,
     required this.shipmentTrackingNumber,
+    this.carrierCompanyId,
     this.carrierCompany,
   });
 
@@ -38,6 +40,7 @@ class ShipmentOffer {
     double? price,
     int? shipmentId,
     String? shipmentTrackingNumber,
+    int? carrierCompanyId,
     CarrierCompany? carrierCompany,
   }) {
     return ShipmentOffer(
@@ -46,6 +49,7 @@ class ShipmentOffer {
       price: price ?? this.price,
       shipmentId: shipmentId ?? this.shipmentId,
       shipmentTrackingNumber: shipmentTrackingNumber ?? this.shipmentTrackingNumber,
+      carrierCompanyId: carrierCompanyId ?? this.carrierCompanyId,
       carrierCompany: carrierCompany ?? this.carrierCompany,
     );
   }

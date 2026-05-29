@@ -669,9 +669,18 @@ class _PremiumLoadBoardCardState extends State<PremiumLoadBoardCard>
           color: const Color(0xFF06B6D4), // Cyan
         );
       case ShipmentStatus.delivered:
-      case ShipmentStatus.completed:
         return _StatusConfig(
           label: 'DELIVERED',
+          color: const Color(0xFF10B981), // Green
+        );
+      case ShipmentStatus.paymentPending:
+        return _StatusConfig(
+          label: 'PAYMENT DUE',
+          color: const Color(0xFFF59E0B), // Amber
+        );
+      case ShipmentStatus.completed:
+        return _StatusConfig(
+          label: 'COMPLETED',
           color: const Color(0xFF10B981), // Green
         );
     }

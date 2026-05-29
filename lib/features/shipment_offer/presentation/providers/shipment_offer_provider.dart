@@ -1,6 +1,7 @@
 // lib/features/shipment_offer/presentation/providers/shipment_offer_provider.dart
 
 import 'package:flutter/foundation.dart';
+import '../../domain/entities/shipment_offer.dart';
 import '../../data/services/shipment_offer_api_service.dart';
 import '../../data/mappers/shipment_offer_mapper.dart';
 import '../states/shipment_offer_state.dart';
@@ -11,6 +12,8 @@ class ShipmentOfferProvider extends ChangeNotifier {
   final ShipmentOfferApiService _apiService;
 
   ShipmentOfferState _state = const ShipmentOfferState();
+  final Set<int> _submittingShipmentIds = <int>{};
+  final Set<int> _submittedShipmentIds = <int>{};
 
   ShipmentOfferProvider(this._apiService);
 
@@ -18,28 +21,36 @@ class ShipmentOfferProvider extends ChangeNotifier {
   ShipmentOfferState get state => _state;
 
   /// Convenience getters
-  List<dynamic> get offers => _state.offers;
+  List<ShipmentOffer> get offers => _state.offers;
   bool get isLoading => _state.isLoading;
   String? get error => _state.error;
   String? get errorMessage => _state.error; // Alias for consistency
+  bool isSubmittingForShipment(int shipmentId) => _submittingShipmentIds.contains(shipmentId);
+  bool hasSubmittedOfferForShipment(int shipmentId) => _submittedShipmentIds.contains(shipmentId);
 
   /// Get carrier's offers from backend
   Future<void> getMyOffers() async {
-    _state = _state.copyWith(isLoading: true, clearError: true);
-    notifyListeners();
-
     try {
+      _state = _state.copyWith(isLoading: true, clearError: true);
+      notifyListeners();
+
       final offerModels = await _apiService.getMyOffers();
       final offers = offerModels.map((model) => ShipmentOfferMapper.toEntity(model)).toList();
+      _submittedShipmentIds
+        ..clear()
+        ..addAll(offers.map((offer) => offer.shipmentId));
       
       _state = _state.copyWith(
         offers: offers,
         isLoading: false,
       );
     } catch (e) {
+      // The supplied OpenAPI contract does not expose /api/shipment-offers/my-offers.
+      // Keep any offers submitted in this session visible instead of replacing
+      // real state with mock data.
       _state = _state.copyWith(
         isLoading: false,
-        error: _getErrorMessage(e),
+        error: _state.offers.isEmpty ? _getErrorMessage(e) : null,
       );
     }
     notifyListeners();
@@ -51,6 +62,11 @@ class ShipmentOfferProvider extends ChangeNotifier {
   /// Create new offer for a shipment
   /// Note: Backend uses "carrierCompanyId" not "carrierId"
   Future<void> createOffer(int shipmentId, int carrierCompanyId, double price) async {
+    if (_submittingShipmentIds.contains(shipmentId) || _submittedShipmentIds.contains(shipmentId)) {
+      return;
+    }
+
+    _submittingShipmentIds.add(shipmentId);
     _state = _state.copyWith(isLoading: true, clearError: true);
     notifyListeners();
 
@@ -60,8 +76,20 @@ class ShipmentOfferProvider extends ChangeNotifier {
         carrierCompanyId: carrierCompanyId,
         price: price,
       );
-      // Refresh the offers list after creating
-      await getMyOffers();
+
+      _submittedShipmentIds.add(shipmentId);
+      final submittedOffer = ShipmentOffer(
+        id: -DateTime.now().millisecondsSinceEpoch,
+        createdAt: DateTime.now().toUtc(),
+        price: price,
+        shipmentId: shipmentId,
+        shipmentTrackingNumber: '',
+        carrierCompanyId: carrierCompanyId,
+      );
+      _state = _state.copyWith(
+        isLoading: false,
+        offers: [submittedOffer, ..._state.offers],
+      );
     } catch (e) {
       _state = _state.copyWith(
         isLoading: false,
@@ -69,6 +97,9 @@ class ShipmentOfferProvider extends ChangeNotifier {
       );
       notifyListeners();
       rethrow; // Rethrow so UI can handle it
+    } finally {
+      _submittingShipmentIds.remove(shipmentId);
+      notifyListeners();
     }
   }
 
@@ -79,8 +110,14 @@ class ShipmentOfferProvider extends ChangeNotifier {
 
     try {
       await _apiService.cancelOffer(offerId);
-      // Refresh the offers list after cancelling
-      await getMyOffers();
+      final remainingOffers = _state.offers.where((offer) => offer.id != offerId).toList();
+      _submittedShipmentIds
+        ..clear()
+        ..addAll(remainingOffers.map((offer) => offer.shipmentId));
+      _state = _state.copyWith(
+        offers: remainingOffers,
+        isLoading: false,
+      );
     } catch (e) {
       _state = _state.copyWith(
         isLoading: false,
@@ -93,6 +130,10 @@ class ShipmentOfferProvider extends ChangeNotifier {
 
   /// Assign carrier to shipment (accept offer)
   Future<void> assignCarrier(int shipmentId, int carrierId) async {
+    if (carrierId <= 0) {
+      throw Exception('Carrier profile id is missing from the selected offer.');
+    }
+
     _state = _state.copyWith(isLoading: true, clearError: true);
     notifyListeners();
 
