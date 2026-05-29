@@ -40,6 +40,18 @@ class ForbiddenException extends AppException {
 	ForbiddenException([super.message = 'Forbidden']);
 }
 
+class NotFoundException extends AppException {
+	NotFoundException([super.message = 'Not found']);
+}
+
+class ConflictException extends AppException {
+	ConflictException([super.message = 'Conflict']);
+}
+
+class ServerException extends AppException {
+	ServerException([super.message = 'Server error']);
+}
+
 class HttpException extends AppException {
 	const HttpException({
 		String message = 'HTTP error',

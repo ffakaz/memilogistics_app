@@ -14,6 +14,7 @@ class AuthApiServiceReal {
     final response = await _apiClient.post(
       '${ApiConstants.apiPrefix}${AuthEndpoints.login}',
       data: body,
+      headers: {'skipAuthInterceptor': 'true'},
     );
 
     if (!response.isSuccess || response.data == null) {
@@ -47,6 +48,7 @@ class AuthApiServiceReal {
         '${ApiConstants.apiPrefix}${AuthEndpoints.register}',
         data: body,
         queryParameters: {'role': role}, // Role as query parameter
+        headers: {'skipAuthInterceptor': 'true'},
       );
 
       print('✅ Registration Response:');
@@ -86,6 +88,7 @@ class AuthApiServiceReal {
     final response = await _apiClient.post(
       '${ApiConstants.apiPrefix}${AuthEndpoints.logout}',
       data: body,
+      headers: {'skipAuthInterceptor': 'true'},
     );
 
     if (!response.isSuccess) {
@@ -99,6 +102,7 @@ class AuthApiServiceReal {
     final response = await _apiClient.post(
       '${ApiConstants.apiPrefix}${AuthEndpoints.refresh}',
       data: body,
+      headers: {'skipAuthInterceptor': 'true'},
     );
 
     if (!response.isSuccess || response.data == null) {

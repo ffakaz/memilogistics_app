@@ -2,232 +2,284 @@
 
 import '../../../../core/network/api_client.dart';
 import '../../../../core/utils/constants/api_constants.dart';
+import '../../../../core/network/request_builder.dart';
+import '../../../../core/network/api_routes.dart';
+import '../../../../core/error/http_error_mapper.dart';
 import '../../../shipment_offer/data/models/shipment_offer_model.dart';
 import '../models/create_shipment_request.dart';
-import '../models/shipment_response_model.dart';
+import '../models/shipment_model.dart';
+import '../models/paginated_shipment_response.dart';
 
 class ShipmentApiServiceReal {
   final ApiClient _apiClient;
 
   ShipmentApiServiceReal(this._apiClient);
 
-  /// Create a new shipment
-  /// POST /api/shipments/create
-  Future<ShipmentResponseModel> createShipment(
-    CreateShipmentRequest request,
-  ) async {
+  Future<ShipmentModel> createShipment(CreateShipmentRequest request) async {
+    // Debug logging
+    print('=== CREATE SHIPMENT DEBUG ===');
+    print('Endpoint: ${ApiConstants.apiPrefix}${ShipmentEndpoints.create}');
+    print('Request payload: ${request.toJson()}');
+    print('Shipper ID: ${request.shipperId}');
+    
     final response = await _apiClient.post<dynamic>(
       '${ApiConstants.apiPrefix}${ShipmentEndpoints.create}',
       data: request.toJson(),
     );
-    return ShipmentResponseModel.fromJson(_requireMap(response));
+    
+    print('Response status: ${response.statusCode}');
+    print('Response data: ${response.data}');
+    print('=== END DEBUG ===');
+    
+    return ShipmentModel.fromJson(_requireMap(response));
   }
 
-  /// Get list of shipments with pagination
-  /// GET /api/shipments/list?page=0&size=20
-  Future<List<ShipmentResponseModel>> listShipments({
-    int page = 0,
-    int size = 20,
-  }) async {
-    final response = await _apiClient.get<dynamic>(
-      '${ApiConstants.apiPrefix}${ShipmentEndpoints.list}',
-      queryParameters: {'page': page, 'size': size},
-    );
-    return _parseShipmentList(response);
+  Future<List<ShipmentModel>> listShipments({int page = 0, int size = 20}) async {
+    // Use the correct backend endpoint: /api/shipment/list
+    // This endpoint supports pagination with page and size query parameters
+    try {
+      final response = await _apiClient.get<dynamic>(
+        '${ApiConstants.apiPrefix}${ShipmentEndpoints.list}',
+        queryParameters: {'page': page, 'size': size},
+      );
+      return _parseShipmentList(response);
+    } catch (e) {
+      print('❌ Failed to fetch shipments from /api/shipment/list: $e');
+      rethrow;
+    }
   }
 
-  /// Get shipment by ID
-  /// GET /api/shipments/{shipmentId}
-  Future<ShipmentResponseModel> getShipment(int shipmentId) async {
-    final endpoint = ShipmentEndpoints.getById.replaceAll(
-      '{shipmentId}',
-      shipmentId.toString(),
-    );
-
-    final response = await _apiClient.get<dynamic>(
-      '${ApiConstants.apiPrefix}$endpoint',
-    );
-    return ShipmentResponseModel.fromJson(_requireMap(response));
+  Future<ShipmentModel> getShipment(int shipmentId) async {
+    final endpoint = ShipmentEndpoints.getById.replaceAll('{shipmentId}', shipmentId.toString());
+    final response = await _apiClient.get<dynamic>('${ApiConstants.apiPrefix}$endpoint');
+    return ShipmentModel.fromJson(_requireMap(response));
   }
 
-  /// Get shipment by tracking number
-  /// GET /api/shipments/tracking/{trackingNumber}
-  Future<ShipmentResponseModel> getShipmentByTracking(
-    String trackingNumber,
-  ) async {
-    final endpoint = ShipmentEndpoints.tracking.replaceAll(
-      '{trackingNumber}',
-      trackingNumber,
-    );
-
-    final response = await _apiClient.get<dynamic>(
-      '${ApiConstants.apiPrefix}$endpoint',
-    );
-    return ShipmentResponseModel.fromJson(_requireMap(response));
-  }
-
-  /// Delete shipment
-  /// DELETE /api/shipments/{shipmentId}
   Future<void> deleteShipment(int shipmentId) async {
-    final endpoint = ShipmentEndpoints.delete.replaceAll(
-      '{shipmentId}',
-      shipmentId.toString(),
-    );
-
-    final response = await _apiClient.delete<dynamic>(
-      '${ApiConstants.apiPrefix}$endpoint',
-    );
+    final endpoint = ShipmentEndpoints.delete.replaceAll('{shipmentId}', shipmentId.toString());
+    final response = await _apiClient.delete<dynamic>('${ApiConstants.apiPrefix}$endpoint');
     _ensureSuccess(response);
   }
 
-  /// Get dashboard statistics
-  /// GET /api/shipments/dashboard
   Future<Map<String, dynamic>> getDashboard() async {
-    final response = await _apiClient.get<Map<String, dynamic>>(
-      '${ApiConstants.apiPrefix}${ShipmentEndpoints.dashboard}',
-    );
+    final response = await _apiClient.get<Map<String, dynamic>>('${ApiConstants.apiPrefix}${ShipmentEndpoints.dashboard}');
     return _requireData(response);
   }
 
-  /// List shipments by origin
-  /// GET /api/shipments/list-by-origin/{origin}
-  Future<List<ShipmentResponseModel>> listByOrigin(
-    String origin, {
-    int page = 0,
-    int size = 20,
-  }) async {
-    final endpoint = ShipmentEndpoints.listByOrigin.replaceAll(
-      '{origin}',
-      Uri.encodeComponent(origin),
-    );
+  Future<PaginatedShipmentResponse> listShipmentsPaginated({int page = 0, int size = 20}) async {
+    print('=== LIST SHIPMENTS PAGINATED DEBUG ===');
+    print('Requesting page: $page, size: $size');
+    
+    final endpoints = [
+      ShipmentEndpoints.list,
+      '/shipment/list',
+      '/shipments',
+      '/shipment',
+    ];
 
+    for (final ep in endpoints) {
+      try {
+        print('Trying endpoint: ${ApiConstants.apiPrefix}$ep');
+        final response = await _apiClient.get<dynamic>(
+          '${ApiConstants.apiPrefix}$ep',
+          queryParameters: {'page': page, 'size': size},
+        );
+        
+        print('Response status: ${response.statusCode}');
+        print('Response data type: ${response.data.runtimeType}');
+        print('Response data: ${response.data}');
+        
+        final data = _requireData(response);
+        
+        // Check if response is a simple array (not paginated)
+        if (data is List) {
+          print('Backend returned simple array, converting to paginated format');
+          return PaginatedShipmentResponse(
+            totalElements: data.length,
+            totalPages: 1,
+            first: true,
+            last: true,
+            size: data.length,
+            content: data.map((json) => ShipmentModel.fromJson(_asMap(json))).toList(),
+            number: 0,
+            numberOfElements: data.length,
+            empty: data.isEmpty,
+          );
+        }
+        
+        // Try to parse as paginated response
+        print('Attempting to parse as paginated response');
+        return PaginatedShipmentResponse.fromJson(_asMap(data));
+      } catch (e) {
+        print('Endpoint $ep failed: $e');
+        continue;
+      }
+    }
+
+    print('=== ALL ENDPOINTS FAILED ===');
+    throw Exception('Failed to fetch paginated shipments from backend - tried multiple endpoints');
+  }
+
+  Future<PaginatedShipmentResponse> getShipperShipmentsPaginated({int page = 0, int size = 20}) async {
+    print('=== GET MY SHIPMENTS DEBUG ===');
+    print('Requesting page: $page, size: $size');
+    print('Endpoint: ${ApiConstants.apiPrefix}${ShipmentEndpoints.my}');
+    
     final response = await _apiClient.get<dynamic>(
-      '${ApiConstants.apiPrefix}$endpoint',
+      '${ApiConstants.apiPrefix}${ShipmentEndpoints.my}',
       queryParameters: {'page': page, 'size': size},
     );
-    return _parseShipmentList(response);
+    
+    print('Response status: ${response.statusCode}');
+    print('Response data type: ${response.data.runtimeType}');
+    print('Response data: ${response.data}');
+    
+    final data = _requireData(response);
+    
+    // Check if response is a simple array (not paginated)
+    if (data is List) {
+      print('Backend returned simple array, converting to paginated format');
+      return PaginatedShipmentResponse(
+        totalElements: data.length,
+        totalPages: 1,
+        first: true,
+        last: true,
+        size: data.length,
+        content: data.map((json) => ShipmentModel.fromJson(_asMap(json))).toList(),
+        number: 0,
+        numberOfElements: data.length,
+        empty: data.isEmpty,
+      );
+    }
+    
+    // Try to parse as paginated response
+    print('Attempting to parse as paginated response');
+    return PaginatedShipmentResponse.fromJson(_asMap(data));
   }
 
-  /// List shipments by destination
-  /// GET /api/shipments/list-by-destination/{destination}
-  Future<List<ShipmentResponseModel>> listByDestination(
-    String destination, {
+  /// Get my shipments (role-aware - filtered by JWT token)
+  /// Shippers see their created shipments, carriers see assigned shipments
+  /// GET /api/shipment/my
+  Future<List<ShipmentModel>> getMyShipments({int page = 0, int size = 20}) async {
+    try {
+      final response = await _apiClient.get<dynamic>(
+        '${ApiConstants.apiPrefix}${ShipmentEndpoints.my}',
+        queryParameters: {'page': page, 'size': size},
+      );
+      return _parseShipmentList(response);
+    } catch (e) {
+      print('❌ Failed to fetch my shipments from /api/shipment/my: $e');
+      rethrow;
+    }
+  }
+
+  /// Get my shipments filtered by status
+  /// GET /api/shipment/my/status?status=PENDING
+  Future<List<ShipmentModel>> getMyShipmentsByStatus({
+    required String status,
     int page = 0,
     int size = 20,
   }) async {
-    final endpoint = ShipmentEndpoints.listByDestination.replaceAll(
-      '{destination}',
-      Uri.encodeComponent(destination),
-    );
-
-    final response = await _apiClient.get<dynamic>(
-      '${ApiConstants.apiPrefix}$endpoint',
-      queryParameters: {'page': page, 'size': size},
-    );
-    return _parseShipmentList(response);
+    try {
+      final response = await _apiClient.get<dynamic>(
+        '${ApiConstants.apiPrefix}${ShipmentEndpoints.myByStatus}',
+        queryParameters: {
+          'status': status,
+          'page': page,
+          'size': size,
+        },
+      );
+      return _parseShipmentList(response);
+    } catch (e) {
+      print('❌ Failed to fetch my shipments by status from /api/shipment/my/status: $e');
+      rethrow;
+    }
   }
 
-  /// List shipments by fragile status
-  /// GET /api/shipments/list/fragile?fragile=true
-  Future<List<ShipmentResponseModel>> listByFragile(
-    bool fragile, {
-    int page = 0,
-    int size = 20,
-  }) async {
-    final response = await _apiClient.get<dynamic>(
-      '${ApiConstants.apiPrefix}${ShipmentEndpoints.listByFragile}',
-      queryParameters: {'fragile': fragile, 'page': page, 'size': size},
-    );
-    return _parseShipmentList(response);
+  Future<Map<String, dynamic>> getShipmentStatistics() async {
+    final response = await _apiClient.get<dynamic>('${ApiConstants.apiPrefix}${ShipmentEndpoints.dashboard}');
+    return _requireMap(response);
   }
 
-  Future<void> offerShipment({
-    required int shipmentId,
-    required double price,
-  }) async {
-    final endpoint = ShipmentEndpoints.offerShipment.replaceAll(
-      '{shipmentId}',
-      shipmentId.toString(),
-    );
-    final response = await _apiClient.post<dynamic>(
-      '${ApiConstants.apiPrefix}$endpoint',
+  Future<List<Map<String, dynamic>>> getShipmentEvents(int shipmentId) async {
+    final endpoint = ShipmentEndpoints.getEvents.replaceAll('{shipmentId}', shipmentId.toString());
+    final response = await _apiClient.get<dynamic>('${ApiConstants.apiPrefix}$endpoint');
+    return _requireList(response).map(_asMap).toList();
+  }
+
+  Future<List<ShipmentOfferModel>> getShipmentOffers(int shipmentId) async {
+    print('🔍 [API] Fetching offers for shipment $shipmentId');
+    final url = RequestBuilder.buildFullUrl(ApiRoutes.getShipmentOffers, {'shipmentId': shipmentId});
+    print('   Endpoint: $url');
+
+    try {
+      final response = await _apiClient.get<dynamic>(url);
+      
+      print('   Response status: ${response.statusCode}');
+      print('   Response data type: ${response.data.runtimeType}');
+      print('   Response data: ${response.data}');
+      
+      final offers = _requireList(response).map((json) => ShipmentOfferModel.fromJson(_asMap(json))).toList();
+      print('   ✅ Parsed ${offers.length} offers successfully');
+      
+      return offers;
+    } catch (e) {
+      print('   ❌ Error fetching offers: $e');
+      rethrow;
+    }
+  }
+
+  /// Fetch shipments assigned to the currently authenticated carrier
+  Future<List<ShipmentModel>> getCarrierAssignedShipments() async {
+    final response = await _apiClient.get<dynamic>('${ApiConstants.apiPrefix}${CarrierShipmentEndpoints.getAssignedForCurrent}');
+    return _requireList(response).map((json) => ShipmentModel.fromJson(_asMap(json))).toList();
+  }
+
+  /// Fetch shipments assigned to a specific carrier by ID
+  Future<List<ShipmentModel>> getCarrierAssignedShipmentsById(int carrierId) async {
+    final endpoint = CarrierShipmentEndpoints.getAssignedForCarrier.replaceAll('{carrierId}', carrierId.toString());
+    final response = await _apiClient.get<dynamic>('${ApiConstants.apiPrefix}$endpoint');
+    return _requireList(response).map((json) => ShipmentModel.fromJson(_asMap(json))).toList();
+  }
+
+  Future<void> offerShipment({required int shipmentId, required double price}) async {
+    final url = RequestBuilder.buildFullUrl(
+      ApiRoutes.createOffer,
+      {'shipmentId': shipmentId},
       queryParameters: {'price': price},
+      requiredQueryKeys: ['price'],
     );
+    final response = await _apiClient.post<dynamic>(url);
     _ensureSuccess(response);
   }
 
   Future<void> cancelShipmentOffer(int shipmentOfferId) async {
-    final endpoint = ShipmentEndpoints.cancelOffer.replaceAll(
-      '{shipmentOfferId}',
-      shipmentOfferId.toString(),
-    );
-    final response = await _apiClient.post<dynamic>(
-      '${ApiConstants.apiPrefix}$endpoint',
-    );
+    // OpenAPI: POST /api/shipments/{shipmentOfferId}/cancel-shipment-offer
+    final url = RequestBuilder.buildFullUrl(ApiRoutes.cancelOffer, {'shipmentOfferId': shipmentOfferId});
+    final response = await _apiClient.post<dynamic>(url);
     _ensureSuccess(response);
   }
 
-  Future<void> assignCarrier({
-    required int shipmentId,
-    required int carrierId,
-  }) async {
-    final endpoint = ShipmentEndpoints.assignCarrier.replaceAll(
-      '{shipmentId}',
-      shipmentId.toString(),
-    );
-    final response = await _apiClient.post<dynamic>(
-      '${ApiConstants.apiPrefix}$endpoint',
+  Future<void> assignCarrier({required int shipmentId, required int carrierId}) async {
+    // OpenAPI: POST /api/shipments/{shipmentId}/assign-carrier?carrierId={carrierId}
+    final url = RequestBuilder.buildFullUrl(
+      ApiRoutes.assignCarrier,
+      {'shipmentId': shipmentId},
       queryParameters: {'carrierId': carrierId},
+      requiredQueryKeys: ['carrierId'],
     );
+    final response = await _apiClient.post<dynamic>(url);
     _ensureSuccess(response);
   }
 
-  Future<ShipmentResponseModel> updateStatus({
-    required int shipmentId,
-    required String location,
-    required String status,
-  }) async {
-    final endpoint = ShipmentEndpoints.updateStatus.replaceAll(
-      '{shipmentId}',
-      shipmentId.toString(),
-    );
-    final response = await _apiClient.patch<dynamic>(
-      '${ApiConstants.apiPrefix}$endpoint',
-      data: {'location': location, 'status': status},
-    );
-    return ShipmentResponseModel.fromJson(_requireMap(response));
+  Future<ShipmentModel> updateStatus({required int shipmentId, required String location, required String status}) async {
+    final endpoint = ShipmentEndpoints.updateStatus.replaceAll('{shipmentId}', shipmentId.toString());
+    final response = await _apiClient.patch<dynamic>('${ApiConstants.apiPrefix}$endpoint', data: {'location': location, 'status': status});
+    return ShipmentModel.fromJson(_requireMap(response));
   }
 
-  Future<List<ShipmentOfferModel>> getShipmentOffers(int shipmentId) async {
-    final endpoint = ShipmentEndpoints.getOffers.replaceAll(
-      '{shipmentId}',
-      shipmentId.toString(),
-    );
-    final response = await _apiClient.get<dynamic>(
-      '${ApiConstants.apiPrefix}$endpoint',
-    );
-    return _requireList(
-      response,
-    ).map((json) => ShipmentOfferModel.fromJson(_asMap(json))).toList();
-  }
-
-  Future<List<Map<String, dynamic>>> getShipmentEvents(int shipmentId) async {
-    final endpoint = ShipmentEndpoints.getEvents.replaceAll(
-      '{shipmentId}',
-      shipmentId.toString(),
-    );
-    final response = await _apiClient.get<dynamic>(
-      '${ApiConstants.apiPrefix}$endpoint',
-    );
-    return _requireList(response).map(_asMap).toList();
-  }
-
-  List<ShipmentResponseModel> _parseShipmentList(
-    ApiResponse<dynamic> response,
-  ) {
-    return _requireList(
-      response,
-    ).map((json) => ShipmentResponseModel.fromJson(_asMap(json))).toList();
+  List<ShipmentModel> _parseShipmentList(ApiResponse<dynamic> response) {
+    return _requireList(response).map((json) => ShipmentModel.fromJson(_asMap(json))).toList();
   }
 
   Map<String, dynamic> _requireMap(ApiResponse<dynamic> response) {
@@ -250,7 +302,6 @@ class ShipmentApiServiceReal {
     if (data is Map) return Map<String, dynamic>.from(data);
     throw Exception('Backend returned an invalid object response');
   }
-
   T _requireData<T>(ApiResponse<T> response) {
     _ensureSuccess(response);
     final data = response.data;
@@ -262,9 +313,7 @@ class ShipmentApiServiceReal {
 
   void _ensureSuccess(ApiResponse<dynamic> response) {
     if (!response.isSuccess) {
-      throw Exception(
-        response.message ?? 'Request failed (${response.statusCode})',
-      );
+      throw HttpErrorMapper.map(response.statusCode, response.message);
     }
   }
 }

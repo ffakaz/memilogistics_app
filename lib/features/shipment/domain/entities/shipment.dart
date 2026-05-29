@@ -1,162 +1,118 @@
-import '../enums/safety_option.dart';
 import '../enums/shipment_status.dart';
+import '../enums/safety_option.dart';
 import '../enums/shipment_type.dart';
 import '../enums/weight_unit.dart';
-
 import 'location.dart';
-import 'delivery_confirmation.dart';
-import 'payment_record.dart';
-import 'shipper_profile.dart';
-import 'carrier_profile.dart';
-import 'shipment_offer.dart';
-import 'shipment_event.dart';
 
 class Shipment {
   final int? id;
   final String? trackingNumber;
-
-  final String shipperName;
-
-  final ShipmentType shipmentType;
-
-  final double amount;
-
-  final WeightUnit unit;
-
-  final Location pickupLocation;
-
-  final Location destinationLocation;
-
-  final DateTime pickupDate;
-
-  final SafetyOption safetyOption;
-
+  final String origin;
+  final String destination;
+  final double weightKg;
+  final double? volume;
   final ShipmentStatus status;
-
-  // Optional backend fields
+  final DateTime? pickupDate;
+  final DateTime? estimatedDeliveryDate;
+  final String? shipmentItem;
   final String? description;
+  final bool fragile;
   final DateTime? createdAt;
   final DateTime? updatedAt;
   final DateTime? completedAt;
-  final double? volume;
+  final int? shipperId;
+  final int? assignedCarrierId;
 
-  // New backend fields (from updated API response)
-  final String? shipmentItem;
-  final double? weightKg;
-  final String? origin; // String location instead of Location object
-  final String? destination; // String location instead of Location object
-  final DateTime? estimatedDeliveryDate;
-  final bool? fragile;
-
-  // Enhanced objects
-  final DeliveryConfirmation? deliveryConfirmation;
-  final PaymentRecord? paymentRecord;
-  final ShipperProfile? shipper;
-  final CarrierProfile? assignedCarrier;
-  final List<ShipmentOffer>? shipmentOffers;
-  final List<ShipmentEvent>? shipmentEvents;
+  // Legacy fields for backward compatibility (will be removed)
+  @Deprecated('Use origin string instead')
+  final Location? pickupLocation;
+  @Deprecated('Use destination string instead')
+  final Location? destinationLocation;
+  @Deprecated('Use weightKg instead')
+  final double? amount;
+  @Deprecated('Use weightKg instead')
+  final WeightUnit? unit;
+  @Deprecated('Use fragile instead')
+  final SafetyOption? safetyOption;
+  @Deprecated('Use shipmentItem instead')
+  final ShipmentType? shipmentType;
+  @Deprecated('Not used')
+  final String? shipperName;
 
   const Shipment({
     this.id,
     this.trackingNumber,
-    required this.shipperName,
-    required this.shipmentType,
-    required this.amount,
-    required this.unit,
-    required this.pickupLocation,
-    required this.destinationLocation,
-    required this.pickupDate,
-    required this.safetyOption,
+    required this.origin,
+    required this.destination,
+    required this.weightKg,
+    this.volume,
     required this.status,
+    this.pickupDate,
+    this.estimatedDeliveryDate,
+    this.shipmentItem,
     this.description,
+    required this.fragile,
     this.createdAt,
     this.updatedAt,
     this.completedAt,
-    this.volume,
-    this.shipmentItem,
-    this.weightKg,
-    this.origin,
-    this.destination,
-    this.estimatedDeliveryDate,
-    this.fragile,
-    this.deliveryConfirmation,
-    this.paymentRecord,
-    this.shipper,
-    this.assignedCarrier,
-    this.shipmentOffers,
-    this.shipmentEvents,
+    this.shipperId,
+    this.assignedCarrierId,
+    // Legacy fields
+    this.pickupLocation,
+    this.destinationLocation,
+    this.amount,
+    this.unit,
+    this.safetyOption,
+    this.shipmentType,
+    this.shipperName,
   });
 
   Shipment copyWith({
     int? id,
     String? trackingNumber,
-    String? shipperName,
-    ShipmentType? shipmentType,
-    double? amount,
-    WeightUnit? unit,
-    Location? pickupLocation,
-    Location? destinationLocation,
-    DateTime? pickupDate,
-    SafetyOption? safetyOption,
+    String? origin,
+    String? destination,
+    double? weightKg,
+    double? volume,
     ShipmentStatus? status,
+    DateTime? pickupDate,
+    DateTime? estimatedDeliveryDate,
+    String? shipmentItem,
     String? description,
+    bool? fragile,
     DateTime? createdAt,
     DateTime? updatedAt,
     DateTime? completedAt,
-    double? volume,
-    String? shipmentItem,
-    double? weightKg,
-    String? origin,
-    String? destination,
-    DateTime? estimatedDeliveryDate,
-    bool? fragile,
-    DeliveryConfirmation? deliveryConfirmation,
-    PaymentRecord? paymentRecord,
-    ShipperProfile? shipper,
-    CarrierProfile? assignedCarrier,
-    List<ShipmentOffer>? shipmentOffers,
-    List<ShipmentEvent>? shipmentEvents,
+    int? shipperId,
+    int? assignedCarrierId,
   }) {
     return Shipment(
       id: id ?? this.id,
       trackingNumber: trackingNumber ?? this.trackingNumber,
-      shipperName: shipperName ?? this.shipperName,
-      shipmentType: shipmentType ?? this.shipmentType,
-      amount: amount ?? this.amount,
-      unit: unit ?? this.unit,
-      pickupLocation: pickupLocation ?? this.pickupLocation,
-      destinationLocation: destinationLocation ?? this.destinationLocation,
-      pickupDate: pickupDate ?? this.pickupDate,
-      safetyOption: safetyOption ?? this.safetyOption,
+      origin: origin ?? this.origin,
+      destination: destination ?? this.destination,
+      weightKg: weightKg ?? this.weightKg,
+      volume: volume ?? this.volume,
       status: status ?? this.status,
+      pickupDate: pickupDate ?? this.pickupDate,
+      estimatedDeliveryDate: estimatedDeliveryDate ?? this.estimatedDeliveryDate,
+      shipmentItem: shipmentItem ?? this.shipmentItem,
       description: description ?? this.description,
+      fragile: fragile ?? this.fragile,
       createdAt: createdAt ?? this.createdAt,
       updatedAt: updatedAt ?? this.updatedAt,
       completedAt: completedAt ?? this.completedAt,
-      volume: volume ?? this.volume,
-      shipmentItem: shipmentItem ?? this.shipmentItem,
-      weightKg: weightKg ?? this.weightKg,
-      origin: origin ?? this.origin,
-      destination: destination ?? this.destination,
-      estimatedDeliveryDate:
-          estimatedDeliveryDate ?? this.estimatedDeliveryDate,
-      fragile: fragile ?? this.fragile,
-      deliveryConfirmation: deliveryConfirmation ?? this.deliveryConfirmation,
-      paymentRecord: paymentRecord ?? this.paymentRecord,
-      shipper: shipper ?? this.shipper,
-      assignedCarrier: assignedCarrier ?? this.assignedCarrier,
-      shipmentOffers: shipmentOffers ?? this.shipmentOffers,
-      shipmentEvents: shipmentEvents ?? this.shipmentEvents,
+      shipperId: shipperId ?? this.shipperId,
+      assignedCarrierId: assignedCarrierId ?? this.assignedCarrierId,
     );
   }
 
-  // Compatibility getters expected by some UI code
-  // Note: origin and destination fields are strings from backend
-  // These getters provide Location objects for backward compatibility
-  Location get originAsLocation => pickupLocation;
-  Location get destinationAsLocation => destinationLocation;
-  double get weight => amount;
-  WeightUnit get weightUnit => unit;
+  // Getter for offer count (will be 0 until we implement offers loading)
+  int get offerCount => 0; // placeholder until offers are loaded separately
 
-  int get offerCount => shipmentOffers?.length ?? 0;
+  // Convenience getters for backward compatibility with UI code
+  Location get originAsLocation => pickupLocation ?? Location(address: origin);
+  Location get destinationAsLocation => destinationLocation ?? Location(address: destination);
+  double get weight => weightKg;
+  String get weightUnit => 'kg';
 }

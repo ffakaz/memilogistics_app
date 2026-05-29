@@ -1,11 +1,11 @@
-import '../../domain/entities/carrier_company.dart';
-import '../../domain/repositories/carrier_company_repository.dart';
+import 'package:memilogistics_app/features/carrier/domain/entities/carrier_company.dart';
+import 'package:memilogistics_app/features/carrier/domain/repositories/carrier_company_repository.dart';
 
-import '../datasources/carrier_company_remote_datasource.dart';
+import '../datasources/carrier_company_remote_datasource_impl.dart';
 import '../mapper/carrier_company_mapper.dart';
 
 class CarrierCompanyRepositoryImpl implements CarrierCompanyRepository {
-  final CarrierCompanyRemoteDataSource remoteDataSource;
+  final CarrierCompanyRemoteDataSourceImpl remoteDataSource;
 
   CarrierCompanyRepositoryImpl(this.remoteDataSource);
 
@@ -22,6 +22,11 @@ class CarrierCompanyRepositoryImpl implements CarrierCompanyRepository {
   Future<CarrierCompany> getCarrierCompany() async {
     final result = await remoteDataSource.getCarrierCompany();
 
+    return CarrierCompanyMapper.toEntity(result);
+  }
+@override
+  Future<CarrierCompany> getCarrierCompanyById(int carrierId) async {
+    final result = await remoteDataSource.getCarrierCompanyById(carrierId);
     return CarrierCompanyMapper.toEntity(result);
   }
 

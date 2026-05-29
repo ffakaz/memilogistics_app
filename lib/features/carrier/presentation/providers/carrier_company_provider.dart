@@ -1,12 +1,15 @@
 import 'package:flutter/material.dart';
+import 'package:memilogistics_app/core/error/exceptions.dart';
 
 import '../../domain/entities/carrier_company.dart';
 
 import '../../domain/usecases/create_carrier_company.dart';
 import '../../domain/usecases/get_carrier_company.dart';
+import '../../domain/usecases/get_carrier_companybyid.dart';
 import '../../domain/usecases/update_carrier_company.dart';
-
 import '../states/carrier_company_state.dart';
+
+
 
 class CarrierCompanyProvider
     extends ChangeNotifier {
@@ -19,11 +22,13 @@ class CarrierCompanyProvider
 
   final UpdateCarrierCompany
       updateCarrierCompanyUseCase;
-
+  final GetCarrierCompanyById
+      getCarrierCompanyByIdUseCase;
   CarrierCompanyProvider({
     required this.createCarrierCompanyUseCase,
     required this.getCarrierCompanyUseCase,
     required this.updateCarrierCompanyUseCase,
+    required this.getCarrierCompanyByIdUseCase,
   });
 
   CarrierCompanyState _state =
@@ -54,6 +59,18 @@ class CarrierCompanyProvider
 
     } catch (e) {
 
+      // If backend returns 404, treat as "missing profile" (onboarding required)
+      if (e is HttpException && e.statusCode == 404) {
+        _state = _state.copyWith(
+          isLoading: false,
+          company: null,
+          error: null,
+          hasAttemptedLoad: true,
+        );
+        notifyListeners();
+        return;
+      }
+
       _state = _state.copyWith(
         isLoading: false,
         error: e.toString(),
@@ -63,7 +80,10 @@ class CarrierCompanyProvider
       notifyListeners();
     }
   }
-
+/// Retrieves a shipper company profile by ID
+  Future<CarrierCompany> getCarrierCompanyById(int carrierId) async {
+    return await getCarrierCompanyByIdUseCase(carrierId);
+  }
   /// Backwards-compatible wrapper used by UI code.
   Future<void> ensureProfileLoaded({bool forceRefresh = false}) async {
     if (forceRefresh) {

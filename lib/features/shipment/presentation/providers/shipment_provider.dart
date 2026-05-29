@@ -1,11 +1,8 @@
 import 'package:flutter/material.dart';
-import '../../domain/entities/location.dart';
 import '../../domain/entities/dashboard_information.dart';
 import '../../domain/entities/shipment.dart';
-import '../../domain/enums/safety_option.dart';
+import 'package:memilogistics_app/features/shipment_offer/data/models/shipment_offer_model.dart';
 import '../../domain/enums/shipment_status.dart';
-import '../../domain/enums/shipment_type.dart';
-import '../../domain/enums/weight_unit.dart';
 import '../../domain/repositories/shipment_repository.dart';
 import '../../domain/usecases/get_dashboard_information.dart';
 
@@ -21,26 +18,52 @@ class ShipmentProvider extends ChangeNotifier {
   bool _isLoading = false;
   String? _errorMessage;
   List<Shipment> _shipments = [];
+  List<Shipment> _assignedShipments = [];
+  final Map<int, List<ShipmentOfferModel>> _offersCache = {};
+  final Set<int> _submittingOffers = {};
   Shipment? _activeShipment;
   DashboardInformation _dashboardInformation = DashboardInformation.empty;
   bool _isDashboardLoading = false;
 
+  // Pagination state
+  int _currentPage = 0;
+  int _pageSize = 20;
+  int _totalPages = 0;
+  bool _hasMorePages = true;
+  bool _isLoadingMore = false;
+
+  // Statistics state (Phase 3)
+  dynamic _statistics;
+  bool _isLoadingStatistics = false;
+
   bool get isLoading => _isLoading;
   String? get errorMessage => _errorMessage;
   List<Shipment> get shipments => _shipments;
+  List<Shipment> get assignedShipments => _assignedShipments;
+  Map<int, List<ShipmentOfferModel>> get offersCache => _offersCache;
+  bool isSubmittingOffer(int shipmentId) => _submittingOffers.contains(shipmentId);
   Shipment? get activeShipment => _activeShipment;
   DashboardInformation get dashboardInformation => _dashboardInformation;
   bool get isDashboardLoading => _isDashboardLoading;
+  
+  // Pagination getters
+  int get currentPage => _currentPage;
+  int get totalPages => _totalPages;
+  bool get hasMorePages => _hasMorePages;
+  bool get isLoadingMore => _isLoadingMore;
+
+  // Statistics getters
+  dynamic get statistics => _statistics;
+  bool get isLoadingStatistics => _isLoadingStatistics;
 
   Future<void> createShipment({
-    required String shipperName,
-    required ShipmentType shipmentType,
-    required double amount,
-    required WeightUnit unit,
-    required String pickup,
+    required int shipperId,  // Required: Shipper ID from shipper profile
+    required String shipmentItem,
+    required double weightKg,
+    required String origin,
     required String destination,
     required DateTime pickupDate,
-    required SafetyOption safetyOption,
+    required bool fragile,
     String? description,
   }) async {
     _setLoading(true);
@@ -48,20 +71,20 @@ class ShipmentProvider extends ChangeNotifier {
 
     try {
       final shipment = Shipment(
-        shipperName: shipperName,
-        shipmentType: shipmentType,
-        amount: amount,
-        unit: unit,
-        pickupLocation: Location(address: pickup),
-        destinationLocation: Location(address: destination),
+        origin: origin,
+        destination: destination,
+        weightKg: weightKg,
+        fragile: fragile,
+        status: ShipmentStatus.pending,
         pickupDate: pickupDate,
-        safetyOption: safetyOption,
-        status: ShipmentStatus
-            .pending, // Backend will manage status transitions based on events
+        shipmentItem: shipmentItem,
         description: description,
       );
 
-      final createdShipment = await repository.createShipment(shipment);
+      final createdShipment = await repository.createShipment(
+        shipment,
+        shipperId: shipperId,
+      );
 
       // Add to local list
       _shipments.add(createdShipment);
@@ -74,26 +97,58 @@ class ShipmentProvider extends ChangeNotifier {
     }
   }
 
+  // Helper methods removed - no longer needed
+
   Future<void> getAvailableShipments() async {
     _setLoading(true);
     _clearError();
 
     try {
+      print('📦 Fetching available shipments...');
+      
       // Get shipments from backend
       _shipments = await repository.listShipments(page: 0, size: 50);
 
+      print('📦 Received ${_shipments.length} shipments from backend');
+      
+      // Log shipment statuses for debugging
+      final statusCounts = <ShipmentStatus, int>{};
+      for (final shipment in _shipments) {
+        statusCounts[shipment.status] = (statusCounts[shipment.status] ?? 0) + 1;
+      }
+      print('📦 Shipment status breakdown:');
+      statusCounts.forEach((status, count) {
+        print('   ${status.displayName}: $count');
+      });
+
       // Filter to only show pending shipments (available for bidding)
-      _shipments = _shipments
+      final pendingShipments = _shipments
           .where((s) => s.status == ShipmentStatus.pending)
           .toList();
+      
+      print('📦 Filtered to ${pendingShipments.length} PENDING shipments available for offers');
+      
+      _shipments = pendingShipments;
 
       notifyListeners();
     } catch (e) {
+      print('❌ Failed to load available shipments: $e');
       _setError('Failed to load shipments: ${e.toString()}');
       _shipments = []; // Empty list on error - no mock data
       notifyListeners();
     } finally {
       _setLoading(false);
+    }
+  }
+
+  /// Fetch shipments assigned to a specific carrier by id
+  Future<List<Shipment>> getAssignedShipmentsByCarrierId(int carrierId) async {
+    try {
+      final models = await repository.getCarrierAssignedShipmentsById(carrierId);
+      return models;
+    } catch (e) {
+      _setError('Failed to load assigned shipments: ${e.toString()}');
+      return [];
     }
   }
 
@@ -178,16 +233,40 @@ class ShipmentProvider extends ChangeNotifier {
     required int shipmentId,
     required double price,
   }) async {
-    _setLoading(true);
+    if (_submittingOffers.contains(shipmentId)) return;
+    _submittingOffers.add(shipmentId);
     _clearError();
+
+    // Optimistic update: add a temporary offer to the cache
+    final tempOffer = ShipmentOfferModel(
+      id: DateTime.now().millisecondsSinceEpoch * -1,
+      createdAt: DateTime.now().toUtc(),
+      price: price,
+      shipmentId: shipmentId,
+      shipmentTrackingNumber: _activeShipment?.trackingNumber ?? '',
+      carrierCompanyId: null,
+      carrierCompany: null,
+    );
+
+    _offersCache.putIfAbsent(shipmentId, () => []);
+    _offersCache[shipmentId] = [tempOffer, ..._offersCache[shipmentId]!];
+    notifyListeners();
 
     try {
       await repository.offerShipment(shipmentId: shipmentId, price: price);
+
+      // On success, refresh offers from backend to reconcile
+      final fresh = await repository.getShipmentOffers(shipmentId);
+      _offersCache[shipmentId] = fresh;
+      notifyListeners();
     } catch (e) {
+      // Rollback optimistic update
+      _offersCache[shipmentId]?.removeWhere((o) => o.id == tempOffer.id);
       _setError('Failed to submit offer: ${e.toString()}');
+      notifyListeners();
       rethrow;
     } finally {
-      _setLoading(false);
+      _submittingOffers.remove(shipmentId);
     }
   }
 
@@ -225,7 +304,7 @@ class ShipmentProvider extends ChangeNotifier {
         shipmentId: shipmentId,
         status: newStatus,
         location:
-            _activeShipment?.destinationAsLocation.shortLabel ?? 'Unknown',
+            _activeShipment?.destination ?? 'Unknown',
       );
       final index = _shipments.indexWhere((s) => s.id == shipmentId);
       if (index != -1) {
@@ -245,23 +324,101 @@ class ShipmentProvider extends ChangeNotifier {
 
   // Get my shipments (role-aware)
   // Note: Backend automatically filters shipments by authenticated user via JWT token.
+  // Get my shipments (role-aware)
+  // Note: Backend automatically filters shipments by authenticated user via JWT token.
   // Shippers see only their shipments, carriers see assigned shipments.
   Future<void> getMyShipments({String? role}) async {
     _setLoading(true);
     _clearError();
 
     try {
-      // Get all shipments from backend (already filtered by user)
-      _shipments = await repository.listShipments(page: 0, size: 50);
+      print('📦 Fetching my shipments (role-aware) using /shipment/my endpoint...');
+      
+      // Use the paginated endpoint that calls /api/shipment/my
+      final paginatedResponse = await repository.getShipperShipmentsPaginated(
+        page: 0,
+        size: 50,
+      );
+      
+      _shipments = paginatedResponse.shipments;
+      _currentPage = paginatedResponse.currentPage;
+      _totalPages = paginatedResponse.totalPages;
+      _hasMorePages = paginatedResponse.hasMore;
+
+      print('📦 Received ${_shipments.length} shipments from backend');
 
       notifyListeners();
     } catch (e) {
+      print('❌ Failed to load my shipments: $e');
       _setError('Failed to load shipments: ${e.toString()}');
       _shipments = []; // Empty list on error - no mock data
       notifyListeners();
     } finally {
       _setLoading(false);
     }
+  }
+
+  // Load shipments with pagination (new method for Phase 1)
+  Future<void> loadShipmentsPaginated({int page = 0, int size = 20, bool append = false}) async {
+    // Prevent multiple simultaneous loads
+    if (_isLoadingMore && append) return;
+    
+    if (append) {
+      _isLoadingMore = true;
+    } else {
+      _setLoading(true);
+    }
+    _clearError();
+
+    try {
+      final paginatedResponse = await repository.listShipmentsPaginated(
+        page: page,
+        size: size,
+      );
+
+      if (append) {
+        // Append to existing list
+        _shipments.addAll(paginatedResponse.shipments);
+      } else {
+        // Replace list
+        _shipments = paginatedResponse.shipments;
+      }
+
+      _currentPage = paginatedResponse.currentPage;
+      _totalPages = paginatedResponse.totalPages;
+      _hasMorePages = paginatedResponse.hasMore;
+      _pageSize = size;
+
+      notifyListeners();
+    } catch (e) {
+      _setError('Failed to load shipments: ${e.toString()}');
+      if (!append) {
+        _shipments = []; // Empty list on error only if not appending
+      }
+      notifyListeners();
+    } finally {
+      if (append) {
+        _isLoadingMore = false;
+      } else {
+        _setLoading(false);
+      }
+      notifyListeners();
+    }
+  }
+
+  // Load next page (for infinite scroll)
+  Future<void> loadNextPage() async {
+    if (!_hasMorePages || _isLoadingMore || _isLoading) return;
+    await loadShipmentsPaginated(
+      page: _currentPage + 1,
+      size: _pageSize,
+      append: true,
+    );
+  }
+
+  // Refresh shipments (pull-to-refresh)
+  Future<void> refreshShipments() async {
+    await loadShipmentsPaginated(page: 0, size: _pageSize, append: false);
   }
 
   // Get shipment events
@@ -271,6 +428,103 @@ class ShipmentProvider extends ChangeNotifier {
     } catch (e) {
       _setError('Failed to load shipment events: ${e.toString()}');
       rethrow;
+    }
+  }
+
+  // Get shipment offers (Phase 2)
+  Future<List<dynamic>> loadShipmentOffers(int shipmentId) async {
+    try {
+      return await repository.getShipmentOffers(shipmentId);
+    } catch (e) {
+      _setError('Failed to load shipment offers: ${e.toString()}');
+      rethrow;
+    }
+  }
+
+  /// Fetch offers and populate local cache
+  Future<void> fetchShipmentOffers(int shipmentId) async {
+    _clearError();
+    try {
+      final offers = await repository.getShipmentOffers(shipmentId);
+      _offersCache[shipmentId] = offers;
+      notifyListeners();
+    } catch (e) {
+      _setError('Failed to load shipment offers: ${e.toString()}');
+      rethrow;
+    }
+  }
+
+  /// Cancel an offer with optimistic removal
+  Future<void> cancelShipmentOffer({required int shipmentId, required int shipmentOfferId}) async {
+    _clearError();
+
+    final existing = _offersCache[shipmentId] ?? [];
+    final removed = existing.where((o) => o.id == shipmentOfferId).toList();
+    if (removed.isEmpty) return;
+
+    // Optimistic removal
+    _offersCache[shipmentId] = existing.where((o) => o.id != shipmentOfferId).toList();
+    notifyListeners();
+
+    try {
+      await repository.cancelShipmentOffer(shipmentOfferId);
+    } catch (e) {
+      // rollback
+      _offersCache[shipmentId] = [..._offersCache[shipmentId] ?? [], ...removed];
+      _setError('Failed to cancel offer: ${e.toString()}');
+      notifyListeners();
+      rethrow;
+    }
+  }
+
+  // Load shipment statistics (Phase 3)
+  Future<void> loadStatistics() async {
+    _isLoadingStatistics = true;
+    _clearError();
+    notifyListeners();
+
+    try {
+      _statistics = await repository.getShipmentStatistics();
+      _isLoadingStatistics = false;
+      notifyListeners();
+    } catch (e) {
+      _setError('Failed to load statistics: ${e.toString()}');
+      _isLoadingStatistics = false;
+      notifyListeners();
+    }
+  }
+
+  // Get carrier's assigned shipments
+  Future<void> getCarrierAssignedShipments() async {
+    _setLoading(true);
+    _clearError();
+
+    try {
+      _assignedShipments = await repository.getCarrierAssignedShipments();
+      notifyListeners();
+    } catch (e) {
+      _setError('Failed to load assigned shipments: ${e.toString()}');
+      _assignedShipments = [];
+      notifyListeners();
+    } finally {
+      _setLoading(false);
+    }
+  }
+
+  // Get specific carrier's assigned shipments (for admin/manager)
+  Future<void> getCarrierAssignedShipmentsById(int carrierId) async {
+    _setLoading(true);
+    _clearError();
+
+    try {
+      _assignedShipments = await repository.getCarrierAssignedShipmentsById(carrierId);
+      notifyListeners();
+    } catch (e) {
+      _setError('Failed to load carrier assigned shipments: ${e.toString()}');
+      _assignedShipments = [];
+      notifyListeners();
+    } finally {
+      _setLoading(false);
     }
   }
 }

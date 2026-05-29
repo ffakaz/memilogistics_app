@@ -14,6 +14,7 @@ class RouteConstants {
   static const String shipperProfile = "/shipper-profile";
   static const String myShipments = "/my-shipments"; // ADDED
   static const String shipmentDetails = "/shipment-details"; // ADDED
+  static const String shipmentOffers = "/shipment-offers"; // ADDED - View and manage offers
   static const String trackShipment = "/track-shipment"; // ADDED
   static const String payment = "/payment"; // ADDED
   static const String selectRole = "/select-role";

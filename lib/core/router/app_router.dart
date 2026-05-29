@@ -8,6 +8,7 @@
 import 'package:flutter/material.dart';
 import 'package:memilogistics_app/core/secure_storage/secure_storage_service.dart';
 import 'package:memilogistics_app/core/utils/constants/route_constants.dart';
+import 'package:memilogistics_app/core/widgets/splash_screen.dart';
 
 class AppRouter {
   AppRouter({required SecureStorageService storageService})
@@ -110,6 +111,21 @@ class _SplashGateState extends State<_SplashGate> {
 
   Future<void> _redirect() async {
     final route = await widget.router.resolveInitialRoute();
+
+    if (!mounted) return;
+
+    // Show promotional splash banner before redirecting
+    await showDialog(
+      context: context,
+      barrierDismissible: false,
+      builder: (context) => SplashScreen(
+        duration: const Duration(seconds: 3),
+        onComplete: () {
+          Navigator.of(context).pop();
+        },
+      ),
+    );
+
     if (mounted) Navigator.of(context).pushReplacementNamed(route);
   }
 

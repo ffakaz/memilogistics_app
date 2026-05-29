@@ -17,3 +17,7 @@ export 'package:memilogistics_app/core/utils/constants/enums.dart';
 export 'package:memilogistics_app/core/utils/constants/route_constants.dart';
 export 'package:memilogistics_app/core/utils/constants/storage_constants.dart';
 export 'package:memilogistics_app/core/utils/validators.dart';
+export 'package:memilogistics_app/core/widgets/premium_load_board_card.dart';
+export 'package:memilogistics_app/core/widgets/shipment_card.dart';
+export 'package:memilogistics_app/core/widgets/status_chip.dart';
+export 'package:memilogistics_app/core/widgets/premium_card.dart';

@@ -7,17 +7,44 @@ import 'app_providers.dart';
 import 'package:memilogistics_app/core/di/service_locator.dart';
 import 'package:memilogistics_app/core/router/app_router.dart';
 import 'package:memilogistics_app/core/theme/app_theme.dart';
+import 'package:memilogistics_app/core/widgets/splash_screen.dart';
 
 import 'package:memilogistics_app/features/auth/presentation/provider/auth_provider.dart';
 import 'package:memilogistics_app/features/carrier/presentation/providers/carrier_company_provider.dart';
 import 'package:memilogistics_app/features/shipper/presentation/providers/shipper_company_provider.dart';
 import 'package:memilogistics_app/features/user/presentation/provider/user_provider.dart';
 
-class MemiLogisticsApp extends StatelessWidget {
+class MemiLogisticsApp extends StatefulWidget {
   const MemiLogisticsApp({super.key});
 
   @override
+  State<MemiLogisticsApp> createState() => _MemiLogisticsAppState();
+}
+
+class _MemiLogisticsAppState extends State<MemiLogisticsApp> {
+  bool _showSplash = true;
+
+  @override
   Widget build(BuildContext context) {
+    // Show splash screen first
+    if (_showSplash) {
+      return MaterialApp(
+        debugShowCheckedModeBanner: false,
+        theme: AppTheme.lightTheme,
+        home: SplashScreen(
+          duration: const Duration(seconds: 2),
+          onComplete: () {
+            if (mounted) {
+              setState(() {
+                _showSplash = false;
+              });
+            }
+          },
+        ),
+      );
+    }
+
+    // Then show main app
     return MultiProvider(
       providers: AppProviders.providers,
 

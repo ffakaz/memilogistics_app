@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import 'package:memilogistics_app/features/carrier/presentation/providers/carrier_company_provider.dart';
 import 'package:memilogistics_app/features/shipper/presentation/providers/shipper_company_provider.dart';
+import 'package:memilogistics_app/core/widgets/promotional_banner.dart';
 import '../provider/auth_provider.dart';
 
 class RegisterScreen extends StatefulWidget {
@@ -21,6 +22,33 @@ class _RegisterScreenState extends State<RegisterScreen> {
   bool _obscurePassword = true;
   bool _obscureConfirm = true;
   String _selectedRole = 'SHIPPER'; // Default role in uppercase
+
+  Future<void> _showPromotionalBanner() async {
+    await showDialog(
+      context: context,
+      barrierDismissible: false,
+      barrierColor: Colors.black54,
+      builder: (dialogContext) => PopScope(
+        canPop: false,
+        child: Theme(
+          data: ThemeData.dark().copyWith(
+            textTheme: ThemeData.dark().textTheme.apply(
+              fontFamily: 'Roboto',
+            ),
+          ),
+          child: Material(
+            type: MaterialType.transparency,
+            child: PromotionalBanner(
+              duration: const Duration(seconds: 3), // 3 seconds for new users
+              onComplete: () {
+                Navigator.of(dialogContext).pop();
+              },
+            ),
+          ),
+        ),
+      ),
+    );
+  }
 
   @override
   void dispose() {
@@ -431,6 +459,7 @@ class _RegisterScreenState extends State<RegisterScreen> {
                                         context
                                             .read<CarrierCompanyProvider>()
                                             .clearProfile();
+                                        
                                         // Show success message
                                         ScaffoldMessenger.of(
                                           context,
@@ -460,6 +489,11 @@ class _RegisterScreenState extends State<RegisterScreen> {
                                             ),
                                           ),
                                         );
+
+                                        // Show promotional banner
+                                        await _showPromotionalBanner();
+                                        
+                                        if (!context.mounted) return;
 
                                         // Route directly to appropriate dashboard based on role
                                         final route = _selectedRole == 'CARRIER'

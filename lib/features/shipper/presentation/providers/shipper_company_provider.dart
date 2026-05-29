@@ -5,6 +5,7 @@ import 'package:flutter/material.dart';
 import '../../domain/entities/shipper_company.dart';
 import '../../domain/usecases/create_shipper_company.dart';
 import '../../domain/usecases/get_shipper_company.dart';
+import '../../domain/usecases/get_shipper_company_by_id.dart';
 import '../../domain/usecases/update_shipper_company.dart';
 import '../states/shipper_company_state.dart';
 
@@ -15,11 +16,13 @@ import '../states/shipper_company_state.dart';
 class ShipperCompanyProvider extends ChangeNotifier {
   final CreateShipperCompany createShipperCompanyUseCase;
   final GetShipperCompany getShipperCompanyUseCase;
+  final GetShipperCompanyById getShipperCompanyByIdUseCase;
   final UpdateShipperCompany updateShipperCompanyUseCase;
 
   ShipperCompanyProvider({
     required this.createShipperCompanyUseCase,
     required this.getShipperCompanyUseCase,
+    required this.getShipperCompanyByIdUseCase,
     required this.updateShipperCompanyUseCase,
   });
 
@@ -74,6 +77,11 @@ class ShipperCompanyProvider extends ChangeNotifier {
   Future<void> ensureProfileLoaded({bool forceRefresh = false}) async {
     if (!forceRefresh && _state.hasCheckedProfile) return;
     await getShipperCompany();
+  }
+
+  /// Retrieves a shipper company profile by ID
+  Future<ShipperCompany> getShipperCompanyById(int shipperId) async {
+    return await getShipperCompanyByIdUseCase(shipperId);
   }
 
   /// Creates a new shipper company profile

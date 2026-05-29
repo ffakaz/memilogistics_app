@@ -67,12 +67,31 @@
 		<string>UIInterfaceOrientationLandscapeRight</string>
 	</array>
 	<!-- Network Configuration -->
+	<!-- 
+		HTTPS-only security configuration.
+		Only allows HTTPS connections to our backend API.
+		This prevents man-in-the-middle attacks.
+	-->
 	<key>NSAppTransportSecurity</key>
 	<dict>
+		<!-- Disable arbitrary loads - require HTTPS by default -->
 		<key>NSAllowsArbitraryLoads</key>
-		<true/>
-		<key>NSAllowsArbitraryLoadsInWebContent</key>
-		<true/>
+		<false/>
+		<!-- Allow specific domains with HTTPS only -->
+		<key>NSExceptionDomains</key>
+		<dict>
+			<!-- Backend API domain - HTTPS only -->
+			<key>memi-logistics-backend.onrender.com</key>
+			<dict>
+				<!-- Require HTTPS -->
+				<key>NSIncludesSubdomains</key>
+				<true/>
+				<key>NSExceptionAllowsInsecureHTTPLoads</key>
+				<false/>
+				<key>NSExceptionMinimumTLSVersion</key>
+				<string>TLSv1.2</string>
+			</dict>
+		</dict>
 	</dict>
 </dict>
 </plist>

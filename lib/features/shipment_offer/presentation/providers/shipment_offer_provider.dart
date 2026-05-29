@@ -49,13 +49,15 @@ class ShipmentOfferProvider extends ChangeNotifier {
   Future<void> loadMyOffers() => getMyOffers();
 
   /// Create new offer for a shipment
-  Future<void> createOffer(int shipmentId, double price) async {
+  /// Note: Backend uses "carrierCompanyId" not "carrierId"
+  Future<void> createOffer(int shipmentId, int carrierCompanyId, double price) async {
     _state = _state.copyWith(isLoading: true, clearError: true);
     notifyListeners();
 
     try {
       await _apiService.createOffer(
         shipmentId: shipmentId,
+        carrierCompanyId: carrierCompanyId,
         price: price,
       );
       // Refresh the offers list after creating
@@ -127,7 +129,19 @@ class ShipmentOfferProvider extends ChangeNotifier {
   String _getErrorMessage(dynamic error) {
     if (error is Exception) {
       final message = error.toString();
-      if (message.contains('Failed to get offers')) {
+      
+      // Check for specific HTTP status codes
+      if (message.contains('401') || message.contains('Unauthorized')) {
+        return 'Authentication failed. Please log in again.';
+      } else if (message.contains('403') || message.contains('Forbidden')) {
+        return 'You do not have permission to submit offers.';
+      } else if (message.contains('404') || message.contains('Not Found')) {
+        return 'Shipment not found or no longer available.';
+      } else if (message.contains('400') || message.contains('Bad Request')) {
+        return 'Invalid offer data. Please check your input.';
+      } else if (message.contains('carrierId') || message.contains('carrier')) {
+        return 'Carrier profile not found. Please create your profile first.';
+      } else if (message.contains('Failed to get offers')) {
         return 'Unable to load offers. Please try again.';
       } else if (message.contains('Failed to create offer')) {
         return 'Unable to submit offer. Please try again.';

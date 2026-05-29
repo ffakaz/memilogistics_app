@@ -28,6 +28,12 @@ class ShipperCompanyRepositoryImpl implements ShipperCompanyRepository {
   }
 
   @override
+  Future<ShipperCompany> getShipperCompanyById(int shipperId) async {
+    final result = await remoteDataSource.getShipperCompanyById(shipperId);
+    return ShipperCompanyMapper.toEntity(result);
+  }
+
+  @override
   Future<ShipperCompany> updateShipperCompany(ShipperCompany company) async {
     final model = ShipperCompanyMapper.toModel(company);
     final result = await remoteDataSource.updateShipperCompany(model);

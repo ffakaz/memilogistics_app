@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import 'package:memilogistics_app/features/carrier/presentation/providers/carrier_company_provider.dart';
 import 'package:memilogistics_app/features/shipper/presentation/providers/shipper_company_provider.dart';
+import 'package:memilogistics_app/core/widgets/promotional_banner.dart';
 import '../provider/auth_provider.dart';
 
 class LoginScreen extends StatefulWidget {
@@ -17,6 +18,33 @@ class _LoginScreenState extends State<LoginScreen> {
   String email = '';
   String password = '';
   bool _obscurePassword = true;
+
+  Future<void> _showPromotionalBanner() async {
+    await showDialog(
+      context: context,
+      barrierDismissible: false,
+      barrierColor: Colors.black54,
+      builder: (dialogContext) => PopScope(
+        canPop: false,
+        child: Theme(
+          data: ThemeData.dark().copyWith(
+            textTheme: ThemeData.dark().textTheme.apply(
+              fontFamily: 'Roboto',
+            ),
+          ),
+          child: Material(
+            type: MaterialType.transparency,
+            child: PromotionalBanner(
+              duration: const Duration(seconds: 5),
+              onComplete: () {
+                Navigator.of(dialogContext).pop();
+              },
+            ),
+          ),
+        ),
+      ),
+    );
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -48,7 +76,7 @@ class _LoginScreenState extends State<LoginScreen> {
                     child: Text(
                       'Welcome Back',
                       style: TextStyle(
-                        color: Colors.white,
+                        color: Color.fromARGB(100, 000, 200, 169),
                         fontSize: 26,
                         fontWeight: FontWeight.bold,
                       ),
@@ -159,6 +187,12 @@ class _LoginScreenState extends State<LoginScreen> {
                                           context
                                               .read<CarrierCompanyProvider>()
                                               .clearProfile();
+                                          
+                                          // Show promotional banner
+                                          await _showPromotionalBanner();
+                                          
+                                          if (!context.mounted) return;
+                                          
                                           // Get user role from auth provider and route accordingly
                                           final userRole = auth.userRole;
                                           final route = userRole == 'CARRIER'

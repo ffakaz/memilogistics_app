@@ -24,6 +24,7 @@ import 'package:memilogistics_app/features/auth/presentation/screens/forgot_pass
 import 'package:memilogistics_app/features/carrier/data/datasources/carrier_company_remote_datasource_impl.dart';
 import 'package:memilogistics_app/features/carrier/data/repositories/carrier_company_repository_impl.dart';
 import 'package:memilogistics_app/features/carrier/domain/usecases/create_carrier_company.dart';
+import 'package:memilogistics_app/features/carrier/domain/usecases/get_carrier_companybyid.dart';
 import 'package:memilogistics_app/features/carrier/domain/usecases/get_carrier_company.dart';
 import 'package:memilogistics_app/features/carrier/domain/usecases/update_carrier_company.dart';
 import 'package:memilogistics_app/features/carrier/presentation/pages/carrier_company_page.dart';
@@ -35,6 +36,7 @@ import 'package:memilogistics_app/features/shipper/data/datasources/shipper_comp
 import 'package:memilogistics_app/features/shipper/data/repositories/shipper_company_repository_impl.dart';
 import 'package:memilogistics_app/features/shipper/domain/usecases/create_shipper_company.dart';
 import 'package:memilogistics_app/features/shipper/domain/usecases/get_shipper_company.dart';
+import 'package:memilogistics_app/features/shipper/domain/usecases/get_shipper_company_by_id.dart';
 import 'package:memilogistics_app/features/shipper/domain/usecases/update_shipper_company.dart';
 import 'package:memilogistics_app/features/shipper/presentation/pages/shipper_company_page.dart';
 import 'package:memilogistics_app/features/shipper/presentation/providers/shipper_company_provider.dart';
@@ -47,6 +49,7 @@ import 'package:memilogistics_app/features/shipment/presentation/screens/create_
 import 'package:memilogistics_app/features/shipment/presentation/screens/shipment_dashboard_screen.dart';
 import 'package:memilogistics_app/features/shipment/presentation/screens/my_shipments_screen.dart';
 import 'package:memilogistics_app/features/shipment/presentation/screens/shipment_details_screen.dart';
+import 'package:memilogistics_app/features/shipment/presentation/screens/shipment_offers_screen.dart';
 import 'package:memilogistics_app/features/shipment/presentation/providers/shipment_provider.dart';
 
 import 'package:memilogistics_app/features/payment/presentation/screens/payment_screen.dart';
@@ -132,6 +135,12 @@ Future<void> setupLocator() async {
         child: ShipmentDetailsScreen(shipmentId: shipmentId),
       );
     },
+    RouteConstants.shipmentOffers: (args) {
+      final shipmentId = args as int;
+      return ShipperProfileGate(
+        child: ShipmentOffersScreen(shipmentId: shipmentId),
+      );
+    },
     RouteConstants.payment: (args) {
       final params = args as Map<String, dynamic>;
       return PaymentScreen(
@@ -152,7 +161,7 @@ Future<void> setupLocator() async {
 
   // AUTH wiring
   final authApiService = AuthApiServiceReal(apiClient);
-  final tokenStorage = TokenStorage(storage: flutterSecureStorage);
+  final tokenStorage = TokenStorage(storage: secureStorageService);
   final authRepository = AuthRepositoryImpl(
     apiService: authApiService,
     tokenStorage: tokenStorage,
@@ -211,10 +220,12 @@ Future<void> setupLocator() async {
   );
   final createCarrierCompanyUseCase = CreateCarrierCompany(carrierRepository);
   final getCarrierCompanyUseCase = GetCarrierCompany(carrierRepository);
+  final getCarrierCompanyByIdUseCase = GetCarrierCompanyById(carrierRepository);
   final updateCarrierCompanyUseCase = UpdateCarrierCompany(carrierRepository);
 
   final carrierProvider = CarrierCompanyProvider(
     createCarrierCompanyUseCase: createCarrierCompanyUseCase,
+    getCarrierCompanyByIdUseCase: getCarrierCompanyByIdUseCase,
     getCarrierCompanyUseCase: getCarrierCompanyUseCase,
     updateCarrierCompanyUseCase: updateCarrierCompanyUseCase,
   );
@@ -229,11 +240,13 @@ Future<void> setupLocator() async {
   );
   final createShipperCompanyUseCase = CreateShipperCompany(shipperRepository);
   final getShipperCompanyUseCase = GetShipperCompany(shipperRepository);
+  final getShipperCompanyByIdUseCase = GetShipperCompanyById(shipperRepository);
   final updateShipperCompanyUseCase = UpdateShipperCompany(shipperRepository);
 
   final shipperProvider = ShipperCompanyProvider(
     createShipperCompanyUseCase: createShipperCompanyUseCase,
     getShipperCompanyUseCase: getShipperCompanyUseCase,
+    getShipperCompanyByIdUseCase: getShipperCompanyByIdUseCase,
     updateShipperCompanyUseCase: updateShipperCompanyUseCase,
   );
   _sl.registerSingleton<ShipperCompanyProvider>(shipperProvider);

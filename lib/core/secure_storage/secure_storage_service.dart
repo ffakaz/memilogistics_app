@@ -1,5 +1,5 @@
 import 'dart:convert';
-
+import 'package:flutter/foundation.dart';
 import 'package:flutter_secure_storage/flutter_secure_storage.dart';
 import 'package:memilogistics_app/core/error/exceptions.dart';
 
@@ -23,39 +23,80 @@ abstract class StorageKeys {
 /// ── Service ─────────────────────────────────────────────────────────────
 class SecureStorageService {
   SecureStorageService({FlutterSecureStorage? storage})
-      : _storage = storage ?? const FlutterSecureStorage();
+      : _storage = storage ?? const FlutterSecureStorage(),
+        _memoryCache = {}; // In-memory fallback for web
 
   final FlutterSecureStorage _storage;
+  final Map<String, String> _memoryCache; // Fallback cache for web
 
-  // Platform-specific options
+  // Platform-specific options - ONLY for mobile/desktop platforms
   static const _android = AndroidOptions(encryptedSharedPreferences: true);
   static const _ios = IOSOptions(
     accessibility: KeychainAccessibility.first_unlock_this_device,
   );
 
+  /// Check if we're running on web platform
+  bool get _isWeb => kIsWeb;
+
   // ── Generic CRUD ───────────────────────────────────────────────────────
 
   Future<void> write({required String key, required String value}) async {
     try {
+      if (_isWeb) {
+        // On web, use in-memory cache (persisted by flutter_secure_storage_web via JS localStorage)
+        _memoryCache[key] = value;
+      }
+      
       await _storage.write(
         key: key,
         value: value,
-        aOptions: _android,
-        iOptions: _ios,
+        aOptions: _isWeb ? null : _android,
+        iOptions: _isWeb ? null : _ios,
       );
+      
+      if (_isWeb) {
+        // DEBUG: Log web storage operations
+        print('🌐 [SecureStorage] Web write: $key');
+      }
     } catch (e) {
-      throw StorageException('Write failed for "$key": $e');
+      // On web, if official secure storage fails, keep in-memory cache
+      if (_isWeb) {
+        _memoryCache[key] = value;
+        print('⚠️  [SecureStorage] Web write failed, using memory cache: $key - $e');
+      } else {
+        throw StorageException('Write failed for "$key": $e');
+      }
     }
   }
 
   Future<String?> read(String key) async {
     try {
-      return await _storage.read(
+      final value = await _storage.read(
         key: key,
-        aOptions: _android,
-        iOptions: _ios,
+        aOptions: _isWeb ? null : _android,
+        iOptions: _isWeb ? null : _ios,
       );
+      
+      if (_isWeb && value == null) {
+        // Try memory cache if actual storage failed
+        return _memoryCache[key];
+      }
+      
+      if (_isWeb && value != null) {
+        print('🌐 [SecureStorage] Web read: $key');
+      }
+      
+      return value;
     } catch (e) {
+      // On web, fallback to memory cache
+      if (_isWeb) {
+        final cached = _memoryCache[key];
+        if (cached != null) {
+          print('⚠️  [SecureStorage] Web read failed, using memory cache: $key');
+          return cached;
+        }
+        return null; // Silent fail on web
+      }
       throw StorageException('Read failed for "$key": $e');
     }
   }
@@ -70,35 +111,66 @@ class SecureStorageService {
 
   Future<void> delete(String key) async {
     try {
+      if (_isWeb) {
+        _memoryCache.remove(key);
+      }
+      
       await _storage.delete(
         key: key,
-        aOptions: _android,
-        iOptions: _ios,
+        aOptions: _isWeb ? null : _android,
+        iOptions: _isWeb ? null : _ios,
       );
     } catch (e) {
-      throw StorageException('Delete failed for "$key": $e');
+      // On web, just remove from memory cache
+      if (_isWeb) {
+        _memoryCache.remove(key);
+        print('⚠️  [SecureStorage] Web delete failed, removed from memory: $key');
+      } else {
+        throw StorageException('Delete failed for "$key": $e');
+      }
     }
   }
 
   Future<void> deleteAll() async {
     try {
+      if (_isWeb) {
+        _memoryCache.clear();
+      }
+      
       await _storage.deleteAll(
-        aOptions: _android,
-        iOptions: _ios,
+        aOptions: _isWeb ? null : _android,
+        iOptions: _isWeb ? null : _ios,
       );
     } catch (e) {
-      throw StorageException('deleteAll failed: $e');
+      // On web, just clear memory cache
+      if (_isWeb) {
+        _memoryCache.clear();
+        print('⚠️  [SecureStorage] Web deleteAll failed, cleared memory cache');
+      } else {
+        throw StorageException('deleteAll failed: $e');
+      }
     }
   }
 
   Future<bool> containsKey(String key) async {
     try {
-      return await _storage.containsKey(
+      final exists = await _storage.containsKey(
         key: key,
-        aOptions: _android,
-        iOptions: _ios,
+        aOptions: _isWeb ? null : _android,
+        iOptions: _isWeb ? null : _ios,
       );
+      
+      // On web, also check memory cache
+      if (_isWeb && !exists) {
+        return _memoryCache.containsKey(key);
+      }
+      
+      return exists;
     } catch (e) {
+      // On web, fallback to memory cache check
+      if (_isWeb) {
+        return _memoryCache.containsKey(key);
+      }
       throw StorageException('containsKey failed for "$key": $e');
     }
   }

@@ -1,0 +1,30 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!--
+    Network Security Configuration for Android
+    
+    This file enforces HTTPS-only connections for improved security.
+    - Disables cleartext (HTTP) traffic by default
+    - Allows HTTPS to our backend API with strong TLS
+    
+    Reference: https://developer.android.com/training/articles/security-config
+-->
+<network-security-config>
+    <!-- Default security policy - HTTPS only -->
+    <domain-config cleartextTrafficPermitted="false">
+        <!-- Our backend API server -->
+        <domain includeSubdomains="true">memi-logistics-backend.onrender.com</domain>
+        
+        <!-- Enforce TLS 1.2+ -->
+        <trust-anchors>
+            <certificates src="system" />
+        </trust-anchors>
+    </domain-config>
+    
+    <!-- Fallback for any other domains (unlikely in this app) -->
+    <domain-config cleartextTrafficPermitted="false">
+        <domain includeSubdomains="true">.</domain>
+        <trust-anchors>
+            <certificates src="system" />
+        </trust-anchors>
+    </domain-config>
+</network-security-config>

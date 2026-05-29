@@ -62,9 +62,13 @@ class AuthDioInterceptor extends Interceptor {
       final token = await _storage.getAccessToken();
       if (token != null && token.isNotEmpty) {
         options.headers['Authorization'] = 'Bearer $token';
+        print('✅ [AuthInterceptor] Token attached to request: ${token.substring(0, 20)}...');
+      } else {
+        print('⚠️  [AuthInterceptor] No token found in storage');
       }
-    } catch (_) {
+    } catch (e) {
       // No token stored; let request proceed unauthenticated.
+      print('❌ [AuthInterceptor] Failed to retrieve token: $e');
     }
     handler.next(options);
   }
@@ -86,29 +90,39 @@ class AuthDioInterceptor extends Interceptor {
     final skip = err.requestOptions.extra[_kSkipAuth] == true;
     final isRetry = err.requestOptions.extra[_kIsRetry] == true;
 
+    print('🔴 [AuthInterceptor] Error: ${err.requestOptions.path}');
+    print('   Status: ${err.response?.statusCode}');
+    print('   Is401: $is401, Skip: $skip, IsRetry: $isRetry');
+
     if (!is401 || skip || isRetry) return handler.next(err);
 
     // ── Queue if refresh already running ────────────────────────────────────
     if (_refreshing) {
+      print('⏳ [AuthInterceptor] Refresh already running, queuing request...');
       final q = _Queued(err.requestOptions);
       _queue.add(q);
       try {
         final token = await q.future;
+        print('✅ [AuthInterceptor] Retrying queued request with new token');
         handler.resolve(await _retry(err.requestOptions, token));
       } catch (_) {
+        print('❌ [AuthInterceptor] Queued retry failed');
         handler.next(err);
       }
       return;
     }
 
     // ── Start refresh cycle ─────────────────────────────────────────────────
+    print('🔄 [AuthInterceptor] Starting token refresh...');
     _refreshing = true;
     try {
       final refreshToken = await _storage.getRefreshToken();
       if (refreshToken == null || refreshToken.isEmpty) {
+        print('❌ [AuthInterceptor] No refresh token available');
         throw MissingTokenException();
       }
 
+      print('📤 [AuthInterceptor] Sending refresh request...');
       final resp = await _dio.post<Map<String, dynamic>>(
         _refreshPath,
         data: {'refreshToken': refreshToken},
@@ -116,6 +130,7 @@ class AuthDioInterceptor extends Interceptor {
       );
 
       final data = resp.data!;
+      print('✅ [AuthInterceptor] Refresh successful');
       // ── Adjust keys to match your Spring Boot token response ───────────────
       final newAccess = data['access_token'] as String? ??
           data['accessToken'] as String;
@@ -123,6 +138,7 @@ class AuthDioInterceptor extends Interceptor {
           data['refreshToken'] as String;
       final expiry = _parseExpiry(data['expiry'] ?? data['accessTokenExpiresAt']);
 
+      print('💾 [AuthInterceptor] Saving new tokens...');
       await _storage.saveTokens(
         accessToken: newAccess,
         refreshToken: newRefresh,
@@ -130,11 +146,13 @@ class AuthDioInterceptor extends Interceptor {
         refreshTokenExpiresAt:
             DateTime.now().add(const Duration(days: 30)), // adjust to backend
       );
+      print('✅ [AuthInterceptor] Tokens saved successfully');
 
       // Retry original + all queued
       _resolveQueue(newAccess);
       handler.resolve(await _retry(err.requestOptions, newAccess));
     } catch (e) {
+      print('❌ [AuthInterceptor] Refresh failed: $e');
       await _storage.clearAuthData();
       _rejectQueue(e);
       _onSessionExpired();
@@ -147,16 +165,28 @@ class AuthDioInterceptor extends Interceptor {
   // ── Helpers ──────────────────────────────────────────────────────────────
 
   Future<Response<dynamic>> _retry(RequestOptions orig, String token) {
+    final safeHeaders = <String, dynamic>{};
+    try {
+      safeHeaders.addAll(Map<String, dynamic>.from(orig.headers));
+    } catch (_) {}
+    safeHeaders['Authorization'] = 'Bearer $token';
+
+    final safeExtra = <String, dynamic>{};
+    try {
+      safeExtra.addAll(Map<String, dynamic>.from(orig.extra as Map));
+    } catch (_) {}
+    safeExtra[_kIsRetry] = true;
+
     return _dio.request<dynamic>(
       orig.path,
       data: orig.data,
       queryParameters: orig.queryParameters,
       options: Options(
         method: orig.method,
-        headers: {...orig.headers, 'Authorization': 'Bearer $token'},
+        headers: safeHeaders,
         contentType: orig.contentType,
         responseType: orig.responseType,
-        extra: {...orig.extra, _kIsRetry: true},
+        extra: safeExtra,
       ),
     );
   }

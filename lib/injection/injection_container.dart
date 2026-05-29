@@ -1,5 +1,5 @@
 import 'package:flutter/material.dart';
-import 'package:flutter_secure_storage/flutter_secure_storage.dart';
+// flutter_secure_storage intentionally not used here; use SecureStorageService from core
 import 'package:provider/provider.dart';
 
 // Core
@@ -62,7 +62,7 @@ class InjectionContainer extends StatelessWidget {
   Widget build(BuildContext context) {
     // ── Core ──────────────────────────────────────────────────────────────
     final apiClient = context.read<ApiClient>();
-    final secureStorage = context.read<FlutterSecureStorage>();
+    final secureStorage = context.read<SecureStorageService>();
 
     // ── Auth — data layer ─────────────────────────────────────────────────
     final authApiService = AuthApiServiceReal(apiClient);

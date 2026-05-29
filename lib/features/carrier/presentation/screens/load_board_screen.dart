@@ -174,7 +174,7 @@ class _LoadBoardScreenState extends State<LoadBoardScreen> {
                           style: TextStyle(fontSize: 12, color: Colors.grey),
                         ),
                         Text(
-                          shipment.originAsLocation.shortLabel,
+                          shipment.origin,
                           style: const TextStyle(
                             fontSize: 14,
                             fontWeight: FontWeight.w500,
@@ -199,7 +199,7 @@ class _LoadBoardScreenState extends State<LoadBoardScreen> {
                           style: TextStyle(fontSize: 12, color: Colors.grey),
                         ),
                         Text(
-                          shipment.destinationAsLocation.shortLabel,
+                          shipment.destination,
                           style: const TextStyle(
                             fontSize: 14,
                             fontWeight: FontWeight.w500,
@@ -218,14 +218,14 @@ class _LoadBoardScreenState extends State<LoadBoardScreen> {
                   Expanded(
                     child: _buildDetailChip(
                       Icons.scale,
-                      '${shipment.weight} ${shipment.weightUnit.displayName}',
+                      '${shipment.weightKg} kg',
                     ),
                   ),
                   const SizedBox(width: 8),
                   Expanded(
                     child: _buildDetailChip(
                       Icons.local_shipping,
-                      shipment.shipmentType.displayName,
+                      shipment.shipmentItem ?? 'General Cargo',
                     ),
                   ),
                 ],
@@ -313,15 +313,15 @@ class _LoadBoardScreenState extends State<LoadBoardScreen> {
                   ),
                 ),
                 const SizedBox(height: 24),
-                _buildDetailRow('Type', shipment.shipmentType.displayName),
+                _buildDetailRow('Type', shipment.shipmentItem ?? 'General Cargo'),
                 _buildDetailRow(
                   'Weight',
-                  '${shipment.weight} ${shipment.weightUnit.displayName}',
+                  '${shipment.weightKg} kg',
                 ),
-                _buildDetailRow('Origin', shipment.originAsLocation.fullLabel),
+                _buildDetailRow('Origin', shipment.origin),
                 _buildDetailRow(
                   'Destination',
-                  shipment.destinationAsLocation.fullLabel,
+                  shipment.destination,
                 ),
                 if (shipment.description != null)
                   _buildDetailRow('Description', shipment.description!),

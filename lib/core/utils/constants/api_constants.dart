@@ -33,51 +33,68 @@ class AuthEndpoints {
 class ShipmentEndpoints {
   ShipmentEndpoints._();
 
-  // Core shipment operations
-  static const String create = "/shipments/create";
-  static const String list = "/shipments/list";
-  static const String getById = "/shipments/{shipmentId}";
-  static const String update = "/shipments/update/{shipmentId}";
-  static const String delete = "/shipments/{shipmentId}";
-  static const String dashboard = "/shipments/dashboard";
+  // Core shipment operations - Backend uses SINGULAR "shipment" not "shipments"
+  static const String create = "/shipment/create";  // POST /api/shipment/create
+  static const String list = "/shipment/list";  // GET /api/shipment/list
+  static const String my = "/shipment/my";  // GET /api/shipment/my (role-aware, filtered by JWT)
+  static const String myByStatus = "/shipment/my/status";  // GET /api/shipment/my/status?status=PENDING
+  static const String getById = "/shipment/{shipmentId}";
+  static const String update = "/shipment/update/{shipmentId}";
+  static const String delete = "/shipment/{shipmentId}";
+  static const String dashboard = "/shipment/dashboard";
+  static const String statistics = "/shipment/dashboard"; // backend exposes dashboard; reuse for statistics
 
   // Tracking
-  static const String tracking = "/shipments/tracking/{trackingNumber}";
+  static const String tracking = "/shipment/tracking/{trackingNumber}";
 
   // Filtering
-  static const String listByOrigin = "/shipments/list-by-origin/{origin}";
+  static const String listByOrigin = "/shipment/list-by-origin/{origin}";
   static const String listByDestination =
-      "/shipments/list-by-destination/{destination}";
-  static const String listByFragile = "/shipments/list/fragile";
+      "/shipment/list-by-destination/{destination}";
+  static const String listByFragile = "/shipment/list/fragile";
 
   // Status management
-  static const String updateStatus = "/shipments/{shipmentId}/update-status";
-  static const String getEvents = "/shipments/{shipmentId}/events";
+  static const String updateStatus = "/shipment/{shipmentId}/update-status";
+  static const String getEvents = "/shipment/{shipmentId}/events";
+
+  // Paginated helpers
+  static const String listByShipper = "/shipment/shipper";
 
   // Offers (Bidding) - DEPRECATED: Use ShipmentOfferEndpoints
-  static const String offerShipment = "/shipments/{shipmentId}/offer-shipment";
-  static const String getOffers = "/shipments/{shipmentId}/offers";
+  static const String offerShipment = "/shipment/{shipmentId}/offer-shipment";
+  static const String getOffers = "/shipment/{shipmentId}/offers";
   static const String cancelOffer =
-      "/shipments/{shipmentOfferId}/cancel-shipment-offer";
-  static const String assignCarrier = "/shipments/{shipmentId}/assign-carrier";
+      "/shipment/{shipmentOfferId}/cancel-shipment-offer";
+  static const String assignCarrier = "/shipment/{shipmentId}/assign-carrier";
 
   // Payment
   static const String initiatePayment =
-      "/shipments/{shipmentId}/initiate-payment";
-  static const String confirmPayment =
-      "/shipments/{shipmentId}/confirm-payment";
+      "/payment/{shipmentId}/initiate-payment";
+    static const String confirmPayment = "/payment/{shipmentId}/confirm-payment";
 }
 
 class ShipmentOfferEndpoints {
   ShipmentOfferEndpoints._();
 
   // Shipment offer operations
-  static const String getMyOffers = "/shipment-offers/my-offers";
-  static const String getShipmentOffers = "/shipments/{shipmentId}/offers";
-  static const String createOffer = "/shipments/{shipmentId}/offer-shipment";
+  // Note: Backend uses PLURAL "shipments" in paths
+  // Backend automatically extracts carrier ID from JWT token
+  static const String getMyOffers = "/shipment-offers/my-offers";  // TODO: Backend doesn't have this endpoint yet
+  static const String getShipmentOffers = "/shipments/{shipmentId}/offers"; // GET offers for a shipment - PLURAL
+  
+  // CREATE OFFER - Uses query parameter for price, carrier ID from JWT token
+  static const String createOffer = "/shipments/{shipmentId}/offer-shipment"; // POST with ?price=X - PLURAL
+  
   static const String cancelOffer =
-      "/shipments/{shipmentOfferId}/cancel-shipment-offer";
-  static const String assignCarrier = "/shipments/{shipmentId}/assign-carrier";
+      "/shipments/{shipmentOfferId}/cancel-shipment-offer";  // PLURAL
+  
+  // Accept offer by assigning carrier (shipper action)
+  // Uses query parameter for carrierId
+  static const String assignCarrier = "/shipments/{shipmentId}/assign-carrier";  // PLURAL
+  
+  // Reject offer (shipper action) - uses cancel endpoint
+  static const String rejectOffer =
+      "/shipments/{shipmentOfferId}/cancel-shipment-offer";  // PLURAL
 }
 
 class LoadEndpoints {
@@ -106,15 +123,30 @@ class CarrierCompanyEndpoints {
   CarrierCompanyEndpoints._();
 
   // ⚠️ FUTURE FEATURE - Not yet available in backend
-  static const String get = "/carriers/profile/me";
-  static const String create = "/carriers/profile/create";
-  static const String update = "/carriers/profile/update";
+  static const String get = "/carrier/profile/me";
+  static const String getById = "/carrier/profile/{carrierId}";
+  static const String create = "/carrier/profile/create";
+  static const String update = "/carrier/profile/update";
+
+}
+
+class CarrierShipmentEndpoints {
+  CarrierShipmentEndpoints._();
+
+  // Get shipments assigned to the current authenticated carrier
+  // GET /api/carrier/shipments/assigned
+  static const String getAssignedForCurrent = "/carrier/shipments/assigned";
+
+  // Get shipments assigned to a specific carrier by ID
+  // GET /api/carrier/shipments/{carrierId}/assigned
+  static const String getAssignedForCarrier = "/carrier/shipments/{carrierId}/assigned";
 }
 
 class ShipperCompanyEndpoints {
   ShipperCompanyEndpoints._();
 
   static const String get = "/shippers/profile/me";
+  static const String getById = "/shippers/profile/{shipperId}";
   static const String create = "/shippers/profile/create";
   static const String update = "/shippers/profile/update";
 }

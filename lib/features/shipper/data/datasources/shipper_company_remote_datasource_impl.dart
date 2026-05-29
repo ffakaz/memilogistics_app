@@ -14,6 +14,7 @@ import 'shipper_company_remote_datasource.dart';
 /// Endpoints:
 /// - POST /api/shippers/profile/create - Create shipper profile
 /// - GET /api/shippers/profile/me - Get current shipper profile
+/// - GET /api/shippers/profile/{id} - Get shipper profile by ID
 /// - PATCH /api/shippers/profile/update - Update shipper profile
 ///
 /// This datasource handles shipper company profile operations including
@@ -57,6 +58,26 @@ class ShipperCompanyRemoteDataSourceImpl
       throw Exception(response.message ?? 'Failed to get shipper company');
     } catch (e) {
       throw Exception('Failed to get shipper company: $e');
+    }
+  }
+
+  @override
+  Future<ShipperCompanyModel> getShipperCompanyById(int shipperId) async {
+    try {
+      final endpoint = ShipperCompanyEndpoints.getById.replaceFirst(
+        '{shipperId}',
+        '$shipperId',
+      );
+      final response = await apiClient.get<dynamic>(
+        '${ApiConstants.apiPrefix}$endpoint',
+      );
+
+      if (response.isSuccess) {
+        return ShipperCompanyModel.fromJson(_profileBody(response.data));
+      }
+      throw Exception(response.message ?? 'Failed to get shipper profile by ID');
+    } catch (e) {
+      throw Exception('Failed to get shipper profile by ID: $e');
     }
   }
 

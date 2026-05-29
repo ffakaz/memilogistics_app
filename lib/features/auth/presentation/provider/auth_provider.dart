@@ -127,7 +127,13 @@ class AuthProvider extends ChangeNotifier {
       _currentToken = null;
       _userRole = null; // Clear user role
     } catch (e) {
-      _errorMessage = 'Logout failed: $e';
+      // Backend logout endpoint has a bug (returns 400 with null parameter error)
+      // But local logout still works, so we clear the session anyway
+      print('⚠️ Backend logout error (ignoring): $e');
+      _isLoggedIn = false;
+      _currentToken = null;
+      _userRole = null;
+      // Don't set error message since logout functionally works
     }
 
     _isLoading = false;

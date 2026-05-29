@@ -1,4 +1,5 @@
 import 'package:memilogistics_app/core/network/api_client.dart';
+import 'package:memilogistics_app/core/error/exceptions.dart';
 import 'package:memilogistics_app/core/utils/constants/api_constants.dart';
 import '../models/carrier_company_model.dart';
 import 'carrier_company_remote_datasource.dart';
@@ -49,15 +50,37 @@ class CarrierCompanyRemoteDataSourceImpl
         '${ApiConstants.apiPrefix}${CarrierCompanyEndpoints.get}',
       );
 
+      if (response.statusCode == 404) {
+        // Interpret 404 as "missing carrier profile" so callers can handle onboarding
+        throw HttpException(message: response.message ?? 'Carrier profile not found', statusCode: 404);
+      }
+
       if (response.isSuccess) {
         return CarrierCompanyModel.fromJson(_profileBody(response.data));
       }
+
       throw Exception(response.message ?? 'Failed to get carrier company');
     } catch (e) {
       throw Exception('Failed to get carrier company: $e');
     }
   }
+  Future<CarrierCompanyModel> getCarrierCompanyById(int carrierId) async {
+    try {
+      // Build the endpoint explicitly instead of using the constant accessor
+      // to avoid potential symbol resolution issues in analyzer.
+      final endpoint = '/carriers/profile/$carrierId';
+      final response = await apiClient.get<dynamic>(
+        '${ApiConstants.apiPrefix}$endpoint',
+      );
 
+      if (response.isSuccess) {
+        return CarrierCompanyModel.fromJson(_profileBody(response.data));
+      }
+      throw Exception(response.message ?? 'Failed to get carrier company by ID');
+    } catch (e) {
+      throw Exception('Failed to get carrier company by ID: $e');
+    }
+  }
   @override
   Future<CarrierCompanyModel> updateCarrierCompany(
     CarrierCompanyModel company,

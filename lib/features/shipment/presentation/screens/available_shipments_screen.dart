@@ -5,7 +5,7 @@ import 'package:provider/provider.dart';
 import '../../domain/entities/shipment.dart';
 import '../../domain/enums/shipment_status.dart';
 import '../providers/shipment_provider.dart';
-import 'shipment_detail_screen.dart';
+import 'shipment_details_screen.dart';
 
 class AvailableShipmentsScreen extends StatefulWidget {
   const AvailableShipmentsScreen({super.key});
@@ -129,7 +129,9 @@ class _AvailableShipmentsScreenState extends State<AvailableShipmentsScreen> {
           provider.setActiveShipment(shipment);
           Navigator.push(
             context,
-            MaterialPageRoute(builder: (_) => const ShipmentDetailScreen()),
+            MaterialPageRoute(
+              builder: (_) => ShipmentDetailsScreen(shipmentId: shipment.id!),
+            ),
           );
         },
         borderRadius: BorderRadius.circular(12),
@@ -179,7 +181,7 @@ class _AvailableShipmentsScreenState extends State<AvailableShipmentsScreen> {
                   const SizedBox(width: 8),
                   Expanded(
                     child: Text(
-                      shipment.originAsLocation.shortLabel,
+                      shipment.origin,
                       style: const TextStyle(fontSize: 14),
                     ),
                   ),
@@ -192,7 +194,7 @@ class _AvailableShipmentsScreenState extends State<AvailableShipmentsScreen> {
                   const SizedBox(width: 8),
                   Expanded(
                     child: Text(
-                      shipment.destinationAsLocation.shortLabel,
+                      shipment.destination,
                       style: const TextStyle(fontSize: 14),
                     ),
                   ),
@@ -243,7 +245,7 @@ class _AvailableShipmentsScreenState extends State<AvailableShipmentsScreen> {
       builder: (context) => AlertDialog(
         title: const Text('Accept Shipment'),
         content: Text(
-          'Do you want to accept this shipment from ${shipment.originAsLocation.shortLabel} to ${shipment.destinationAsLocation.shortLabel}?',
+          'Do you want to accept this shipment from ${shipment.origin} to ${shipment.destination}?',
         ),
         actions: [
           TextButton(

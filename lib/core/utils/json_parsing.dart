@@ -8,6 +8,14 @@ class JsonParsing {
     return fallback;
   }
 
+  static int? asIntOrNull(dynamic value) {
+    if (value == null) return null;
+    if (value is int) return value;
+    if (value is num) return value.toInt();
+    if (value is String) return int.tryParse(value.trim());
+    return null;
+  }
+
   static double asDouble(dynamic value, {double fallback = 0}) {
     if (value is double) return value;
     if (value is num) return value.toDouble();

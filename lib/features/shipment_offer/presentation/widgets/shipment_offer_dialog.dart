@@ -4,6 +4,8 @@ import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:provider/provider.dart';
 import '../../../shipment/domain/entities/shipment.dart';
+import '../../../shipment/domain/enums/shipment_status.dart';
+import '../../../carrier/presentation/providers/carrier_company_provider.dart';
 import '../providers/shipment_offer_provider.dart';
 
 /// Dialog for carriers to submit a shipment offer
@@ -102,19 +104,19 @@ class _ShipmentOfferDialogState extends State<ShipmentOfferDialog> {
                       _buildInfoRow(
                         Icons.location_on,
                         'From',
-                        widget.shipment.originAsLocation.shortLabel,
+                        widget.shipment.origin,
                       ),
-                      const SizedBox(height: 8),
+                      const SizedBox(width: 8),
                       _buildInfoRow(
                         Icons.flag,
                         'To',
-                        widget.shipment.destinationAsLocation.shortLabel,
+                        widget.shipment.destination,
                       ),
-                      const SizedBox(height: 8),
+                      const SizedBox(width: 8),
                       _buildInfoRow(
                         Icons.scale,
                         'Weight',
-                        '${widget.shipment.weight} ${widget.shipment.weightUnit.displayName}',
+                        '${widget.shipment.weightKg} kg',
                       ),
                     ],
                   ),
@@ -250,14 +252,65 @@ class _ShipmentOfferDialogState extends State<ShipmentOfferDialog> {
       return;
     }
 
+    // Validate shipment is still pending
+    if (widget.shipment.status != ShipmentStatus.pending) {
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text(
+              'This shipment is no longer available for offers. Status: ${widget.shipment.status.displayName}',
+            ),
+            backgroundColor: Colors.orange,
+            duration: const Duration(seconds: 4),
+          ),
+        );
+        Navigator.pop(context);
+      }
+      return;
+    }
+
     setState(() => _isSubmitting = true);
 
     try {
       final price = double.parse(_priceController.text);
 
-      // Call API to submit offer
+      // Get carrier company provider to fetch carrier company ID
+      final carrierProvider = context.read<CarrierCompanyProvider>();
+      
+      // Ensure carrier profile is loaded
+      if (carrierProvider.state.company == null) {
+        print('📋 Carrier profile not loaded, fetching...');
+        await carrierProvider.getCarrierCompany();
+      }
+
+      final carrierCompanyId = carrierProvider.state.company?.id;
+
+      // Validate carrier profile exists
+      if (carrierCompanyId == null) {
+        if (mounted) {
+          Navigator.pop(context);
+          ScaffoldMessenger.of(context).showSnackBar(
+            const SnackBar(
+              content: Text(
+                'Please create your carrier company profile first before submitting offers.',
+              ),
+              backgroundColor: Colors.orange,
+              duration: Duration(seconds: 4),
+            ),
+          );
+        }
+        return;
+      }
+
+      print('📋 Submitting offer with Carrier Company ID: $carrierCompanyId');
+      print('📋 Shipment ID: ${widget.shipment.id}');
+      print('📋 Shipment Status: ${widget.shipment.status.displayName}');
+      print('📋 Price: \$${price.toStringAsFixed(2)}');
+
+      // Call API to submit offer with carrier company ID
       await context.read<ShipmentOfferProvider>().createOffer(
         widget.shipment.id!,
+        carrierCompanyId,
         price,
       );
 
@@ -273,11 +326,13 @@ class _ShipmentOfferDialogState extends State<ShipmentOfferDialog> {
         );
       }
     } catch (e) {
+      print('❌ Error submitting offer: $e');
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
-            content: Text('Failed to submit offer: ${e.toString()}'),
+            content: Text('Failed to submit offer: ${e.toString().replaceAll('Exception: ', '')}'),
             backgroundColor: Colors.red,
+            duration: const Duration(seconds: 4),
           ),
         );
       }

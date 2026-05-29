@@ -12,6 +12,11 @@ abstract class ShipperCompanyRemoteDataSource {
   /// Gets the current shipper's company profile
   Future<ShipperCompanyModel> getShipperCompany();
 
+  /// Gets a shipper's company profile by ID
+  /// 
+  /// [shipperId] - The ID of the shipper whose profile to retrieve
+  Future<ShipperCompanyModel> getShipperCompanyById(int shipperId);
+
   /// Updates the shipper company profile
   Future<ShipperCompanyModel> updateShipperCompany(ShipperCompanyModel company);
 }

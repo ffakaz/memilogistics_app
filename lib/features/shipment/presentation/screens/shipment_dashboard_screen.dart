@@ -456,8 +456,8 @@ class _RecentShipments extends StatelessWidget {
               : shipment.trackingNumber ??
                     'Shipment ${shipment.id ?? ''}'.trim();
           final lane = [
-            shipment.origin ?? shipment.pickupLocation.address,
-            shipment.destination ?? shipment.destinationLocation.address,
+            shipment.origin,
+            shipment.destination,
           ].where((part) => part.trim().isNotEmpty).join(' to ');
 
           return ListTile(

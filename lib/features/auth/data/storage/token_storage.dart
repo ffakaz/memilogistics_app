@@ -1,17 +1,12 @@
-import 'package:flutter_secure_storage/flutter_secure_storage.dart';
 import 'package:memilogistics_app/core/secure_storage/secure_storage_service.dart';
-
 import 'package:memilogistics_app/shared/storage_exception.dart';
+import 'package:memilogistics_app/core/error/exceptions.dart';
 
 class TokenStorage {
-  final FlutterSecureStorage storage;
-
-  static const _legacyAccessTokenKey = 'access_token';
-  static const _legacyRefreshTokenKey = 'refresh_token';
+  final SecureStorageService storage;
 
   TokenStorage({required this.storage});
 
-  /// Save tokens
   Future<void> saveTokens({
     required String accessToken,
     String? refreshToken,
@@ -19,66 +14,55 @@ class TokenStorage {
   }) async {
     try {
       await storage.write(key: StorageKeys.accessToken, value: accessToken);
-
       if (refreshToken != null) {
         await storage.write(key: StorageKeys.refreshToken, value: refreshToken);
       }
-
       if (role != null) {
         await storage.write(key: StorageKeys.userRole, value: role);
       }
     } catch (e) {
-      throw StorageException('Failed to save tokens');
+      throw StorageException('Failed to save tokens: $e');
     }
   }
 
-  /// Get access token
   Future<String?> getAccessToken() async {
     try {
-      return await storage.read(key: StorageKeys.accessToken) ??
-          storage.read(key: _legacyAccessTokenKey);
+      return await storage.read(StorageKeys.accessToken);
     } catch (e) {
-      throw StorageException('Failed to read access token');
+      throw StorageException('Failed to read access token: $e');
     }
   }
 
-  /// Get refresh token
   Future<String?> getRefreshToken() async {
     try {
-      return await storage.read(key: StorageKeys.refreshToken) ??
-          storage.read(key: _legacyRefreshTokenKey);
+      return await storage.read(StorageKeys.refreshToken);
     } catch (e) {
-      throw StorageException('Failed to read refresh token');
+      throw StorageException('Failed to read refresh token: $e');
     }
   }
 
-  /// Get user role
   Future<String?> getUserRole() async {
     try {
-      return await storage.read(key: StorageKeys.userRole);
+      return await storage.read(StorageKeys.userRole);
     } catch (e) {
-      throw StorageException('Failed to read user role');
+      throw StorageException('Failed to read user role: $e');
     }
   }
 
-  /// Clear all tokens
   Future<void> clearTokens() async {
     try {
       await Future.wait([
-        storage.delete(key: StorageKeys.accessToken),
-        storage.delete(key: StorageKeys.refreshToken),
-        storage.delete(key: StorageKeys.accessTokenExpiry),
-        storage.delete(key: StorageKeys.refreshTokenExpiry),
-        storage.delete(key: StorageKeys.userRole),
-        storage.delete(key: _legacyAccessTokenKey),
-        storage.delete(key: _legacyRefreshTokenKey),
+        storage.delete(StorageKeys.accessToken),
+        storage.delete(StorageKeys.refreshToken),
+        storage.delete(StorageKeys.accessTokenExpiry),
+        storage.delete(StorageKeys.refreshTokenExpiry),
+        storage.delete(StorageKeys.userRole),
       ]);
     } catch (e) {
-      throw StorageException('Failed to clear tokens');
+      throw StorageException('Failed to clear tokens: $e');
     }
   }
 
-  /// Check if user is logged in
   Future<bool> hasToken() async {
     final token = await getAccessToken();
     return token != null && token.isNotEmpty;

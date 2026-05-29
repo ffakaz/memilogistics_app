@@ -8,6 +8,7 @@ abstract class ApiClient {
     String path, {
     Map<String, dynamic>? queryParameters,
     Map<String, String>? headers,
+    bool skipAuth = false,
   });
 
   Future<ApiResponse<T>> post<T>(
@@ -15,6 +16,7 @@ abstract class ApiClient {
     dynamic data,
     Map<String, dynamic>? queryParameters,
     Map<String, String>? headers,
+    bool skipAuth = false,
   });
 
   Future<ApiResponse<T>> put<T>(
@@ -22,6 +24,7 @@ abstract class ApiClient {
     dynamic data,
     Map<String, dynamic>? queryParameters,
     Map<String, String>? headers,
+    bool skipAuth = false,
   });
 
   Future<ApiResponse<T>> patch<T>(
@@ -29,6 +32,7 @@ abstract class ApiClient {
     dynamic data,
     Map<String, dynamic>? queryParameters,
     Map<String, String>? headers,
+    bool skipAuth = false,
   });
 
   Future<ApiResponse<T>> delete<T>(
@@ -36,6 +40,7 @@ abstract class ApiClient {
     dynamic data,
     Map<String, dynamic>? queryParameters,
     Map<String, String>? headers,
+    bool skipAuth = false,
   });
 }
 

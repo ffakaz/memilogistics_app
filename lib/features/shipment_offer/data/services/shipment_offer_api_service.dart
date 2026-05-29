@@ -1,7 +1,9 @@
 // lib/features/shipment_offer/data/services/shipment_offer_api_service.dart
 
 import 'package:memilogistics_app/core/network/api_client.dart';
-import 'package:memilogistics_app/core/utils/constants/api_constants.dart';
+import 'package:memilogistics_app/core/network/request_builder.dart';
+import 'package:memilogistics_app/core/network/api_routes.dart';
+import 'package:memilogistics_app/core/error/http_error_mapper.dart';
 import '../models/shipment_offer_model.dart';
 
 /// API service for shipment offer operations
@@ -14,54 +16,69 @@ class ShipmentOfferApiService {
   /// Get carrier's offers
   /// GET /api/shipment-offers/my-offers
   Future<List<ShipmentOfferModel>> getMyOffers() async {
-    final response = await _apiClient.get<dynamic>(
-      '${ApiConstants.apiPrefix}${ShipmentOfferEndpoints.getMyOffers}',
-    );
+    final url = RequestBuilder.buildFullUrl(ApiRoutes.getMyOffers, {});
+    final response = await _apiClient.get<dynamic>(url);
     return _parseOfferList(response);
   }
 
   /// Get offers submitted for a shipment.
   /// GET /api/shipments/{shipmentId}/offers
   Future<List<ShipmentOfferModel>> getShipmentOffers(int shipmentId) async {
-    final endpoint = ShipmentOfferEndpoints.getShipmentOffers.replaceAll(
-      '{shipmentId}',
-      shipmentId.toString(),
-    );
-    final response = await _apiClient.get<dynamic>(
-      '${ApiConstants.apiPrefix}$endpoint',
-    );
+    final url = RequestBuilder.buildFullUrl(ApiRoutes.getShipmentOffers, {'shipmentId': shipmentId});
+    final response = await _apiClient.get<dynamic>(url);
     return _parseOfferList(response);
   }
 
   /// Create a shipment offer
-  /// POST /api/shipments/{shipmentId}/offer-shipment?price={price}
+  /// POST /api/shipments/{shipmentId}/offer-shipment (with price as query parameter)
+  /// Note: Backend automatically extracts carrierCompanyId from JWT token
   Future<void> createOffer({
     required int shipmentId,
+    required int carrierCompanyId, // Keep for compatibility but not sent to backend
     required double price,
   }) async {
-    final endpoint = ShipmentOfferEndpoints.createOffer.replaceAll(
-      '{shipmentId}',
-      shipmentId.toString(),
+    print('🔵 Creating Shipment Offer:');
+    print('  Shipment ID: $shipmentId');
+    print('  Carrier Company ID: $carrierCompanyId (from JWT token)');
+    print('  Price: \$${price.toStringAsFixed(2)}');
+    
+    // Build the endpoint with shipmentId
+    final url = RequestBuilder.buildFullUrl(
+      ApiRoutes.createOffer,
+      {'shipmentId': shipmentId},
+      queryParameters: {'price': price},
+      requiredQueryKeys: ['price'],
     );
 
-    final response = await _apiClient.post<dynamic>(
-      '${ApiConstants.apiPrefix}$endpoint',
-      queryParameters: {'price': price},
-    );
-    _ensureSuccess(response, 'Failed to create offer');
+    print('  Trying endpoint: POST $url');
+
+    try {
+      final response = await _apiClient.post<dynamic>(
+        url,
+      );
+      
+      print('✅ Offer Created Successfully');
+      print('  Response Status: ${response.statusCode}');
+      print('  Response Data: ${response.data}');
+      
+      _ensureSuccess(response, 'Failed to create offer');
+    } catch (e) {
+      print('❌ Offer Creation Failed');
+      print('  Error: $e');
+      print('  Error Type: ${e.runtimeType}');
+      rethrow;
+    }
   }
 
   /// Cancel a shipment offer
   /// POST /api/shipments/{shipmentOfferId}/cancel-shipment-offer
   Future<void> cancelOffer(int shipmentOfferId) async {
-    final endpoint = ShipmentOfferEndpoints.cancelOffer.replaceAll(
-      '{shipmentOfferId}',
-      shipmentOfferId.toString(),
+    final url = RequestBuilder.buildFullUrl(
+      ApiRoutes.cancelOffer,
+      {'shipmentOfferId': shipmentOfferId},
     );
 
-    final response = await _apiClient.post<dynamic>(
-      '${ApiConstants.apiPrefix}$endpoint',
-    );
+    final response = await _apiClient.post<dynamic>(url);
     _ensureSuccess(response, 'Failed to cancel offer');
   }
 
@@ -71,15 +88,14 @@ class ShipmentOfferApiService {
     required int shipmentId,
     required int carrierId,
   }) async {
-    final endpoint = ShipmentOfferEndpoints.assignCarrier.replaceAll(
-      '{shipmentId}',
-      shipmentId.toString(),
+    final url = RequestBuilder.buildFullUrl(
+      ApiRoutes.assignCarrier,
+      {'shipmentId': shipmentId},
+      queryParameters: {'carrierId': carrierId},
+      requiredQueryKeys: ['carrierId'],
     );
 
-    final response = await _apiClient.post<dynamic>(
-      '${ApiConstants.apiPrefix}$endpoint',
-      queryParameters: {'carrierId': carrierId},
-    );
+    final response = await _apiClient.post<dynamic>(url);
     _ensureSuccess(response, 'Failed to assign carrier');
   }
 
@@ -107,7 +123,7 @@ class ShipmentOfferApiService {
 
   void _ensureSuccess(ApiResponse<dynamic> response, String fallbackMessage) {
     if (!response.isSuccess) {
-      throw Exception(response.message ?? fallbackMessage);
+      throw HttpErrorMapper.map(response.statusCode, response.message ?? fallbackMessage);
     }
   }
 }

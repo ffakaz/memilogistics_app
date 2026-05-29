@@ -43,9 +43,9 @@ class _CarrierDashboardImprovedState extends State<CarrierDashboardImproved> {
       try {
         context.read<CarrierCompanyProvider>().ensureProfileLoaded();
       } catch (_) {}
-      // Load shipments assigned to this carrier
+      // Load shipments assigned to this carrier using new endpoint
       try {
-        context.read<ShipmentProvider>().getMyShipments();
+        context.read<ShipmentProvider>().getCarrierAssignedShipments();
       } catch (_) {}
     });
   }
@@ -153,8 +153,8 @@ class _CarrierDashboardImprovedState extends State<CarrierDashboardImproved> {
         if (query.isNotEmpty) {
           shipments = shipments.where((s) {
             final tn = (s.trackingNumber ?? '').toLowerCase();
-            final pick = s.pickupLocation.address.toLowerCase();
-            final dest = s.destinationLocation.address.toLowerCase();
+            final pick = (s.pickupLocation?.address ?? s.origin).toLowerCase();
+            final dest = (s.destinationLocation?.address ?? s.destination).toLowerCase();
             return tn.contains(query) ||
                 pick.contains(query) ||
                 dest.contains(query);
@@ -251,6 +251,48 @@ class _CarrierDashboardImprovedState extends State<CarrierDashboardImproved> {
 
         return Column(
           children: [
+            // Assigned shipments summary (if any)
+            if (context.watch<ShipmentProvider>().assignedShipments.isNotEmpty)
+              Padding(
+                padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    const Text('Assigned to you', style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold)),
+                    const SizedBox(height: 8),
+                    SizedBox(
+                      height: 100,
+                      child: ListView.builder(
+                        scrollDirection: Axis.horizontal,
+                        itemCount: context.watch<ShipmentProvider>().assignedShipments.length,
+                        itemBuilder: (context, idx) {
+                          final s = context.read<ShipmentProvider>().assignedShipments[idx];
+                          return Container(
+                            width: 260,
+                            margin: const EdgeInsets.only(right: 12),
+                            child: Card(
+                              child: Padding(
+                                padding: const EdgeInsets.all(12),
+                                child: Column(
+                                  crossAxisAlignment: CrossAxisAlignment.start,
+                                  children: [
+                                    Text(s.trackingNumber ?? 'N/A', style: const TextStyle(fontWeight: FontWeight.bold)),
+                                    const SizedBox(height: 6),
+                                    Text('${s.origin} → ${s.destination}', maxLines: 1, overflow: TextOverflow.ellipsis),
+                                    const SizedBox(height: 6),
+                                    Text(s.pickupDate != null ? _formatDate(s.pickupDate!) : 'Pickup: —'),
+                                  ],
+                                ),
+                              ),
+                            ),
+                          );
+                        },
+                      ),
+                    ),
+                    const SizedBox(height: 12),
+                  ],
+                ),
+              ),
             Padding(
               padding: const EdgeInsets.all(12),
               child: Row(
@@ -443,7 +485,7 @@ class _CarrierDashboardImprovedState extends State<CarrierDashboardImproved> {
                             const SizedBox(width: 8),
                             Expanded(
                               child: Text(
-                                'From: ${_formatLocation(shipment.pickupLocation.address)}',
+                                'From: ${_formatLocation(shipment.pickupLocation?.address ?? shipment.origin)}',
                                 style: const TextStyle(
                                   fontSize: 14,
                                   fontWeight: FontWeight.w500,
@@ -465,7 +507,7 @@ class _CarrierDashboardImprovedState extends State<CarrierDashboardImproved> {
                             const SizedBox(width: 8),
                             Expanded(
                               child: Text(
-                                'To: ${_formatLocation(shipment.destinationLocation.address)}',
+                                'To: ${_formatLocation(shipment.destinationLocation?.address ?? shipment.destination)}',
                                 style: const TextStyle(
                                   fontSize: 14,
                                   fontWeight: FontWeight.w500,
@@ -490,23 +532,23 @@ class _CarrierDashboardImprovedState extends State<CarrierDashboardImproved> {
                   Expanded(
                     child: _buildDetailChip(
                       Icons.scale,
-                      '${shipment.amount} ${shipment.unit.name}',
+                      '${shipment.weightKg} kg',
                     ),
                   ),
                   const SizedBox(width: 8),
                   Expanded(
                     child: _buildDetailChip(
                       Icons.calendar_today,
-                      _formatDate(shipment.pickupDate),
+                      shipment.pickupDate != null ? _formatDate(shipment.pickupDate!) : 'Not set',
                     ),
                   ),
                   const SizedBox(width: 8),
                   Expanded(
                     child: _buildDetailChip(
-                      shipment.safetyOption.name == 'fragile'
+                      shipment.fragile
                           ? Icons.warning
                           : Icons.check_circle,
-                      shipment.safetyOption.name == 'fragile'
+                      shipment.fragile
                           ? 'Fragile'
                           : 'Standard',
                     ),
@@ -955,17 +997,17 @@ class _CarrierDashboardImprovedState extends State<CarrierDashboardImproved> {
               ),
               const SizedBox(height: 8),
               Text(
-                'From: ${_formatLocation(shipment.pickupLocation.address)}',
+                'From: ${_formatLocation(shipment.pickupLocation?.address ?? shipment.origin)}',
                 style: TextStyle(fontSize: 13, color: Colors.grey[600]),
               ),
               const SizedBox(height: 4),
               Text(
-                'To: ${_formatLocation(shipment.destinationLocation.address)}',
+                'To: ${_formatLocation(shipment.destinationLocation?.address ?? shipment.destination)}',
                 style: TextStyle(fontSize: 13, color: Colors.grey[600]),
               ),
               const SizedBox(height: 8),
               Text(
-                'Weight: ${shipment.amount} ${shipment.unit.name}',
+                'Weight: ${shipment.weightKg} kg',
                 style: TextStyle(fontSize: 13, color: Colors.grey[600]),
               ),
               const SizedBox(height: 16),
@@ -976,7 +1018,6 @@ class _CarrierDashboardImprovedState extends State<CarrierDashboardImproved> {
                 ),
                 decoration: InputDecoration(
                   labelText: 'Your Offer Price',
-                  prefixText: '\$ ',
                   border: const OutlineInputBorder(),
                   errorText: priceError,
                 ),
@@ -1016,24 +1057,63 @@ class _CarrierDashboardImprovedState extends State<CarrierDashboardImproved> {
                 Navigator.pop(context);
 
                 try {
-                  await context.read<ShipmentProvider>().submitShipmentOffer(
-                    shipmentId: shipment.id!,
-                    price: price,
+                  // Get carrier company provider to fetch carrier company ID
+                  final carrierProvider = context.read<CarrierCompanyProvider>();
+                  
+                  // Ensure carrier profile is loaded
+                  if (carrierProvider.state.company == null) {
+                    print('📋 Carrier profile not loaded, fetching...');
+                    await carrierProvider.getCarrierCompany();
+                  }
+
+                  final carrierCompanyId = carrierProvider.state.company?.id;
+
+                  // Validate carrier profile exists
+                  if (carrierCompanyId == null) {
+                    if (mounted) {
+                      ScaffoldMessenger.of(context).showSnackBar(
+                        const SnackBar(
+                          content: Text(
+                            'Please create your carrier company profile first before submitting offers.',
+                          ),
+                          backgroundColor: Colors.orange,
+                          duration: Duration(seconds: 4),
+                        ),
+                      );
+                    }
+                    return;
+                  }
+
+                  print('📋 Submitting offer with Carrier Company ID: $carrierCompanyId');
+                  print('📋 Shipment ID: ${shipment.id}');
+                  print('📋 Price: \$${price.toStringAsFixed(2)}');
+
+                  // Use the NEW ShipmentOfferProvider.createOffer() method
+                  await context.read<ShipmentOfferProvider>().createOffer(
+                    shipment.id!,
+                    carrierCompanyId,
+                    price,
                   );
 
                   if (mounted) {
                     ScaffoldMessenger.of(context).showSnackBar(
-                      const SnackBar(
-                        content: Text('Offer submitted successfully!'),
+                      SnackBar(
+                        content: Text('Offer of \$${price.toStringAsFixed(2)} submitted successfully!'),
+                        backgroundColor: Colors.green,
                       ),
                     );
                     // Refresh offers
                     context.read<ShipmentOfferProvider>().loadMyOffers();
                   }
                 } catch (e) {
+                  print('❌ Error submitting offer: $e');
                   if (mounted) {
                     ScaffoldMessenger.of(context).showSnackBar(
-                      SnackBar(content: Text('Failed to submit offer: $e')),
+                      SnackBar(
+                        content: Text('Failed to submit offer: ${e.toString().replaceAll('Exception: ', '')}'),
+                        backgroundColor: Colors.red,
+                        duration: const Duration(seconds: 4),
+                      ),
                     );
                   }
                 }

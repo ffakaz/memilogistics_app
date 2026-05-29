@@ -1,9 +1,16 @@
-import '../entities/carrier_company.dart';
+import 'package:memilogistics_app/features/carrier/domain/entities/carrier_company.dart';
 
 abstract class CarrierCompanyRepository {
-  Future<CarrierCompany> createCarrierCompany(CarrierCompany company);
+  Future<CarrierCompany> createCarrierCompany(
+    CarrierCompany company,
+  );
 
   Future<CarrierCompany> getCarrierCompany();
 
-  Future<CarrierCompany> updateCarrierCompany(CarrierCompany company);
+  /// Retrieves a carrier company by its ID.
+  Future<CarrierCompany> getCarrierCompanyById(int carrierId);
+
+  Future<CarrierCompany> updateCarrierCompany(
+    CarrierCompany company,
+  );
 }

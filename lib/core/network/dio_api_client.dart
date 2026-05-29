@@ -2,6 +2,7 @@
 //
 // Real Dio-based implementation of ApiClient
 
+import 'package:flutter/foundation.dart';
 import 'package:dio/dio.dart';
 import 'package:memilogistics_app/core/core.dart';
 
@@ -34,6 +35,16 @@ class DioApiClient implements ApiClient {
         validateStatus: (status) => status != null && status < 500,
       ),
     );
+
+    // Configure platform-specific HTTP client adapter
+    if (!kIsWeb) {
+      // On mobile/desktop, Dio uses native HttpClientAdapter by default
+      print('📱 [DioApiClient] Using default native HTTP adapter for mobile/desktop');
+    } else {
+      // On web, Dio automatically uses browser's fetch API via BrowserHttpClientAdapter
+      // No need to explicitly set it - Dio handles this automatically
+      print('🌐 [DioApiClient] Web platform detected - using browser HTTP adapter');
+    }
 
     dio.interceptors.addAll([
       // 1. JWT attach + 401 refresh + retry
@@ -68,12 +79,27 @@ class DioApiClient implements ApiClient {
     String path, {
     Map<String, dynamic>? queryParameters,
     Map<String, String>? headers,
+    bool skipAuth = false,
   }) async {
     try {
+      // Allow callers to pass a header flag `skipAuthInterceptor: 'true'`
+      // as a lightweight way to avoid modifying the ApiClient interface.
+      Map<String, String>? cleanedHeaders;
+      var headerSkip = false;
+      if (headers != null) {
+        cleanedHeaders = Map<String, String>.from(headers);
+        if (cleanedHeaders.remove('skipAuthInterceptor') != null) {
+          headerSkip = true;
+        }
+      }
+
+      final shouldSkip = skipAuth || headerSkip;
+      final extra = shouldSkip ? {'skipAuthInterceptor': true} : null;
+
       final response = await _dio.get<T>(
         path,
         queryParameters: queryParameters,
-        options: Options(headers: headers),
+        options: Options(headers: cleanedHeaders ?? headers, extra: extra),
       );
       return _toApiResponse<T>(response);
     } on DioException catch (e) {
@@ -87,6 +113,7 @@ class DioApiClient implements ApiClient {
     dynamic data,
     Map<String, dynamic>? queryParameters,
     Map<String, String>? headers,
+    bool skipAuth = false,
   }) async {
     try {
       print('🌐 POST Request:');
@@ -94,12 +121,23 @@ class DioApiClient implements ApiClient {
       print('  Query: $queryParameters');
       print('  Data: $data');
       print('  Headers: $headers');
-      
+      Map<String, String>? cleanedHeaders;
+      var headerSkip = false;
+      if (headers != null) {
+        cleanedHeaders = Map<String, String>.from(headers);
+        if (cleanedHeaders.remove('skipAuthInterceptor') != null) {
+          headerSkip = true;
+        }
+      }
+
+      final shouldSkip = skipAuth || headerSkip;
+      final extra = shouldSkip ? {'skipAuthInterceptor': true} : null;
+
       final response = await _dio.post<T>(
         path,
         data: data,
         queryParameters: queryParameters,
-        options: Options(headers: headers),
+        options: Options(headers: cleanedHeaders ?? headers, extra: extra),
       );
       
       print('✅ POST Response:');
@@ -130,13 +168,25 @@ class DioApiClient implements ApiClient {
     dynamic data,
     Map<String, dynamic>? queryParameters,
     Map<String, String>? headers,
+    bool skipAuth = false,
   }) async {
     try {
+      Map<String, String>? cleanedHeaders;
+      var headerSkip = false;
+      if (headers != null) {
+        cleanedHeaders = Map<String, String>.from(headers);
+        if (cleanedHeaders.remove('skipAuthInterceptor') != null) {
+          headerSkip = true;
+        }
+      }
+
+      final shouldSkip = skipAuth || headerSkip;
+      final extra = shouldSkip ? {'skipAuthInterceptor': true} : null;
       final response = await _dio.put<T>(
         path,
         data: data,
         queryParameters: queryParameters,
-        options: Options(headers: headers),
+        options: Options(headers: cleanedHeaders ?? headers, extra: extra),
       );
       return _toApiResponse<T>(response);
     } on DioException catch (e) {
@@ -150,13 +200,25 @@ class DioApiClient implements ApiClient {
     dynamic data,
     Map<String, dynamic>? queryParameters,
     Map<String, String>? headers,
+    bool skipAuth = false,
   }) async {
     try {
+      Map<String, String>? cleanedHeaders;
+      var headerSkip = false;
+      if (headers != null) {
+        cleanedHeaders = Map<String, String>.from(headers);
+        if (cleanedHeaders.remove('skipAuthInterceptor') != null) {
+          headerSkip = true;
+        }
+      }
+
+      final shouldSkip = skipAuth || headerSkip;
+      final extra = shouldSkip ? {'skipAuthInterceptor': true} : null;
       final response = await _dio.patch<T>(
         path,
         data: data,
         queryParameters: queryParameters,
-        options: Options(headers: headers),
+        options: Options(headers: cleanedHeaders ?? headers, extra: extra),
       );
       return _toApiResponse<T>(response);
     } on DioException catch (e) {
@@ -170,13 +232,25 @@ class DioApiClient implements ApiClient {
     dynamic data,
     Map<String, dynamic>? queryParameters,
     Map<String, String>? headers,
+    bool skipAuth = false,
   }) async {
     try {
+      Map<String, String>? cleanedHeaders;
+      var headerSkip = false;
+      if (headers != null) {
+        cleanedHeaders = Map<String, String>.from(headers);
+        if (cleanedHeaders.remove('skipAuthInterceptor') != null) {
+          headerSkip = true;
+        }
+      }
+
+      final shouldSkip = skipAuth || headerSkip;
+      final extra = shouldSkip ? {'skipAuthInterceptor': true} : null;
       final response = await _dio.delete<T>(
         path,
         data: data,
         queryParameters: queryParameters,
-        options: Options(headers: headers),
+        options: Options(headers: cleanedHeaders ?? headers, extra: extra),
       );
       return _toApiResponse<T>(response);
     } on DioException catch (e) {

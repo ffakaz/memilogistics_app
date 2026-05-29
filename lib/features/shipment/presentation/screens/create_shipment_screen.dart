@@ -1,10 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 
-import '../../domain/enums/safety_option.dart';
-import '../../domain/enums/shipment_type.dart';
-import '../../domain/enums/weight_unit.dart';
-
 import '../providers/shipment_provider.dart';
 import 'package:memilogistics_app/features/shipper/presentation/providers/shipper_company_provider.dart';
 
@@ -18,25 +14,22 @@ class CreateShipmentScreen extends StatefulWidget {
 class _CreateShipmentScreenState extends State<CreateShipmentScreen> {
   final _formKey = GlobalKey<FormState>();
 
-  final TextEditingController _amountController = TextEditingController();
-
-  final TextEditingController _pickupController = TextEditingController();
-
+  final TextEditingController _shipmentItemController = TextEditingController();
+  final TextEditingController _weightController = TextEditingController();
+  final TextEditingController _originController = TextEditingController();
   final TextEditingController _destinationController = TextEditingController();
+  final TextEditingController _descriptionController = TextEditingController();
 
   DateTime? _pickupDate;
-
-  ShipmentType _shipmentType = ShipmentType.dryGoods;
-
-  WeightUnit _weightUnit = WeightUnit.kg;
-
-  SafetyOption _safetyOption = SafetyOption.normal;
+  bool _fragile = false;
 
   @override
   void dispose() {
-    _amountController.dispose();
-    _pickupController.dispose();
+    _shipmentItemController.dispose();
+    _weightController.dispose();
+    _originController.dispose();
     _destinationController.dispose();
+    _descriptionController.dispose();
     super.dispose();
   }
 
@@ -70,37 +63,73 @@ class _CreateShipmentScreenState extends State<CreateShipmentScreen> {
     final provider = context.read<ShipmentProvider>();
     final shipperProvider = context.read<ShipperCompanyProvider>();
 
+    // Ensure shipper profile is loaded
+    if (shipperProvider.state.company == null) {
+      print('📋 Shipper profile not loaded, fetching...');
+      try {
+        await shipperProvider.getShipperCompany();
+      } catch (e) {
+        print('❌ Failed to load shipper profile: $e');
+      }
+    }
+
     final shipperCompany = shipperProvider.state.company;
-    if (shipperCompany == null) {
+    final shipperId = shipperCompany?.id;
+
+    if (shipperId == null) {
       ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('Complete your shipper profile first.')),
+        const SnackBar(
+          content: Text('Please create your shipper profile first before creating shipments.'),
+          backgroundColor: Colors.orange,
+          duration: Duration(seconds: 4),
+        ),
       );
       return;
     }
 
+    print('📋 Creating shipment with Shipper ID: $shipperId');
+
     try {
       await provider.createShipment(
-        shipperName: shipperCompany.companyName,
-        shipmentType: _shipmentType,
-        amount: double.parse(_amountController.text.trim()),
-        unit: _weightUnit,
-        pickup: _pickupController.text.trim(),
+        shipperId: shipperId,  // Include shipper ID
+        shipmentItem: _shipmentItemController.text.trim(),
+        weightKg: double.parse(_weightController.text.trim()),
+        origin: _originController.text.trim(),
         destination: _destinationController.text.trim(),
         pickupDate: _pickupDate!,
-        safetyOption: _safetyOption,
-        // Status will be set to 'pending' by backend automatically
+        fragile: _fragile,
+        description: _descriptionController.text.trim().isEmpty 
+            ? null 
+            : _descriptionController.text.trim(),
       );
 
       if (!mounted) return;
 
+      // Refresh the shipments list so new shipment appears immediately
+      await context.read<ShipmentProvider>().getMyShipments();
+      print('✅ Refreshed shipments list after creation');
+
+      if (!mounted) return;
+
       ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('Shipment created successfully')),
+        const SnackBar(
+          content: Text('Shipment created successfully'),
+          backgroundColor: Colors.green,
+        ),
       );
+
+      // Navigate back
+      Navigator.pop(context);
     } catch (e) {
+      print('❌ Error creating shipment: $e');
       if (!mounted) return;
 
       ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text('Failed to create shipment: ${e.toString()}')),
+        SnackBar(
+          content: Text('Failed to create shipment: ${e.toString().replaceAll('Exception: ', '')}'),
+          backgroundColor: Colors.red,
+          duration: const Duration(seconds: 4),
+        ),
       );
     }
   }
@@ -139,111 +168,62 @@ class _CreateShipmentScreenState extends State<CreateShipmentScreen> {
 
               const SizedBox(height: 16),
 
-              /// SHIPMENT TYPE
-              DropdownButtonFormField<ShipmentType>(
-                initialValue: _shipmentType,
-
+              /// SHIPMENT ITEM
+              TextFormField(
+                controller: _shipmentItemController,
                 decoration: const InputDecoration(
-                  labelText: 'Shipment Type',
+                  labelText: 'Shipment Item',
+                  hintText: 'e.g., Electronics, Furniture, Dry Goods',
                   border: OutlineInputBorder(),
+                  prefixIcon: Icon(Icons.inventory_2_outlined),
                 ),
-
-                items: ShipmentType.values
-                    .map(
-                      (type) =>
-                          DropdownMenuItem(value: type, child: Text(type.name)),
-                    )
-                    .toList(),
-
-                onChanged: (value) {
-                  if (value != null) {
-                    setState(() {
-                      _shipmentType = value;
-                    });
+                validator: (value) {
+                  if (value == null || value.trim().isEmpty) {
+                    return 'Shipment item is required';
                   }
+                  return null;
                 },
               ),
 
               const SizedBox(height: 16),
 
-              /// AMOUNT + UNIT
-              Row(
-                children: [
-                  Expanded(
-                    flex: 2,
-
-                    child: TextFormField(
-                      controller: _amountController,
-
-                      keyboardType: TextInputType.number,
-
-                      decoration: const InputDecoration(
-                        labelText: 'Amount',
-                        border: OutlineInputBorder(),
-                      ),
-
-                      validator: (value) {
-                        if (value == null || value.isEmpty) {
-                          return 'Amount is required';
-                        }
-
-                        final parsed = double.tryParse(value);
-
-                        if (parsed == null || parsed <= 0) {
-                          return 'Invalid amount';
-                        }
-
-                        return null;
-                      },
-                    ),
-                  ),
-
-                  const SizedBox(width: 12),
-
-                  Expanded(
-                    child: DropdownButtonFormField<WeightUnit>(
-                      initialValue: _weightUnit,
-
-                      decoration: const InputDecoration(
-                        labelText: 'Unit',
-                        border: OutlineInputBorder(),
-                      ),
-
-                      items: WeightUnit.values
-                          .map(
-                            (unit) => DropdownMenuItem(
-                              value: unit,
-                              child: Text(unit.name),
-                            ),
-                          )
-                          .toList(),
-
-                      onChanged: (value) {
-                        if (value != null) {
-                          setState(() {
-                            _weightUnit = value;
-                          });
-                        }
-                      },
-                    ),
-                  ),
-                ],
+              /// WEIGHT IN KG
+              TextFormField(
+                controller: _weightController,
+                keyboardType: TextInputType.number,
+                decoration: const InputDecoration(
+                  labelText: 'Weight (kg)',
+                  hintText: 'Enter weight in kilograms',
+                  border: OutlineInputBorder(),
+                  prefixIcon: Icon(Icons.scale_outlined),
+                  suffixText: 'kg',
+                ),
+                validator: (value) {
+                  if (value == null || value.isEmpty) {
+                    return 'Weight is required';
+                  }
+                  final parsed = double.tryParse(value);
+                  if (parsed == null || parsed <= 0) {
+                    return 'Invalid weight';
+                  }
+                  return null;
+                },
               ),
 
               const SizedBox(height: 16),
 
-              /// PICKUP
+              /// ORIGIN
               TextFormField(
-                controller: _pickupController,
-
+                controller: _originController,
                 decoration: const InputDecoration(
-                  labelText: 'Pickup Point',
+                  labelText: 'Origin',
+                  hintText: 'Pickup location',
                   border: OutlineInputBorder(),
+                  prefixIcon: Icon(Icons.trip_origin),
                 ),
-
                 validator: (value) {
                   if (value == null || value.trim().isEmpty) {
-                    return 'Pickup address is required';
+                    return 'Origin is required';
                   }
                   return null;
                 },
@@ -254,12 +234,12 @@ class _CreateShipmentScreenState extends State<CreateShipmentScreen> {
               /// DESTINATION
               TextFormField(
                 controller: _destinationController,
-
                 decoration: const InputDecoration(
                   labelText: 'Destination',
+                  hintText: 'Delivery location',
                   border: OutlineInputBorder(),
+                  prefixIcon: Icon(Icons.location_on_outlined),
                 ),
-
                 validator: (value) {
                   if (value == null || value.trim().isEmpty) {
                     return 'Destination is required';
@@ -273,13 +253,12 @@ class _CreateShipmentScreenState extends State<CreateShipmentScreen> {
               /// PICKUP DATE
               InkWell(
                 onTap: _selectPickupDate,
-
                 child: InputDecorator(
                   decoration: const InputDecoration(
                     labelText: 'Pickup Date',
                     border: OutlineInputBorder(),
+                    prefixIcon: Icon(Icons.calendar_today_outlined),
                   ),
-
                   child: Text(
                     _pickupDate == null
                         ? 'Select date'
@@ -290,29 +269,36 @@ class _CreateShipmentScreenState extends State<CreateShipmentScreen> {
 
               const SizedBox(height: 16),
 
-              /// SAFETY OPTION
-              const Text(
-                'Safety Option',
-                style: TextStyle(fontWeight: FontWeight.bold),
+              /// DESCRIPTION (Optional)
+              TextFormField(
+                controller: _descriptionController,
+                maxLines: 3,
+                decoration: const InputDecoration(
+                  labelText: 'Description (Optional)',
+                  hintText: 'Additional details about the shipment',
+                  border: OutlineInputBorder(),
+                  prefixIcon: Icon(Icons.description_outlined),
+                ),
               ),
 
-              const SizedBox(height: 8),
+              const SizedBox(height: 16),
 
-              SegmentedButton<SafetyOption>(
-                segments: SafetyOption.values
-                    .map(
-                      (option) => ButtonSegment<SafetyOption>(
-                        value: option,
-                        label: Text(option.name),
-                      ),
-                    )
-                    .toList(),
-                selected: {_safetyOption},
-                onSelectionChanged: (selection) {
-                  setState(() {
-                    _safetyOption = selection.first;
-                  });
-                },
+              /// FRAGILE CHECKBOX
+              Card(
+                child: CheckboxListTile(
+                  title: const Text('Fragile Item'),
+                  subtitle: const Text('Check if this shipment contains fragile items'),
+                  secondary: Icon(
+                    _fragile ? Icons.warning : Icons.check_circle_outline,
+                    color: _fragile ? Colors.orange : Colors.green,
+                  ),
+                  value: _fragile,
+                  onChanged: (value) {
+                    setState(() {
+                      _fragile = value ?? false;
+                    });
+                  },
+                ),
               ),
 
               const SizedBox(height: 24),
@@ -321,17 +307,22 @@ class _CreateShipmentScreenState extends State<CreateShipmentScreen> {
               SizedBox(
                 width: double.infinity,
                 height: 50,
-
                 child: ElevatedButton(
                   onPressed: provider.isLoading ? null : _submit,
-
+                  style: ElevatedButton.styleFrom(
+                    backgroundColor: const Color(0xFF2C3E50),
+                    foregroundColor: Colors.white,
+                  ),
                   child: provider.isLoading
                       ? const SizedBox(
                           width: 24,
                           height: 24,
-                          child: CircularProgressIndicator(),
+                          child: CircularProgressIndicator(color: Colors.white),
                         )
-                      : const Text('Create Shipment'),
+                      : const Text(
+                          'Create Shipment',
+                          style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold),
+                        ),
                 ),
               ),
             ],

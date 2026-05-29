@@ -1,36 +1,34 @@
 enum ShipmentStatus {
-  pending,
-  accepted,
-  assigned,
-  pickedUp,
-  inTransit,
-  arrivedAtDestination,
-  delivered,
-  completed,
-  cancelled,
-}
-
-extension ShipmentStatusX on ShipmentStatus {
-  String get backendValue {
+  pending('PENDING'),
+  accepted('ACCEPTED'),        // NEW
+  assigned('ASSIGNED'),
+  pickedUp('PICKED_UP'),
+  inTransit('IN_TRANSIT'),
+  arrivedAtDestination('ARRIVED_AT_DESTINATION'),
+  delivered('DELIVERED'),
+  completed('COMPLETED');
+  
+  final String backendValue;
+  const ShipmentStatus(this.backendValue);
+  
+  String get displayName {
     switch (this) {
       case ShipmentStatus.pending:
-        return 'PENDING';
+        return 'Pending';
       case ShipmentStatus.accepted:
-        return 'ACCEPTED';
+        return 'Accepted';
       case ShipmentStatus.assigned:
-        return 'ASSIGNED';
+        return 'Assigned';
       case ShipmentStatus.pickedUp:
-        return 'PICKED_UP';
+        return 'Picked Up';
       case ShipmentStatus.inTransit:
-        return 'IN_TRANSIT';
+        return 'In Transit';
       case ShipmentStatus.arrivedAtDestination:
-        return 'ARRIVED_AT_DESTINATION';
+        return 'Arrived';
       case ShipmentStatus.delivered:
-        return 'DELIVERED';
+        return 'Delivered';
       case ShipmentStatus.completed:
-        return 'COMPLETED';
-      case ShipmentStatus.cancelled:
-        return 'CANCELLED';
+        return 'Completed';
     }
   }
 }
