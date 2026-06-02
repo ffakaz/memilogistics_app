@@ -52,7 +52,9 @@ class CarrierCompanyRemoteDataSourceImpl
 
       if (response.statusCode == 404) {
         // Interpret 404 as "missing carrier profile" so callers can handle onboarding
-        throw HttpException(message: response.message ?? 'Carrier profile not found', statusCode: 404);
+        throw NotFoundException(
+          response.message ?? 'Carrier profile not found',
+        );
       }
 
       if (response.isSuccess) {
@@ -61,9 +63,14 @@ class CarrierCompanyRemoteDataSourceImpl
 
       throw Exception(response.message ?? 'Failed to get carrier company');
     } catch (e) {
+      if (e is AppException) {
+        // Preserve app exceptions so callers can detect 404 and guide onboarding
+        rethrow;
+      }
       throw Exception('Failed to get carrier company: $e');
     }
   }
+
   Future<CarrierCompanyModel> getCarrierCompanyById(int carrierId) async {
     try {
       // Build the endpoint explicitly instead of using the constant accessor
@@ -79,11 +86,14 @@ class CarrierCompanyRemoteDataSourceImpl
       if (response.isSuccess) {
         return CarrierCompanyModel.fromJson(_profileBody(response.data));
       }
-      throw Exception(response.message ?? 'Failed to get carrier company by ID');
+      throw Exception(
+        response.message ?? 'Failed to get carrier company by ID',
+      );
     } catch (e) {
       throw Exception('Failed to get carrier company by ID: $e');
     }
   }
+
   @override
   Future<CarrierCompanyModel> updateCarrierCompany(
     CarrierCompanyModel company,

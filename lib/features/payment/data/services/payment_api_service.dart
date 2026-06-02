@@ -87,7 +87,7 @@ class PaymentApiService {
       return PaymentRecordModel(
         id: fallbackRecord?.id,
         amount: fallbackRecord?.amount ?? 0,
-        currency: fallbackRecord?.currency ?? 'USD',
+        currency: fallbackRecord?.currency ?? 'ETB',
         paymentStatus: 'COMPLETED',
         paymentMethod: fallbackRecord?.paymentMethod ?? 'BANK_TRANSFER',
         transactionId: fallbackRecord?.transactionId,

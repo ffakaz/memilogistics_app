@@ -27,10 +27,7 @@ class StatusChip extends StatelessWidget {
       ),
       decoration: BoxDecoration(
         gradient: LinearGradient(
-          colors: [
-            config.color,
-            config.color.withAlpha((0.8 * 255).round()),
-          ],
+          colors: [config.color, config.color.withAlpha((0.8 * 255).round())],
           begin: Alignment.topLeft,
           end: Alignment.bottomRight,
         ),
@@ -47,11 +44,7 @@ class StatusChip extends StatelessWidget {
         mainAxisSize: MainAxisSize.min,
         children: [
           if (showIcon) ...[
-            Icon(
-              config.icon,
-              size: fontSize ?? 14,
-              color: Colors.white,
-            ),
+            Icon(config.icon, size: fontSize ?? 14, color: Colors.white),
             const SizedBox(width: AppTheme.spacing8),
           ],
           Text(
@@ -133,11 +126,7 @@ class _StatusConfig {
   final Color color;
   final IconData icon;
 
-  _StatusConfig({
-    required this.label,
-    required this.color,
-    required this.icon,
-  });
+  _StatusConfig({required this.label, required this.color, required this.icon});
 }
 
 /// Animated Status Chip with pulse effect
@@ -168,9 +157,10 @@ class _AnimatedStatusChipState extends State<AnimatedStatusChip>
       vsync: this,
     )..repeat(reverse: true);
 
-    _scaleAnimation = Tween<double>(begin: 1.0, end: 1.05).animate(
-      CurvedAnimation(parent: _controller, curve: Curves.easeInOut),
-    );
+    _scaleAnimation = Tween<double>(
+      begin: 1.0,
+      end: 1.05,
+    ).animate(CurvedAnimation(parent: _controller, curve: Curves.easeInOut));
   }
 
   @override
@@ -185,16 +175,10 @@ class _AnimatedStatusChipState extends State<AnimatedStatusChip>
     if (widget.status == ShipmentStatus.inTransit) {
       return ScaleTransition(
         scale: _scaleAnimation,
-        child: StatusChip(
-          status: widget.status,
-          showIcon: widget.showIcon,
-        ),
+        child: StatusChip(status: widget.status, showIcon: widget.showIcon),
       );
     }
 
-    return StatusChip(
-      status: widget.status,
-      showIcon: widget.showIcon,
-    );
+    return StatusChip(status: widget.status, showIcon: widget.showIcon);
   }
 }

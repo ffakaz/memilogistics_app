@@ -15,10 +15,14 @@ class PaymentRequest extends Equatable {
   /// Payment method to use
   final PaymentMethod paymentMethod;
 
+  /// Optional payment note sent to the backend
+  final String? note;
+
   const PaymentRequest({
     required this.amount,
     required this.currency,
     required this.paymentMethod,
+    this.note,
   });
 
   /// Get formatted amount with currency
@@ -34,16 +38,18 @@ class PaymentRequest extends Equatable {
     double? amount,
     String? currency,
     PaymentMethod? paymentMethod,
+    String? note,
   }) {
     return PaymentRequest(
       amount: amount ?? this.amount,
       currency: currency ?? this.currency,
       paymentMethod: paymentMethod ?? this.paymentMethod,
+      note: note ?? this.note,
     );
   }
 
   @override
-  List<Object?> get props => [amount, currency, paymentMethod];
+  List<Object?> get props => [amount, currency, paymentMethod, note];
 
   @override
   String toString() {

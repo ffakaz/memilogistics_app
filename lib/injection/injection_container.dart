@@ -119,7 +119,7 @@ class InjectionContainer extends StatelessWidget {
 
         // ShipmentOffer provider
         ChangeNotifierProvider<ShipmentOfferProvider>(
-          create: (_) => ShipmentOfferProvider(shipmentOfferApiService),
+          create: (_) => ShipmentOfferProvider(shipmentOfferApiService, tokenStorage),
         ),
 
         // Payment provider

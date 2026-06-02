@@ -81,7 +81,7 @@ class _ShipmentOffersScreenState extends State<ShipmentOffersScreen> {
       });
       ScaffoldMessenger.of(context).showSnackBar(
         const SnackBar(
-          content: Text('Offer accepted'),
+          content: Text('Your offer has been accepted. Shipment assigned successfully.'),
           backgroundColor: Colors.green,
         ),
       );
@@ -116,7 +116,7 @@ class _ShipmentOffersScreenState extends State<ShipmentOffersScreen> {
       if (!mounted) return;
       ScaffoldMessenger.of(context).showSnackBar(
         const SnackBar(
-          content: Text('Offer rejected'),
+          content: Text('Your offer was not selected by the shipper.'),
           backgroundColor: Colors.orange,
         ),
       );
@@ -166,7 +166,7 @@ class _ShipmentOffersScreenState extends State<ShipmentOffersScreen> {
     final offers = provider.offersCache[widget.shipmentId] ?? [];
 
     return Scaffold(
-      appBar: AppBar(title: const Text('Shipment Offers')),
+      appBar: AppBar(title: const Text('Review Offers')),
       body: _isLoading
           ? const Center(child: CircularProgressIndicator())
           : _errorMessage != null
@@ -254,10 +254,9 @@ class _ShipmentOffersScreenState extends State<ShipmentOffersScreen> {
 
   Widget _buildOfferCard(ShipmentOfferModel offer, ShipmentProvider provider) {
     final isSubmitting = provider.isMutatingOffer(offer.id);
-    final shipmentIsPending =
-        _shipment?.status == null ||
-        _shipment?.status == ShipmentStatus.pending;
-    final actionsDisabled = isSubmitting || !shipmentIsPending;
+    final shipmentAssigned = (_shipment?.assignedCarrierId != null) ||
+      (_shipment?.status == ShipmentStatus.assigned);
+    final actionsDisabled = isSubmitting || shipmentAssigned;
     final carrierName = _carrierName(offer);
 
     return Card(
@@ -312,7 +311,7 @@ class _ShipmentOffersScreenState extends State<ShipmentOffersScreen> {
               style: TextStyle(color: Colors.grey[600]),
             ),
             const SizedBox(height: 12),
-            if (!shipmentIsPending)
+            if (shipmentAssigned)
               const Text(
                 'This shipment has already been assigned.',
                 style: TextStyle(fontWeight: FontWeight.w600),

@@ -60,6 +60,64 @@ class ShipmentProvider extends ChangeNotifier {
   dynamic get statistics => _statistics;
   bool get isLoadingStatistics => _isLoadingStatistics;
 
+  Future<List<Shipment>> getMyShipmentsByStatus({
+    required ShipmentStatus status,
+    int page = 0,
+    int size = 20,
+  }) async {
+    _setLoading(true);
+    _clearError();
+
+    try {
+      final shipments = await repository.getMyShipmentsByStatus(
+        status: status,
+        page: page,
+        size: size,
+      );
+      for (final shipment in shipments) {
+        _upsertShipment(shipment);
+      }
+      notifyListeners();
+      return shipments;
+    } catch (e) {
+      _setError('Failed to load ${status.displayName} shipments: ${e.toString()}');
+      rethrow;
+    } finally {
+      _setLoading(false);
+    }
+  }
+
+  Future<Map<ShipmentStatus, List<Shipment>>> getMyShipmentStatusBuckets(
+    List<ShipmentStatus> statuses, {
+    int page = 0,
+    int size = 20,
+  }) async {
+    _setLoading(true);
+    _clearError();
+
+    try {
+      final buckets = <ShipmentStatus, List<Shipment>>{};
+      for (final status in statuses) {
+        final shipments = await repository.getMyShipmentsByStatus(
+          status: status,
+          page: page,
+          size: size,
+        );
+        buckets[status] = shipments;
+        for (final shipment in shipments) {
+          _upsertShipment(shipment);
+        }
+      }
+      notifyListeners();
+      return buckets;
+    } catch (e) {
+      _setError('Failed to load shipments by status: ${e.toString()}');
+      rethrow;
+    } finally {
+      _setLoading(false);
+    }
+  }
+
   Future<void> createShipment({
     required int shipperId, // Required: Shipper ID from shipper profile
     required String shipmentItem,
@@ -110,14 +168,18 @@ class ShipmentProvider extends ChangeNotifier {
     try {
       print('📦 Fetching available shipments...');
 
-      // Get shipments from backend
-      _shipments = await repository.listShipments(page: 0, size: 50);
+      // The carrier load board must not use /shipment/my/status because that
+      // endpoint is scoped to the authenticated user's own shipments.
+      final allShipments = await repository.listShipments(
+        page: 0,
+        size: 50,
+      );
 
-      print('📦 Received ${_shipments.length} shipments from backend');
+      print('📦 Received ${allShipments.length} shipments from backend');
 
       // Log shipment statuses for debugging
       final statusCounts = <ShipmentStatus, int>{};
-      for (final shipment in _shipments) {
+      for (final shipment in allShipments) {
         statusCounts[shipment.status] =
             (statusCounts[shipment.status] ?? 0) + 1;
       }
@@ -126,16 +188,17 @@ class ShipmentProvider extends ChangeNotifier {
         print('   ${status.displayName}: $count');
       });
 
-      // Filter to only show pending shipments (available for bidding)
-      final pendingShipments = _shipments
-          .where((s) => s.status == ShipmentStatus.pending)
+      // Filter to only show unassigned shipments (available for bidding)
+      // Business rule: show shipments where assignedCarrierId == null
+      final unassignedShipments = allShipments
+          .where((s) => s.assignedCarrierId == null)
           .toList();
 
       print(
-        '📦 Filtered to ${pendingShipments.length} PENDING shipments available for offers',
+        '📦 Filtered to ${unassignedShipments.length} UNASSIGNED shipments available for offers',
       );
 
-      _shipments = pendingShipments;
+      _shipments = unassignedShipments;
 
       notifyListeners();
     } catch (e) {
@@ -231,29 +294,9 @@ class ShipmentProvider extends ChangeNotifier {
   // This method provides an alternative direct assignment flow (not currently used).
   // The standard flow is: Carrier submits offer → Shipper accepts → Backend assigns carrier
   Future<void> acceptShipment(int shipmentId) async {
-    _setLoading(true);
-    _clearError();
-
-    try {
-      // Alternative flow: Direct assignment without offer
-      // For now, update status locally
-      final index = _shipments.indexWhere((s) => s.id == shipmentId);
-      if (index != -1) {
-        final updatedShipment = _shipments[index].copyWith(
-          status: ShipmentStatus.assigned,
-        );
-        _shipments[index] = updatedShipment;
-        if (_activeShipment?.id == shipmentId) {
-          _activeShipment = updatedShipment;
-        }
-        notifyListeners();
-      }
-    } catch (e) {
-      _setError('Failed to accept shipment: ${e.toString()}');
-      rethrow;
-    } finally {
-      _setLoading(false);
-    }
+    throw Exception(
+      'Direct shipment acceptance is disabled. Submit an offer and wait for shipper approval.',
+    );
   }
 
   Future<void> submitShipmentOffer({
@@ -302,30 +345,9 @@ class ShipmentProvider extends ChangeNotifier {
     required int shipmentId,
     required int carrierId,
   }) async {
-    if (carrierId <= 0) {
-      throw Exception('Carrier profile id is missing from the selected offer.');
-    }
-
-    _setLoading(true);
-    _clearError();
-
-    try {
-      await repository.assignCarrier(
-        shipmentId: shipmentId,
-        carrierId: carrierId,
-      );
-
-      final refreshedShipment = await repository.getShipment(shipmentId);
-      _upsertShipment(refreshedShipment);
-      _activeShipment = refreshedShipment;
-      _offersCache.remove(shipmentId);
-      notifyListeners();
-    } catch (e) {
-      _setError('Failed to assign carrier: ${e.toString()}');
-      rethrow;
-    } finally {
-      _setLoading(false);
-    }
+    throw Exception(
+      'Direct carrier assignment is disabled. Accept a carrier offer from the review screen.',
+    );
   }
 
   // Update shipment status (carrier action)
@@ -372,16 +394,44 @@ class ShipmentProvider extends ChangeNotifier {
         '📦 Fetching my shipments (role-aware) using /shipment/my endpoint...',
       );
 
-      // Use the paginated endpoint that calls /api/shipment/my
-      final paginatedResponse = await repository.getShipperShipmentsPaginated(
-        page: 0,
-        size: 50,
-      );
+      final statuses = <ShipmentStatus>[
+        ShipmentStatus.pending,
+        ShipmentStatus.accepted,
+        ShipmentStatus.assigned,
+        ShipmentStatus.pickedUp,
+        ShipmentStatus.inTransit,
+        ShipmentStatus.arrivedAtDestination,
+        ShipmentStatus.delivered,
+        ShipmentStatus.paymentPending,
+        ShipmentStatus.completed,
+      ];
+      final byId = <int, Shipment>{};
+      final withoutId = <Shipment>[];
 
-      _shipments = paginatedResponse.shipments;
-      _currentPage = paginatedResponse.currentPage;
-      _totalPages = paginatedResponse.totalPages;
-      _hasMorePages = paginatedResponse.hasMore;
+      for (final status in statuses) {
+        final statusShipments = await repository.getMyShipmentsByStatus(
+          status: status,
+          page: 0,
+          size: 50,
+        );
+        for (final shipment in statusShipments) {
+          final id = shipment.id;
+          if (id == null) {
+            withoutId.add(shipment);
+          } else {
+            byId[id] = shipment;
+          }
+        }
+      }
+
+      _shipments = [...byId.values, ...withoutId];
+      _currentPage = 0;
+      _totalPages = 1;
+      _hasMorePages = false;
+      _dashboardInformation = _dashboardFromShipments(
+        _shipments,
+        fallback: _dashboardInformation,
+      );
 
       print('📦 Received ${_shipments.length} shipments from backend');
 
@@ -430,6 +480,10 @@ class ShipmentProvider extends ChangeNotifier {
       _totalPages = paginatedResponse.totalPages;
       _hasMorePages = paginatedResponse.hasMore;
       _pageSize = size;
+      _dashboardInformation = _dashboardFromShipments(
+        _shipments,
+        fallback: _dashboardInformation,
+      );
 
       notifyListeners();
     } catch (e) {
@@ -501,6 +555,17 @@ class ShipmentProvider extends ChangeNotifier {
     required int shipmentId,
     required int shipmentOfferId,
   }) async {
+    // Re-check shipment state to avoid cancelling after assignment (race condition)
+    try {
+      final latest = await repository.getShipment(shipmentId);
+      if (latest.assignedCarrierId != null || latest.status == ShipmentStatus.assigned) {
+        throw Exception('Cannot cancel offer: shipment already assigned.');
+      }
+    } catch (e) {
+      // If unable to fetch shipment, fail-safe: abort cancellation to avoid unintended state changes
+      _setError('Unable to verify shipment status before cancelling offer: ${e.toString()}');
+      rethrow;
+    }
     if (_mutatingOfferIds.contains(shipmentOfferId)) return;
     _mutatingOfferIds.add(shipmentOfferId);
     _clearError();
@@ -592,6 +657,65 @@ class ShipmentProvider extends ChangeNotifier {
     if (assignedIndex != -1) {
       _assignedShipments[assignedIndex] = shipment;
     }
+    _dashboardInformation = _dashboardFromShipments(
+      _shipments,
+      fallback: _dashboardInformation,
+    );
+  }
+
+  DashboardInformation _dashboardFromShipments(
+    List<Shipment> shipments, {
+    required DashboardInformation fallback,
+  }) {
+    if (shipments.isEmpty) return fallback;
+
+    final pending = shipments
+        .where((shipment) => shipment.status == ShipmentStatus.pending)
+        .length;
+    final assigned = shipments
+        .where((shipment) => shipment.status == ShipmentStatus.assigned)
+        .length;
+    final delivered = shipments
+        .where((shipment) => shipment.status == ShipmentStatus.delivered)
+        .length;
+    final completed = shipments
+        .where((shipment) => shipment.status == ShipmentStatus.completed)
+        .length;
+    final inTransit = shipments
+        .where(
+          (shipment) =>
+              shipment.status == ShipmentStatus.pickedUp ||
+              shipment.status == ShipmentStatus.inTransit ||
+              shipment.status == ShipmentStatus.arrivedAtDestination,
+        )
+        .length;
+    final paymentPending = shipments
+        .where((shipment) => shipment.status == ShipmentStatus.paymentPending)
+        .length;
+    final active = shipments
+        .where(
+          (shipment) =>
+              shipment.status == ShipmentStatus.assigned ||
+              shipment.status == ShipmentStatus.pickedUp ||
+              shipment.status == ShipmentStatus.inTransit ||
+              shipment.status == ShipmentStatus.arrivedAtDestination ||
+              shipment.status == ShipmentStatus.paymentPending,
+        )
+        .length;
+    final fragile = shipments.where((shipment) => shipment.fragile).length;
+
+    return DashboardInformation(
+      pendingShipments: pending,
+      assignedShipments: assigned,
+      deliveredShipments: delivered,
+      completedShipments: completed,
+      inTransitShipments: inTransit,
+      paymentPendingShipments: paymentPending,
+      availableLoads: pending,
+      activeLoads: active,
+      fragileShipments: fragile,
+      nonFragileShipments: shipments.length - fragile,
+    );
   }
 
   // Load shipment statistics (Phase 3)

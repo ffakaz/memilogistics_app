@@ -10,6 +10,7 @@ import 'package:memilogistics_app/features/auth/presentation/provider/auth_provi
 
 import 'package:memilogistics_app/features/shipment/presentation/provider/shipment_provider.dart';
 import 'package:memilogistics_app/features/shipment_offer/presentation/providers/shipment_offer_provider.dart';
+import 'package:memilogistics_app/features/payment/presentation/providers/payment_provider.dart';
 
 import 'package:memilogistics_app/features/user/presentation/provider/user_provider.dart';
 
@@ -18,7 +19,7 @@ class AppProviders {
   static final List<SingleChildWidget> providers = [
 
     ChangeNotifierProvider<AuthProvider>(
-      create: (_) => locator<AuthProvider>()..init(),
+      create: (_) => locator<AuthProvider>(),
     ),
 
     ChangeNotifierProvider<ShipmentProvider>(
@@ -27,6 +28,11 @@ class AppProviders {
 
     ChangeNotifierProvider<ShipmentOfferProvider>(
       create: (_) => locator<ShipmentOfferProvider>(),
+    ),
+
+    // Payment provider
+    ChangeNotifierProvider<PaymentProvider>(
+      create: (_) => locator<PaymentProvider>(),
     ),
 
     ChangeNotifierProvider<CarrierCompanyProvider>(

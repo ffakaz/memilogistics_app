@@ -22,6 +22,9 @@ class Shipment {
   final DateTime? completedAt;
   final int? shipperId;
   final int? assignedCarrierId;
+  final String? assignedCarrierName;
+  final String? assignedCarrierCompany;
+  final String? assignedCarrierPhone;
 
   // Legacy fields for backward compatibility (will be removed)
   @Deprecated('Use origin string instead')
@@ -57,6 +60,9 @@ class Shipment {
     this.completedAt,
     this.shipperId,
     this.assignedCarrierId,
+    this.assignedCarrierName,
+    this.assignedCarrierCompany,
+    this.assignedCarrierPhone,
     // Legacy fields
     this.pickupLocation,
     this.destinationLocation,
@@ -85,6 +91,9 @@ class Shipment {
     DateTime? completedAt,
     int? shipperId,
     int? assignedCarrierId,
+    String? assignedCarrierName,
+    String? assignedCarrierCompany,
+    String? assignedCarrierPhone,
   }) {
     return Shipment(
       id: id ?? this.id,
@@ -104,6 +113,9 @@ class Shipment {
       completedAt: completedAt ?? this.completedAt,
       shipperId: shipperId ?? this.shipperId,
       assignedCarrierId: assignedCarrierId ?? this.assignedCarrierId,
+      assignedCarrierName: assignedCarrierName ?? this.assignedCarrierName,
+      assignedCarrierCompany: assignedCarrierCompany ?? this.assignedCarrierCompany,
+      assignedCarrierPhone: assignedCarrierPhone ?? this.assignedCarrierPhone,
     );
   }
 

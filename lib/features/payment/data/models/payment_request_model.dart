@@ -25,7 +25,7 @@ class PaymentRequestModel {
   /// Create model from the backend request shape.
   factory PaymentRequestModel.fromJson(Map<String, dynamic> json) {
     return PaymentRequestModel(
-      currencyCode: json['currencyCode'] as String? ?? 'USD',
+      currencyCode: json['currencyCode'] as String? ?? 'ETB',
       amount: (json['amount'] as num).toDouble(),
       paymentMethod: json['paymentMethod'] as String,
       note: json['note'] as String?,
@@ -48,7 +48,7 @@ class PaymentRequestModel {
       currencyCode: entity.currency,
       amount: entity.amount,
       paymentMethod: entity.paymentMethod.value,
-      note: null, // Optional note
+      note: entity.note,
     );
   }
 
@@ -58,6 +58,7 @@ class PaymentRequestModel {
       amount: amount,
       currency: currencyCode,
       paymentMethod: PaymentMethod.fromString(paymentMethod),
+      note: note,
     );
   }
 

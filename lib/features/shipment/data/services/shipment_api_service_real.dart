@@ -34,18 +34,35 @@ class ShipmentApiServiceReal {
   }
 
   Future<List<ShipmentModel>> listShipments({int page = 0, int size = 20}) async {
-    // Use the correct backend endpoint: /api/shipment/list
-    // This endpoint supports pagination with page and size query parameters
-    try {
-      final response = await _apiClient.get<dynamic>(
-        '${ApiConstants.apiPrefix}${ShipmentEndpoints.list}',
-        queryParameters: {'page': page, 'size': size},
-      );
-      return _parseShipmentList(response);
-    } catch (e) {
-      print('❌ Failed to fetch shipments from /api/shipment/list: $e');
-      rethrow;
+    // Try multiple known list endpoints (backend historically varied between
+    // singular/plural forms). Fall back similarly to the paginated method.
+    final endpoints = [
+      ShipmentEndpoints.list,
+      '/shipment/list',
+      '/shipments',
+      '/shipment',
+    ];
+
+    for (final ep in endpoints) {
+      try {
+        print('🔍 Trying shipments endpoint: ${ApiConstants.apiPrefix}$ep');
+        final response = await _apiClient.get<dynamic>(
+          '${ApiConstants.apiPrefix}$ep',
+          queryParameters: {'page': page, 'size': size},
+        );
+        print('   Response status: ${response.statusCode}');
+        print('   Response data type: ${response.data.runtimeType}');
+        print('   Response data: ${response.data}');
+
+        // If this call produced a valid list, parse and return it
+        return _parseShipmentList(response);
+      } catch (e) {
+        print('   Endpoint $ep failed: $e');
+        continue;
+      }
     }
+
+    throw Exception('Failed to fetch shipments from backend - tried multiple endpoints');
   }
 
   Future<ShipmentModel> getShipment(int shipmentId) async {
@@ -267,8 +284,17 @@ class ShipmentApiServiceReal {
       queryParameters: {'carrierId': carrierId},
       requiredQueryKeys: ['carrierId'],
     );
-    final response = await _apiClient.post<dynamic>(url);
-    _ensureSuccess(response);
+    print('🔵 [API] assignCarrier -> POST $url');
+    try {
+      final response = await _apiClient.post<dynamic>(url);
+      print('   Response status: ${response.statusCode}');
+      print('   Response data: ${response.data}');
+      _ensureSuccess(response);
+      print('   ✅ assignCarrier succeeded for shipmentId=$shipmentId');
+    } catch (e) {
+      print('   ❌ assignCarrier failed for shipmentId=$shipmentId: $e');
+      rethrow;
+    }
   }
 
   Future<ShipmentModel> updateStatus({required int shipmentId, required String location, required String status}) async {

@@ -63,7 +63,9 @@ class _PremiumOfferSheetState extends State<PremiumOfferSheet> {
               children: [
                 Icon(Icons.check_circle_rounded, color: Colors.white),
                 SizedBox(width: AppTheme.spacing12),
-                Text('Offer submitted successfully!'),
+                Expanded(
+                  child: Text('Your offer has been submitted successfully. The shipper will review your offer and notify you once a decision is made.'),
+                ),
               ],
             ),
             backgroundColor: AppTheme.statusDelivered,
@@ -237,7 +239,7 @@ class _PremiumOfferSheetState extends State<PremiumOfferSheet> {
                                 ),
                               ),
                               hintText: 'Enter your price',
-                              suffixText: 'USD',
+                              suffixText: 'ETB',
                               suffixStyle: Theme.of(context).textTheme.titleMedium?.copyWith(
                                     color: AppTheme.darkGray,
                                     fontWeight: FontWeight.w600,

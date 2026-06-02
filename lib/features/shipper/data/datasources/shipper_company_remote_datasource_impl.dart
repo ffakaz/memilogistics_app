@@ -2,6 +2,7 @@
 
 import '../../../../core/network/api_client.dart';
 import '../../../../core/utils/constants/api_constants.dart';
+import '../../../../core/error/exceptions.dart';
 import '../models/shipper_company_model.dart';
 import 'shipper_company_remote_datasource.dart';
 
@@ -52,11 +53,21 @@ class ShipperCompanyRemoteDataSourceImpl
         '${ApiConstants.apiPrefix}${ShipperCompanyEndpoints.get}',
       );
 
+      if (response.statusCode == 404) {
+        throw NotFoundException(
+          response.message ?? 'Shipper profile not found',
+        );
+      }
+
       if (response.isSuccess) {
         return ShipperCompanyModel.fromJson(_profileBody(response.data));
       }
       throw Exception(response.message ?? 'Failed to get shipper company');
     } catch (e) {
+      if (e is AppException) {
+        // Preserve app exceptions (e.g. 404) so callers can handle missing profile
+        rethrow;
+      }
       throw Exception('Failed to get shipper company: $e');
     }
   }
@@ -75,8 +86,13 @@ class ShipperCompanyRemoteDataSourceImpl
       if (response.isSuccess) {
         return ShipperCompanyModel.fromJson(_profileBody(response.data));
       }
-      throw Exception(response.message ?? 'Failed to get shipper profile by ID');
+      throw Exception(
+        response.message ?? 'Failed to get shipper profile by ID',
+      );
     } catch (e) {
+      if (e is HttpException) {
+        rethrow;
+      }
       throw Exception('Failed to get shipper profile by ID: $e');
     }
   }

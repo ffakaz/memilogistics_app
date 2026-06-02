@@ -1,6 +1,7 @@
 // lib/features/shipment_offer/presentation/providers/shipment_offer_provider.dart
 
 import 'package:flutter/foundation.dart';
+import 'package:memilogistics_app/features/auth/data/storage/token_storage.dart';
 import '../../domain/entities/shipment_offer.dart';
 import '../../data/services/shipment_offer_api_service.dart';
 import '../../data/mappers/shipment_offer_mapper.dart';
@@ -10,12 +11,13 @@ import '../states/shipment_offer_state.dart';
 /// Handles state management and API calls for the ShipmentOffer feature
 class ShipmentOfferProvider extends ChangeNotifier {
   final ShipmentOfferApiService _apiService;
+  final TokenStorage _tokenStorage;
 
   ShipmentOfferState _state = const ShipmentOfferState();
   final Set<int> _submittingShipmentIds = <int>{};
   final Set<int> _submittedShipmentIds = <int>{};
 
-  ShipmentOfferProvider(this._apiService);
+  ShipmentOfferProvider(this._apiService, this._tokenStorage);
 
   /// Current state
   ShipmentOfferState get state => _state;
@@ -62,6 +64,20 @@ class ShipmentOfferProvider extends ChangeNotifier {
   /// Create new offer for a shipment
   /// Note: Backend uses "carrierCompanyId" not "carrierId"
   Future<void> createOffer(int shipmentId, int carrierCompanyId, double price) async {
+    // Prevent users with SHIPPER role from submitting offers (client-side guard).
+    try {
+      final role = await _tokenStorage.getUserRole();
+      if (role != null && role.toUpperCase() == 'SHIPPER') {
+        _state = _state.copyWith(isLoading: false, error: 'You must be a carrier to submit offers.');
+        notifyListeners();
+        throw Exception('Only carriers can submit offers.');
+      }
+    } catch (e) {
+      // If role cannot be determined, fail-safe: prevent offer submission.
+      _state = _state.copyWith(isLoading: false, error: 'Unable to verify user role.');
+      notifyListeners();
+      rethrow;
+    }
     if (_submittingShipmentIds.contains(shipmentId) || _submittedShipmentIds.contains(shipmentId)) {
       return;
     }
@@ -130,28 +146,12 @@ class ShipmentOfferProvider extends ChangeNotifier {
 
   /// Assign carrier to shipment (accept offer)
   Future<void> assignCarrier(int shipmentId, int carrierId) async {
-    if (carrierId <= 0) {
-      throw Exception('Carrier profile id is missing from the selected offer.');
-    }
-
-    _state = _state.copyWith(isLoading: true, clearError: true);
-    notifyListeners();
-
-    try {
-      await _apiService.assignCarrier(
-        shipmentId: shipmentId,
-        carrierId: carrierId,
-      );
-      _state = _state.copyWith(isLoading: false);
-      notifyListeners();
-    } catch (e) {
-      _state = _state.copyWith(
-        isLoading: false,
-        error: _getErrorMessage(e),
-      );
-      notifyListeners();
-      rethrow; // Rethrow so UI can handle it
-    }
+    // Assignment is a shipper-only action and must be performed via the
+    // shipper review UI which routes through ShipmentProvider -> Repository.
+    // This method is intentionally disabled to avoid accidental assignments
+    // from carrier-side flows. Use the shipper offer review screen instead.
+    throw Exception(
+        'Assigning a carrier is a shipper-only action. Use the shipper offer review UI to accept offers.');
   }
 
   /// Clear error message

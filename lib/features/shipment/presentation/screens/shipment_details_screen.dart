@@ -1,6 +1,11 @@
 // Simplified Shipment Details screen — keeps behavior but fixes analyzer warnings
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
+import '../../../auth/presentation/provider/auth_provider.dart';
+import '../../../payment/presentation/providers/payment_provider.dart';
+import '../../../payment/presentation/screens/payment_screen.dart';
+import '../../../payment/presentation/widgets/payment_summary_card.dart';
+import '../../../payment/presentation/states/payment_state.dart';
 import '../../domain/entities/shipment.dart';
 import '../../domain/enums/shipment_status.dart';
 import '../providers/shipment_provider.dart';
@@ -16,6 +21,7 @@ class ShipmentDetailsScreen extends StatefulWidget {
 class _ShipmentDetailsScreenState extends State<ShipmentDetailsScreen>
     with SingleTickerProviderStateMixin {
   late TabController _tabController;
+  Future<List<Map<String, dynamic>>>? _eventsFuture;
 
   @override
   void initState() {
@@ -24,6 +30,10 @@ class _ShipmentDetailsScreenState extends State<ShipmentDetailsScreen>
     WidgetsBinding.instance.addPostFrameCallback((_) {
       if (mounted) {
         context.read<ShipmentProvider>().loadShipmentDetail(widget.shipmentId);
+        // Load shipment events for timeline
+        _eventsFuture = context.read<ShipmentProvider>().getShipmentEvents(
+          widget.shipmentId,
+        );
       }
     });
   }
@@ -55,7 +65,8 @@ class _ShipmentDetailsScreenState extends State<ShipmentDetailsScreen>
                   const Text('Shipment not found'),
                   const SizedBox(height: 12),
                   ElevatedButton.icon(
-                    onPressed: () => provider.loadShipmentDetail(widget.shipmentId),
+                    onPressed: () =>
+                        provider.loadShipmentDetail(widget.shipmentId),
                     icon: const Icon(Icons.refresh),
                     label: const Text('Retry'),
                   ),
@@ -86,11 +97,281 @@ class _ShipmentDetailsScreenState extends State<ShipmentDetailsScreen>
                         const SizedBox(height: 12),
                         Text('Origin: ${_formatLocation(shipment.origin)}'),
                         const SizedBox(height: 8),
-                        Text('Destination: ${_formatLocation(shipment.destination)}'),
+                        Text(
+                          'Destination: ${_formatLocation(shipment.destination)}',
+                        ),
+                        const SizedBox(height: 8),
+                        Text('Item: ${_formatValue(shipment.shipmentItem)}'),
+                        const SizedBox(height: 8),
+                        Text(
+                          'Weight: ${shipment.weightKg.toStringAsFixed(1)} kg',
+                        ),
+                        const SizedBox(height: 8),
+                        Text(
+                          'Handling: ${shipment.fragile ? 'Fragile' : 'Standard'}',
+                        ),
                         const SizedBox(height: 8),
                         Text('Pickup: ${_formatDate(shipment.pickupDate)}'),
                         const SizedBox(height: 8),
+                        Text(
+                          'Delivery: ${_formatDate(shipment.estimatedDeliveryDate)}',
+                        ),
+                        const SizedBox(height: 8),
+                        Text(
+                          'Assigned Carrier: ${_formatValue(shipment.assignedCarrierName)}',
+                        ),
+                        if (shipment.assignedCarrierCompany != null && shipment.assignedCarrierCompany!.trim().isNotEmpty)
+                          Padding(
+                            padding: const EdgeInsets.only(top: 4.0),
+                            child: Text('Company: ${_formatValue(shipment.assignedCarrierCompany)}'),
+                          ),
+                        if (shipment.assignedCarrierPhone != null && shipment.assignedCarrierPhone!.trim().isNotEmpty)
+                          Padding(
+                            padding: const EdgeInsets.only(top: 4.0),
+                            child: Text('Phone: ${_formatValue(shipment.assignedCarrierPhone)}'),
+                          ),
+                        if (shipment.description?.trim().isNotEmpty ==
+                            true) ...[
+                          const SizedBox(height: 8),
+                          Text('Description: ${shipment.description!.trim()}'),
+                        ],
+                        const SizedBox(height: 8),
                         Text('Status: ${_getStatusLabel(shipment.status)}'),
+                        const SizedBox(height: 18),
+                        const Text(
+                          'Shipment Timeline',
+                          style: TextStyle(
+                            fontSize: 16,
+                            fontWeight: FontWeight.w700,
+                          ),
+                        ),
+                        const SizedBox(height: 8),
+                        FutureBuilder<List<Map<String, dynamic>>>(
+                          future: _eventsFuture,
+                          builder: (context, snapshot) {
+                            if (snapshot.connectionState ==
+                                ConnectionState.waiting) {
+                              return const Padding(
+                                padding: EdgeInsets.symmetric(vertical: 12.0),
+                                child: Center(
+                                  child: CircularProgressIndicator(),
+                                ),
+                              );
+                            }
+                            if (snapshot.hasError) {
+                              return Padding(
+                                padding: const EdgeInsets.symmetric(
+                                  vertical: 8.0,
+                                ),
+                                child: Text(
+                                  'Failed to load timeline: ${snapshot.error}',
+                                ),
+                              );
+                            }
+                            final events = snapshot.data ?? [];
+                            if (events.isEmpty) {
+                              return const Padding(
+                                padding: EdgeInsets.symmetric(vertical: 8.0),
+                                child: Text('No events yet'),
+                              );
+                            }
+
+                            // Sort events by timestamp ascending
+                            events.sort((a, b) {
+                              DateTime ta = _parseEventTime(a);
+                              DateTime tb = _parseEventTime(b);
+                              return ta.compareTo(tb);
+                            });
+
+                            return Column(
+                              children: events.map((e) {
+                                final dt = _parseEventTime(e);
+                                final label = _eventLabel(e);
+                                final desc = _eventDescription(e);
+                                return ListTile(
+                                  dense: true,
+                                  leading: Column(
+                                    mainAxisAlignment: MainAxisAlignment.center,
+                                    children: [
+                                      Icon(
+                                        Icons.circle,
+                                        size: 10,
+                                        color: Colors.grey[600],
+                                      ),
+                                    ],
+                                  ),
+                                  title: Text(label),
+                                  subtitle: desc != null ? Text(desc) : null,
+                                  trailing: Text(
+                                    _formatDateTime(dt),
+                                    style: TextStyle(
+                                      fontSize: 12,
+                                      color: Colors.grey[600],
+                                    ),
+                                  ),
+                                );
+                              }).toList(),
+                            );
+                          },
+                        ),
+                        const SizedBox(height: 16),
+                        // Payment summary (if available)
+                        Consumer<PaymentProvider>(
+                          builder: (context, paymentProv, _) {
+                            final state = paymentProv.state;
+                            if (state is PaymentInitiated) {
+                              return PaymentSummaryCard(
+                                paymentRecord: state.paymentRecord,
+                              );
+                            }
+                            if (state is PaymentConfirmed) {
+                              return PaymentSummaryCard(
+                                paymentRecord: state.paymentRecord,
+                              );
+                            }
+                            if (state is PaymentRecordLoaded &&
+                                state.paymentRecord != null) {
+                              return PaymentSummaryCard(
+                                paymentRecord: state.paymentRecord!,
+                              );
+                            }
+                            return const SizedBox.shrink();
+                          },
+                        ),
+
+                        const SizedBox(height: 8),
+                        // Payment actions (shipper initiates, carrier confirms)
+                        Consumer3<
+                          ShipmentProvider,
+                          PaymentProvider,
+                          AuthProvider
+                        >(
+                          builder: (context, shipmentProv, paymentProv, authProv, _) {
+                            final role = authProv.userRole?.toUpperCase();
+                            // current shipment reference
+                            final s = shipment;
+
+                            // Shipper can initiate payment when status == delivered
+                            if (role == 'SHIPPER' &&
+                                s.status == ShipmentStatus.delivered) {
+                              return SizedBox(
+                                width: double.infinity,
+                                child: ElevatedButton(
+                                  onPressed: paymentProv.isLoading
+                                      ? null
+                                      : () async {
+                                          final res =
+                                              await Navigator.push<bool?>(
+                                                context,
+                                                MaterialPageRoute(
+                                                  builder: (_) => PaymentScreen(
+                                                    shipmentId: s.id!,
+                                                    amount: s.amount ?? 0.0,
+                                                  ),
+                                                ),
+                                              );
+                                          if (res == true) {
+                                            // Show standardized success message
+                                            if (mounted)
+                                              ScaffoldMessenger.of(
+                                                context,
+                                              ).showSnackBar(
+                                                const SnackBar(
+                                                  content: Text(
+                                                    'Payment initiated successfully. Waiting for carrier confirmation.',
+                                                  ),
+                                                  backgroundColor: Colors.green,
+                                                ),
+                                              );
+                                            await shipmentProv
+                                                .loadShipmentDetail(s.id!);
+                                            setState(() {
+                                              _eventsFuture = shipmentProv
+                                                  .getShipmentEvents(
+                                                    widget.shipmentId,
+                                                  );
+                                            });
+                                          }
+                                        },
+                                  style: ElevatedButton.styleFrom(
+                                    backgroundColor: Colors.green.shade700,
+                                  ),
+                                  child: const Text('Initiate Payment'),
+                                ),
+                              );
+                            }
+
+                            // Carrier can confirm payment after the shipper initiates it.
+                            if (role == 'CARRIER' &&
+                                s.status == ShipmentStatus.paymentPending) {
+                              return SizedBox(
+                                width: double.infinity,
+                                child: ElevatedButton(
+                                  onPressed: paymentProv.isLoading
+                                      ? null
+                                      : () async {
+                                          try {
+                                            final success = await paymentProv
+                                                .confirmPayment(
+                                                  shipmentId: s.id!,
+                                                  transactionId: '',
+                                                );
+                                            if (success) {
+                                              await shipmentProv
+                                                  .loadShipmentDetail(s.id!);
+                                              setState(() {
+                                                _eventsFuture = shipmentProv
+                                                    .getShipmentEvents(
+                                                      widget.shipmentId,
+                                                    );
+                                              });
+                                              if (mounted)
+                                                ScaffoldMessenger.of(
+                                                  context,
+                                                ).showSnackBar(
+                                                  const SnackBar(
+                                                    content: Text(
+                                                      'Payment confirmed successfully. Shipment completed.',
+                                                    ),
+                                                  ),
+                                                );
+                                            }
+                                          } catch (e) {
+                                            if (mounted)
+                                              ScaffoldMessenger.of(
+                                                context,
+                                              ).showSnackBar(
+                                                SnackBar(
+                                                  content: Text(
+                                                    'Failed to confirm payment: $e',
+                                                  ),
+                                                ),
+                                              );
+                                          }
+                                        },
+                                  style: ElevatedButton.styleFrom(
+                                    backgroundColor: Colors.blue.shade700,
+                                  ),
+                                  child: paymentProv.isLoading
+                                      ? const SizedBox(
+                                          height: 18,
+                                          width: 18,
+                                          child: CircularProgressIndicator(
+                                            strokeWidth: 2,
+                                            valueColor:
+                                                AlwaysStoppedAnimation<Color>(
+                                                  Colors.white,
+                                                ),
+                                          ),
+                                        )
+                                      : const Text('Confirm Payment'),
+                                ),
+                              );
+                            }
+
+                            return const SizedBox.shrink();
+                          },
+                        ),
                       ],
                     ),
                   ),
@@ -100,13 +381,16 @@ class _ShipmentDetailsScreenState extends State<ShipmentDetailsScreen>
           );
         },
       ),
-      floatingActionButton: Consumer<ShipmentProvider>(
-        builder: (context, provider, _) {
+      floatingActionButton: Consumer2<ShipmentProvider, AuthProvider>(
+        builder: (context, provider, authProvider, _) {
           final activeShipment = provider.activeShipment;
           final shipment = activeShipment?.id == widget.shipmentId
               ? activeShipment
               : provider.getShipmentById(widget.shipmentId);
-          if (shipment != null && _canUpdateStatus(shipment)) {
+          final role = authProvider.userRole?.toUpperCase();
+          if (role == 'CARRIER' &&
+              shipment != null &&
+              _canUpdateStatus(shipment)) {
             return FloatingActionButton.extended(
               onPressed: () => _showUpdateStatusDialog(shipment),
               backgroundColor: const Color(0xFF2C3E50),
@@ -175,19 +459,37 @@ class _ShipmentDetailsScreenState extends State<ShipmentDetailsScreen>
 
     return Container(
       padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
-      decoration: BoxDecoration(color: bgColor, borderRadius: BorderRadius.circular(20)),
-      child: Row(mainAxisSize: MainAxisSize.min, children: [Icon(icon, size: 18, color: textColor), const SizedBox(width: 8), Text(_getStatusLabel(status), style: TextStyle(color: textColor, fontWeight: FontWeight.w600))]),
+      decoration: BoxDecoration(
+        color: bgColor,
+        borderRadius: BorderRadius.circular(20),
+      ),
+      child: Row(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          Icon(icon, size: 18, color: textColor),
+          const SizedBox(width: 8),
+          Text(
+            _getStatusLabel(status),
+            style: TextStyle(color: textColor, fontWeight: FontWeight.w600),
+          ),
+        ],
+      ),
     );
   }
 
   bool _canUpdateStatus(Shipment shipment) {
-    return shipment.status != ShipmentStatus.pending && shipment.status != ShipmentStatus.completed;
+    return shipment.status == ShipmentStatus.assigned ||
+        shipment.status == ShipmentStatus.pickedUp ||
+        shipment.status == ShipmentStatus.inTransit ||
+        shipment.status == ShipmentStatus.arrivedAtDestination;
   }
 
   void _showUpdateStatusDialog(Shipment shipment) {
     final nextStatuses = _getNextPossibleStatuses(shipment.status);
     if (nextStatuses.isEmpty) {
-      ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('No status updates available')));
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('No status updates available')),
+      );
       return;
     }
 
@@ -199,15 +501,28 @@ class _ShipmentDetailsScreenState extends State<ShipmentDetailsScreen>
           mainAxisSize: MainAxisSize.min,
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            Text('Current: ${_getStatusLabel(shipment.status)}', style: const TextStyle(fontWeight: FontWeight.w500)),
+            Text(
+              'Current: ${_getStatusLabel(shipment.status)}',
+              style: const TextStyle(fontWeight: FontWeight.w500),
+            ),
             const SizedBox(height: 12),
-            ...nextStatuses.map((s) => ListTile(title: Text(_getStatusLabel(s)), onTap: () {
+            ...nextStatuses.map(
+              (s) => ListTile(
+                title: Text(_getStatusLabel(s)),
+                onTap: () {
                   Navigator.pop(context);
                   _updateStatus(shipment, s);
-                })),
+                },
+              ),
+            ),
           ],
         ),
-        actions: [TextButton(onPressed: () => Navigator.pop(context), child: const Text('Cancel'))],
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(context),
+            child: const Text('Cancel'),
+          ),
+        ],
       ),
     );
   }
@@ -222,21 +537,35 @@ class _ShipmentDetailsScreenState extends State<ShipmentDetailsScreen>
         return [ShipmentStatus.arrivedAtDestination];
       case ShipmentStatus.arrivedAtDestination:
         return [ShipmentStatus.delivered];
-      case ShipmentStatus.delivered:
-        return [ShipmentStatus.paymentPending];
-      case ShipmentStatus.paymentPending:
-        return [ShipmentStatus.completed];
       default:
         return [];
     }
   }
 
-  Future<void> _updateStatus(Shipment shipment, ShipmentStatus newStatus) async {
+  Future<void> _updateStatus(
+    Shipment shipment,
+    ShipmentStatus newStatus,
+  ) async {
     try {
-      await context.read<ShipmentProvider>().updateShipmentStatus(shipment.id!, newStatus);
-      if (mounted) ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('Status updated successfully!')));
+      await context.read<ShipmentProvider>().updateShipmentStatus(
+        shipment.id!,
+        newStatus,
+      );
+      // Refresh timeline after successful status update
+      setState(() {
+        _eventsFuture = context.read<ShipmentProvider>().getShipmentEvents(
+          widget.shipmentId,
+        );
+      });
+      if (mounted)
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(content: Text('Status updated successfully!')),
+        );
     } catch (e) {
-      if (mounted) ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text('Failed to update status: $e')));
+      if (mounted)
+        ScaffoldMessenger.of(
+          context,
+        ).showSnackBar(SnackBar(content: Text('Failed to update status: $e')));
     }
   }
 
@@ -265,12 +594,76 @@ class _ShipmentDetailsScreenState extends State<ShipmentDetailsScreen>
 
   String _formatDate(DateTime? date) {
     if (date == null) return '—';
-    final months = ['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'];
+    final months = [
+      'Jan',
+      'Feb',
+      'Mar',
+      'Apr',
+      'May',
+      'Jun',
+      'Jul',
+      'Aug',
+      'Sep',
+      'Oct',
+      'Nov',
+      'Dec',
+    ];
     return '${months[date.month - 1]} ${date.day}, ${date.year}';
+  }
+
+  String _formatValue(String? value) {
+    final trimmed = value?.trim();
+    return trimmed == null || trimmed.isEmpty ? 'N/A' : trimmed;
   }
 
   String _formatLocation(String? address) {
     if (address == null || address.isEmpty) return 'Unknown';
-    return address.split(' ').map((w) => w.isEmpty ? w : (w[0].toUpperCase() + w.substring(1).toLowerCase())).join(' ');
+    return address
+        .split(' ')
+        .map(
+          (w) => w.isEmpty
+              ? w
+              : (w[0].toUpperCase() + w.substring(1).toLowerCase()),
+        )
+        .join(' ');
+  }
+
+  static DateTime _parseEventTime(Map<String, dynamic> e) {
+    final keys = [
+      'eventTimestamp',
+      'createdAt',
+      'timestamp',
+      'occurredAt',
+      'time',
+    ];
+    for (final k in keys) {
+      final v = e[k];
+      if (v == null) continue;
+      try {
+        return DateTime.parse(v as String).toLocal();
+      } catch (_) {}
+      try {
+        if (v is int) return DateTime.fromMillisecondsSinceEpoch(v).toLocal();
+      } catch (_) {}
+    }
+    return DateTime.now();
+  }
+
+  static String _eventLabel(Map<String, dynamic> e) {
+    return (e['shipmentStatus'] ??
+            e['status'] ??
+            e['eventType'] ??
+            e['type'] ??
+            e['label'] ??
+            'Event')
+        .toString();
+  }
+
+  static String? _eventDescription(Map<String, dynamic> e) {
+    return (e['description'] ?? e['details'] ?? e['message'])?.toString();
+  }
+
+  String _formatDateTime(DateTime dt) {
+    return '${dt.year}-${dt.month.toString().padLeft(2, '0')}-${dt.day.toString().padLeft(2, '0')} ${dt.hour.toString().padLeft(2, '0')}:${dt.minute.toString().padLeft(2, '0')}';
   }
 }

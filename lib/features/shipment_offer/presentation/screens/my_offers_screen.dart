@@ -4,6 +4,8 @@ import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import '../../domain/entities/shipment_offer.dart';
 import '../providers/shipment_offer_provider.dart';
+import '../../../shipment/presentation/providers/shipment_provider.dart';
+import '../../../shipment/domain/enums/shipment_status.dart';
 
 /// Screen showing carrier's submitted shipment offers
 /// Simplified from MyBidsScreen - no status filtering (offers are either active or cancelled)
@@ -226,13 +228,24 @@ class _MyOffersScreenState extends State<MyOffersScreen> {
                   'Submitted: ${_formatDate(offer.createdAt)}',
                   style: TextStyle(fontSize: 11, color: Colors.grey[500]),
                 ),
-                TextButton.icon(
-                  onPressed: () => _cancelOffer(offer),
-                  icon: const Icon(Icons.cancel, size: 16),
-                  label: const Text('Cancel'),
-                  style: TextButton.styleFrom(
-                    foregroundColor: Colors.red,
-                  ),
+                Builder(
+                  builder: (context) {
+                    final shipmentProv = context.read<ShipmentProvider?>();
+                    final shipment = shipmentProv?.getShipmentById(offer.shipmentId);
+                    final canCancel = shipment == null ||
+                        (shipment.assignedCarrierId == null && shipment.status != ShipmentStatus.assigned);
+                    if (!canCancel) {
+                      return const SizedBox.shrink();
+                    }
+                    return TextButton.icon(
+                      onPressed: () => _cancelOffer(offer),
+                      icon: const Icon(Icons.cancel, size: 16),
+                      label: const Text('Cancel'),
+                      style: TextButton.styleFrom(
+                        foregroundColor: Colors.red,
+                      ),
+                    );
+                  },
                 ),
               ],
             ),
@@ -266,8 +279,15 @@ class _MyOffersScreenState extends State<MyOffersScreen> {
 
     if (confirmed == true && mounted) {
       try {
-        await context.read<ShipmentOfferProvider>().cancelOffer(offer.id);
-        
+        // Use ShipmentProvider cancellation which verifies shipment state
+        await context.read<ShipmentProvider>().cancelShipmentOffer(
+          shipmentId: offer.shipmentId,
+          shipmentOfferId: offer.id,
+        );
+
+        // Refresh carrier offers view to reflect cancellation
+        await context.read<ShipmentOfferProvider>().getMyOffers();
+
         if (mounted) {
           ScaffoldMessenger.of(context).showSnackBar(
             const SnackBar(

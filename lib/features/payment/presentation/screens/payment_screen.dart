@@ -18,7 +18,7 @@ class PaymentScreen extends StatefulWidget {
     super.key,
     required this.shipmentId,
     required this.amount,
-    this.currency = 'USD',
+    this.currency = 'ETB',
   });
 
   @override
@@ -26,7 +26,28 @@ class PaymentScreen extends StatefulWidget {
 }
 
 class _PaymentScreenState extends State<PaymentScreen> {
-  PaymentMethod _selectedMethod = PaymentMethod.bankTransfer;
+  PaymentMethod _selectedMethod = PaymentMethod.cash;
+  late final TextEditingController _currencyController;
+  late final TextEditingController _amountController;
+  late final TextEditingController _noteController;
+
+  @override
+  void initState() {
+    super.initState();
+    _currencyController = TextEditingController(text: widget.currency);
+    _amountController = TextEditingController(
+      text: widget.amount.toStringAsFixed(2),
+    );
+    _noteController = TextEditingController();
+  }
+
+  @override
+  void dispose() {
+    _currencyController.dispose();
+    _amountController.dispose();
+    _noteController.dispose();
+    super.dispose();
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -43,7 +64,6 @@ class _PaymentScreenState extends State<PaymentScreen> {
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                // Payment Amount Card
                 Card(
                   elevation: 2,
                   shape: RoundedRectangleBorder(
@@ -54,23 +74,44 @@ class _PaymentScreenState extends State<PaymentScreen> {
                     child: Column(
                       crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
-                        Text(
-                          'Payment Amount',
+                        const Text(
+                          'Payment Details',
                           style: TextStyle(
                             fontSize: 14,
-                            color: Colors.grey.shade600,
+                            color: Colors.black54,
                           ),
                         ),
-                        const SizedBox(height: 8),
-                        Text(
-                          '${widget.currency} ${widget.amount.toStringAsFixed(2)}',
-                          style: const TextStyle(
-                            fontSize: 32,
-                            fontWeight: FontWeight.bold,
-                            color: Colors.black87,
+                        const SizedBox(height: 16),
+                        TextField(
+                          controller: _currencyController,
+                          textCapitalization: TextCapitalization.characters,
+                          decoration: const InputDecoration(
+                            labelText: 'Currency Code',
+                            border: OutlineInputBorder(),
                           ),
                         ),
-                        const SizedBox(height: 8),
+                        const SizedBox(height: 12),
+                        TextField(
+                          controller: _amountController,
+                          keyboardType: const TextInputType.numberWithOptions(
+                            decimal: true,
+                          ),
+                          decoration: const InputDecoration(
+                            labelText: 'Amount',
+                            border: OutlineInputBorder(),
+                          ),
+                        ),
+                        const SizedBox(height: 12),
+                        TextField(
+                          controller: _noteController,
+                          minLines: 2,
+                          maxLines: 3,
+                          decoration: const InputDecoration(
+                            labelText: 'Note',
+                            border: OutlineInputBorder(),
+                          ),
+                        ),
+                        const SizedBox(height: 12),
                         Text(
                           'Shipment #${widget.shipmentId}',
                           style: TextStyle(
@@ -185,7 +226,7 @@ class _PaymentScreenState extends State<PaymentScreen> {
                       const SizedBox(width: 8),
                       Expanded(
                         child: Text(
-                          'Your payment is secure and encrypted',
+                          'Payment will move this shipment to Payment Pending until the carrier confirms it.',
                           style: TextStyle(
                             color: Colors.grey.shade700,
                             fontSize: 12,
@@ -207,10 +248,22 @@ class _PaymentScreenState extends State<PaymentScreen> {
     BuildContext context,
     PaymentProvider paymentProvider,
   ) async {
+    final amount = double.tryParse(_amountController.text.trim());
+    final currency = _currencyController.text.trim().toUpperCase();
+    if (amount == null || amount <= 0 || currency.isEmpty) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('Enter a valid amount and currency.')),
+      );
+      return;
+    }
+
     final request = PaymentRequest(
-      amount: widget.amount,
-      currency: widget.currency,
+      amount: amount,
+      currency: currency,
       paymentMethod: _selectedMethod,
+      note: _noteController.text.trim().isEmpty
+          ? null
+          : _noteController.text.trim(),
     );
 
     final success = await paymentProvider.initiatePayment(
@@ -221,27 +274,7 @@ class _PaymentScreenState extends State<PaymentScreen> {
     if (!mounted) return;
 
     if (success) {
-      // Show success message
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(
-          content: const Row(
-            children: [
-              Icon(Icons.check_circle, color: Colors.white),
-              SizedBox(width: 12),
-              Expanded(
-                child: Text(
-                  'Payment initiated successfully!',
-                  style: TextStyle(fontSize: 16),
-                ),
-              ),
-            ],
-          ),
-          backgroundColor: Colors.green.shade600,
-          duration: const Duration(seconds: 2),
-        ),
-      );
-
-      // Navigate back or to confirmation screen
+      // Close and let caller (details screen) show standardized success message
       Navigator.pop(context, true);
     }
   }

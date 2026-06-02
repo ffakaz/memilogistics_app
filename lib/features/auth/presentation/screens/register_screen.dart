@@ -32,9 +32,7 @@ class _RegisterScreenState extends State<RegisterScreen> {
         canPop: false,
         child: Theme(
           data: ThemeData.dark().copyWith(
-            textTheme: ThemeData.dark().textTheme.apply(
-              fontFamily: 'Roboto',
-            ),
+            textTheme: ThemeData.dark().textTheme.apply(fontFamily: 'Roboto'),
           ),
           child: Material(
             type: MaterialType.transparency,
@@ -459,7 +457,7 @@ class _RegisterScreenState extends State<RegisterScreen> {
                                         context
                                             .read<CarrierCompanyProvider>()
                                             .clearProfile();
-                                        
+
                                         // Show success message
                                         ScaffoldMessenger.of(
                                           context,
@@ -492,11 +490,13 @@ class _RegisterScreenState extends State<RegisterScreen> {
 
                                         // Show promotional banner
                                         await _showPromotionalBanner();
-                                        
+
                                         if (!context.mounted) return;
 
                                         // Route directly to appropriate dashboard based on role
-                                        final route = _selectedRole == 'CARRIER'
+                                        final route =
+                                            _selectedRole.toUpperCase() ==
+                                                'CARRIER'
                                             ? '/carrier-dashboard'
                                             : '/dashboard';
                                         Navigator.pushReplacementNamed(

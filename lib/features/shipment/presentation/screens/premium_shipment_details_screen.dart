@@ -254,7 +254,10 @@ class _RouteTimeline extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final isInTransit = status == ShipmentStatus.inTransit;
-    final isDelivered = status == ShipmentStatus.delivered;
+    final isDelivered =
+        status == ShipmentStatus.delivered ||
+        status == ShipmentStatus.paymentPending ||
+        status == ShipmentStatus.completed;
 
     return Column(
       children: [
@@ -426,15 +429,22 @@ class _DeliveryTimeline extends StatelessWidget {
   Widget build(BuildContext context) {
     final steps = [
       _TimelineStep(
-        title: 'Shipment Created',
-        subtitle: 'Awaiting carrier assignment',
+        title: 'Offer',
+        subtitle: 'Awaiting carrier offers',
         icon: Icons.add_circle_rounded,
         isCompleted: true,
         isActive: status == ShipmentStatus.pending,
       ),
       _TimelineStep(
-        title: 'Carrier Assigned',
-        subtitle: 'Preparing for pickup',
+        title: 'Review',
+        subtitle: 'Shipper reviews carrier offers',
+        icon: Icons.rate_review_rounded,
+        isCompleted: status.index >= ShipmentStatus.assigned.index,
+        isActive: status == ShipmentStatus.accepted,
+      ),
+      _TimelineStep(
+        title: 'Assigned',
+        subtitle: 'Carrier selected',
         icon: Icons.assignment_turned_in_rounded,
         isCompleted: status.index >= ShipmentStatus.assigned.index,
         isActive: status == ShipmentStatus.assigned,
@@ -450,8 +460,22 @@ class _DeliveryTimeline extends StatelessWidget {
         title: 'Delivered',
         subtitle: 'Successfully delivered',
         icon: Icons.check_circle_rounded,
-        isCompleted: status == ShipmentStatus.delivered,
+        isCompleted: status.index >= ShipmentStatus.delivered.index,
         isActive: status == ShipmentStatus.delivered,
+      ),
+      _TimelineStep(
+        title: 'Payment Pending',
+        subtitle: 'Waiting for carrier confirmation',
+        icon: Icons.payments_rounded,
+        isCompleted: status.index >= ShipmentStatus.paymentPending.index,
+        isActive: status == ShipmentStatus.paymentPending,
+      ),
+      _TimelineStep(
+        title: 'Completed',
+        subtitle: 'Payment confirmed',
+        icon: Icons.done_all_rounded,
+        isCompleted: status == ShipmentStatus.completed,
+        isActive: status == ShipmentStatus.completed,
         isLast: true,
       ),
     ];

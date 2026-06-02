@@ -100,8 +100,8 @@ class PaymentRecordModel {
 
   static String _parseCurrency(dynamic value) {
     if (value is Map) {
-      return JsonParsing.asString(value['currencyCode'], fallback: 'USD');
+      return JsonParsing.asString(value['currencyCode'], fallback: 'ETB');
     }
-    return JsonParsing.asString(value, fallback: 'USD');
+    return JsonParsing.asString(value, fallback: 'ETB');
   }
 }

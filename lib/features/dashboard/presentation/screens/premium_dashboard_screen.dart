@@ -218,28 +218,28 @@ class _PremiumDashboardScreenState extends State<PremiumDashboardScreen> {
       children: [
         StatCard(
           title: 'Pending',
-          value: '${dashboardInfo.pendingShipments ?? 0}',
+          value: '${dashboardInfo.pendingShipments}',
           icon: Icons.schedule_rounded,
           color: AppTheme.statusPending,
           subtitle: 'Awaiting action',
         ),
         StatCard(
           title: 'In Transit',
-          value: '${dashboardInfo.inTransitShipments ?? 0}',
+          value: '${dashboardInfo.inTransitShipments}',
           icon: Icons.local_shipping_rounded,
           color: AppTheme.statusInTransit,
           subtitle: 'On the way',
         ),
         StatCard(
           title: 'Delivered',
-          value: '${dashboardInfo.completedShipments ?? 0}',
+          value: '${dashboardInfo.completedShipments}',
           icon: Icons.check_circle_rounded,
           color: AppTheme.statusDelivered,
           subtitle: 'Completed',
         ),
         StatCard(
           title: 'Fragile Items',
-          value: '${dashboardInfo.fragileShipments ?? 0}',
+          value: '${dashboardInfo.fragileShipments}',
           icon: Icons.warning_amber_rounded,
           color: AppTheme.electricOrange,
           subtitle: 'Handle with care',

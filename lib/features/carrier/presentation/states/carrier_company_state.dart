@@ -26,11 +26,13 @@ class CarrierCompanyState {
     CarrierCompany? company,
     String? error,
     bool? hasAttemptedLoad,
+    bool clearError = false,
+    bool clearCompany = false,
   }) {
     return CarrierCompanyState(
       isLoading: isLoading ?? this.isLoading,
-      company: company ?? this.company,
-      error: error ?? this.error,
+      company: clearCompany ? null : company ?? this.company,
+      error: clearError ? null : error ?? this.error,
       hasAttemptedLoad: hasAttemptedLoad ?? this.hasAttemptedLoad,
     );
   }

@@ -9,21 +9,13 @@ import '../../domain/usecases/get_carrier_companybyid.dart';
 import '../../domain/usecases/update_carrier_company.dart';
 import '../states/carrier_company_state.dart';
 
+class CarrierCompanyProvider extends ChangeNotifier {
+  final CreateCarrierCompany createCarrierCompanyUseCase;
 
+  final GetCarrierCompany getCarrierCompanyUseCase;
 
-class CarrierCompanyProvider
-    extends ChangeNotifier {
-
-  final CreateCarrierCompany
-      createCarrierCompanyUseCase;
-
-  final GetCarrierCompany
-      getCarrierCompanyUseCase;
-
-  final UpdateCarrierCompany
-      updateCarrierCompanyUseCase;
-  final GetCarrierCompanyById
-      getCarrierCompanyByIdUseCase;
+  final UpdateCarrierCompany updateCarrierCompanyUseCase;
+  final GetCarrierCompanyById getCarrierCompanyByIdUseCase;
   CarrierCompanyProvider({
     required this.createCarrierCompanyUseCase,
     required this.getCarrierCompanyUseCase,
@@ -31,8 +23,7 @@ class CarrierCompanyProvider
     required this.getCarrierCompanyByIdUseCase,
   });
 
-  CarrierCompanyState _state =
-      const CarrierCompanyState();
+  CarrierCompanyState _state = const CarrierCompanyState();
 
   CarrierCompanyState get state => _state;
 
@@ -40,31 +31,34 @@ class CarrierCompanyProvider
     try {
       _state = _state.copyWith(
         isLoading: true,
-        error: null,
+        clearError: true,
         hasAttemptedLoad: true,
       );
 
       notifyListeners();
 
-      final company =
-          await getCarrierCompanyUseCase();
+      final company = await getCarrierCompanyUseCase();
 
       _state = _state.copyWith(
         isLoading: false,
         company: company,
+        clearError: true,
         hasAttemptedLoad: true,
       );
 
       notifyListeners();
-
     } catch (e) {
-
-      // If backend returns 404, treat as "missing profile" (onboarding required)
-      if (e is HttpException && e.statusCode == 404) {
+      // Treat 404 / not-found consistently:
+      // - HttpException with statusCode 404
+      // - NotFoundException mapped by HttpErrorMapper
+      // - Fallback: message contains '404' or 'not found'
+      if ((e is HttpException && e.statusCode == 404) ||
+          (e is NotFoundException) ||
+          _isNotFound(e.toString())) {
         _state = _state.copyWith(
           isLoading: false,
-          company: null,
-          error: null,
+          clearCompany: true,
+          clearError: true,
           hasAttemptedLoad: true,
         );
         notifyListeners();
@@ -80,10 +74,12 @@ class CarrierCompanyProvider
       notifyListeners();
     }
   }
-/// Retrieves a shipper company profile by ID
+
+  /// Retrieves a shipper company profile by ID
   Future<CarrierCompany> getCarrierCompanyById(int carrierId) async {
     return await getCarrierCompanyByIdUseCase(carrierId);
   }
+
   /// Backwards-compatible wrapper used by UI code.
   Future<void> ensureProfileLoaded({bool forceRefresh = false}) async {
     if (forceRefresh) {
@@ -96,83 +92,64 @@ class CarrierCompanyProvider
     }
   }
 
+  bool _isNotFound(String message) {
+    final normalized = message.toLowerCase();
+    return normalized.contains('not_found') ||
+        normalized.contains('not found') ||
+        normalized.contains('404');
+  }
+
   void clearError() {
-    _state = _state.copyWith(error: null);
+    _state = _state.copyWith(clearError: true);
     notifyListeners();
   }
 
   void clearProfile() {
-    _state = _state.copyWith(company: null, hasAttemptedLoad: true);
+    _state = const CarrierCompanyState();
     notifyListeners();
   }
 
-  Future<void> createCarrierCompany(
-    CarrierCompany company,
-  ) async {
-
+  Future<void> createCarrierCompany(CarrierCompany company) async {
     try {
-
-      _state = _state.copyWith(
-        isLoading: true,
-        error: null,
-      );
+      _state = _state.copyWith(isLoading: true, clearError: true);
 
       notifyListeners();
 
-      final result =
-          await createCarrierCompanyUseCase(
-        company,
-      );
+      final result = await createCarrierCompanyUseCase(company);
 
       _state = _state.copyWith(
         isLoading: false,
         company: result,
+        clearError: true,
+        hasAttemptedLoad: true,
       );
 
       notifyListeners();
-
     } catch (e) {
-
-      _state = _state.copyWith(
-        isLoading: false,
-        error: e.toString(),
-      );
+      _state = _state.copyWith(isLoading: false, error: e.toString());
 
       notifyListeners();
     }
   }
 
-  Future<void> updateCarrierCompany(
-    CarrierCompany company,
-  ) async {
-
+  Future<void> updateCarrierCompany(CarrierCompany company) async {
     try {
-
-      _state = _state.copyWith(
-        isLoading: true,
-        error: null,
-      );
+      _state = _state.copyWith(isLoading: true, clearError: true);
 
       notifyListeners();
 
-      final result =
-          await updateCarrierCompanyUseCase(
-        company,
-      );
+      final result = await updateCarrierCompanyUseCase(company);
 
       _state = _state.copyWith(
         isLoading: false,
         company: result,
+        clearError: true,
+        hasAttemptedLoad: true,
       );
 
       notifyListeners();
-
     } catch (e) {
-
-      _state = _state.copyWith(
-        isLoading: false,
-        error: e.toString(),
-      );
+      _state = _state.copyWith(isLoading: false, error: e.toString());
 
       notifyListeners();
     }

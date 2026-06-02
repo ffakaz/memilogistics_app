@@ -34,15 +34,18 @@ class ShipmentEndpoints {
   ShipmentEndpoints._();
 
   // Core shipment operations - Backend uses SINGULAR "shipment" not "shipments"
-  static const String create = "/shipment/create";  // POST /api/shipment/create
-  static const String list = "/shipment/list";  // GET /api/shipment/list
-  static const String my = "/shipment/my";  // GET /api/shipment/my (role-aware, filtered by JWT)
-  static const String myByStatus = "/shipment/my/status";  // GET /api/shipment/my/status?status=PENDING
+  static const String create = "/shipment/create"; // POST /api/shipment/create
+  static const String list = "/shipment/list"; // GET /api/shipment/list
+  static const String my =
+      "/shipment/my"; // GET /api/shipment/my (role-aware, filtered by JWT)
+  static const String myByStatus =
+      "/shipment/my/status"; // GET /api/shipment/my/status?status=PENDING
   static const String getById = "/shipment/{shipmentId}";
   static const String update = "/shipment/update/{shipmentId}";
   static const String delete = "/shipment/{shipmentId}";
   static const String dashboard = "/shipment/dashboard";
-  static const String statistics = "/shipment/dashboard"; // backend exposes dashboard; reuse for statistics
+  static const String statistics =
+      "/shipment/dashboard"; // backend exposes dashboard; reuse for statistics
 
   // Tracking
   static const String tracking = "/shipment/{trackingNumber}/track";
@@ -70,7 +73,8 @@ class ShipmentEndpoints {
   // Payment
   static const String initiatePayment =
       "/payment/{shipmentId}/initiate-payment";
-    static const String confirmPayment = "/payment/{shipmentId}/confirm-payment";
+  static const String confirmPayment =
+      "/payment/{shipmentId}/confirm-payment";
 }
 
 class ShipmentOfferEndpoints {
@@ -80,22 +84,26 @@ class ShipmentOfferEndpoints {
   // Note: backend uses singular "/shipment" for reading offers,
   // and plural "/shipments" for offer mutations.
   // Backend automatically extracts carrier ID from JWT token
-  static const String getMyOffers = "/shipment-offers/my-offers";  // TODO: Backend doesn't have this endpoint yet
-  static const String getShipmentOffers = "/shipment/{shipmentId}/offers"; // GET offers for a shipment - SINGULAR
-  
+  static const String getMyOffers =
+      "/shipment-offers/my-offers"; // TODO: Backend doesn't have this endpoint yet
+  static const String getShipmentOffers =
+      "/shipment/{shipmentId}/offers"; // GET offers for a shipment - SINGULAR
+
   // CREATE OFFER - Uses query parameter for price, carrier ID from JWT token
-  static const String createOffer = "/shipments/{shipmentId}/offer-shipment"; // POST with ?price=X - PLURAL
-  
+  static const String createOffer =
+      "/shipments/{shipmentId}/offer-shipment"; // POST with ?price=X - PLURAL
+
   static const String cancelOffer =
-      "/shipments/{shipmentOfferId}/cancel-shipment-offer";  // PLURAL
-  
+      "/shipments/{shipmentOfferId}/cancel-shipment-offer"; // PLURAL
+
   // Accept offer by assigning carrier (shipper action)
   // Uses query parameter for carrierId
-  static const String assignCarrier = "/shipments/{shipmentId}/assign-carrier";  // PLURAL
-  
+  static const String assignCarrier =
+      "/shipments/{shipmentId}/assign-carrier"; // PLURAL
+
   // Reject offer (shipper action) - uses cancel endpoint
   static const String rejectOffer =
-      "/shipments/{shipmentOfferId}/cancel-shipment-offer";  // PLURAL
+      "/shipments/{shipmentOfferId}/cancel-shipment-offer"; // PLURAL
 }
 
 class LoadEndpoints {
@@ -128,7 +136,6 @@ class CarrierCompanyEndpoints {
   static const String getById = "/carrier/profile/{carrierId}";
   static const String create = "/carrier/profile/create";
   static const String update = "/carrier/profile/update";
-
 }
 
 class CarrierShipmentEndpoints {
@@ -140,7 +147,8 @@ class CarrierShipmentEndpoints {
 
   // Get shipments assigned to a specific carrier by ID
   // GET /api/carrier/shipments/{carrierId}/assigned
-  static const String getAssignedForCarrier = "/carrier/shipments/{carrierId}/assigned";
+  static const String getAssignedForCarrier =
+      "/carrier/shipments/{carrierId}/assigned";
 }
 
 class ShipperCompanyEndpoints {

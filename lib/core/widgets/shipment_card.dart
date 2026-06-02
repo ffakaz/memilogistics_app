@@ -116,6 +116,14 @@ class _LegacyShipmentCard extends StatelessWidget {
                           ),
                       overflow: TextOverflow.ellipsis,
                     ),
+                    if (shipment.assignedCarrierName != null && shipment.assignedCarrierName!.trim().isNotEmpty) ...[
+                      const SizedBox(height: AppTheme.spacing4),
+                      Text(
+                        'Assigned to ${shipment.assignedCarrierName}',
+                        style: Theme.of(context).textTheme.bodySmall?.copyWith(color: AppTheme.darkGray),
+                        overflow: TextOverflow.ellipsis,
+                      ),
+                    ],
                     const SizedBox(height: AppTheme.spacing4),
                     Row(
                       children: [

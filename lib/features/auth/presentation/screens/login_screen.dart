@@ -29,9 +29,7 @@ class _LoginScreenState extends State<LoginScreen> {
         canPop: false,
         child: Theme(
           data: ThemeData.dark().copyWith(
-            textTheme: ThemeData.dark().textTheme.apply(
-              fontFamily: 'Roboto',
-            ),
+            textTheme: ThemeData.dark().textTheme.apply(fontFamily: 'Roboto'),
           ),
           child: Material(
             type: MaterialType.transparency,
@@ -55,11 +53,7 @@ class _LoginScreenState extends State<LoginScreen> {
       body: Container(
         decoration: const BoxDecoration(
           gradient: LinearGradient(
-            colors: [
-              Color(0xFF07111F),
-              Color(0xFF0E2A3E),
-              Color(0xFFF7F9FC),
-            ],
+            colors: [Color(0xFF07111F), Color(0xFF0E2A3E), Color(0xFFF7F9FC)],
             stops: [0.0, 0.46, 0.46],
             begin: Alignment.topCenter,
             end: Alignment.bottomCenter,
@@ -117,7 +111,9 @@ class _LoginScreenState extends State<LoginScreen> {
                           TextFormField(
                             decoration: InputDecoration(
                               labelText: 'Email',
-                              prefixIcon: const Icon(Icons.alternate_email_rounded),
+                              prefixIcon: const Icon(
+                                Icons.alternate_email_rounded,
+                              ),
                               filled: true,
                               fillColor: const Color(0xFFF5F7FA),
                               border: OutlineInputBorder(
@@ -141,7 +137,9 @@ class _LoginScreenState extends State<LoginScreen> {
                             obscureText: _obscurePassword,
                             decoration: InputDecoration(
                               labelText: 'Password',
-                              prefixIcon: const Icon(Icons.lock_outline_rounded),
+                              prefixIcon: const Icon(
+                                Icons.lock_outline_rounded,
+                              ),
                               filled: true,
                               fillColor: const Color(0xFFF5F7FA),
                               border: OutlineInputBorder(
@@ -193,9 +191,11 @@ class _LoginScreenState extends State<LoginScreen> {
                           ),
                           const SizedBox(height: 8),
                           SizedBox(
-                                  width: double.infinity,
-                                  child: ElevatedButton(
-                                    onPressed: auth.isLoading ? null : () async {
+                            width: double.infinity,
+                            child: ElevatedButton(
+                              onPressed: auth.isLoading
+                                  ? null
+                                  : () async {
                                       if (_formKey.currentState!.validate()) {
                                         _formKey.currentState!.save();
 
@@ -211,14 +211,15 @@ class _LoginScreenState extends State<LoginScreen> {
                                           context
                                               .read<CarrierCompanyProvider>()
                                               .clearProfile();
-                                          
+
                                           // Show promotional banner
                                           await _showPromotionalBanner();
-                                          
+
                                           if (!context.mounted) return;
-                                          
+
                                           // Get user role from auth provider and route accordingly
-                                          final userRole = auth.userRole;
+                                          final userRole = auth.userRole
+                                              ?.toUpperCase();
                                           final route = userRole == 'CARRIER'
                                               ? '/carrier-dashboard'
                                               : '/dashboard';
@@ -229,27 +230,29 @@ class _LoginScreenState extends State<LoginScreen> {
                                         }
                                       }
                                     },
-                                    style: ElevatedButton.styleFrom(
-                                      backgroundColor: const Color(0xFF0B5FFF),
-                                      foregroundColor: Colors.white,
-                                      elevation: 0,
-                                      padding: const EdgeInsets.symmetric(vertical: 16),
-                                      shape: RoundedRectangleBorder(
-                                        borderRadius: BorderRadius.circular(14),
-                                      ),
-                                    ),
-                                    child: auth.isLoading
-                                        ? const SizedBox(
-                                            height: 20,
-                                            width: 20,
-                                            child: CircularProgressIndicator(
-                                              strokeWidth: 2,
-                                              color: Colors.white,
-                                            ),
-                                          )
-                                        : const Text('Login'),
-                                  ),
+                              style: ElevatedButton.styleFrom(
+                                backgroundColor: const Color(0xFF0B5FFF),
+                                foregroundColor: Colors.white,
+                                elevation: 0,
+                                padding: const EdgeInsets.symmetric(
+                                  vertical: 16,
                                 ),
+                                shape: RoundedRectangleBorder(
+                                  borderRadius: BorderRadius.circular(14),
+                                ),
+                              ),
+                              child: auth.isLoading
+                                  ? const SizedBox(
+                                      height: 20,
+                                      width: 20,
+                                      child: CircularProgressIndicator(
+                                        strokeWidth: 2,
+                                        color: Colors.white,
+                                      ),
+                                    )
+                                  : const Text('Login'),
+                            ),
+                          ),
                           if (auth.error != null) ...[
                             const SizedBox(height: 10),
                             Text(
@@ -305,7 +308,9 @@ class _LoginScreenState extends State<LoginScreen> {
                   decoration: BoxDecoration(
                     color: Colors.white.withValues(alpha: 0.12),
                     borderRadius: BorderRadius.circular(16),
-                    border: Border.all(color: Colors.white.withValues(alpha: 0.2)),
+                    border: Border.all(
+                      color: Colors.white.withValues(alpha: 0.2),
+                    ),
                   ),
                   child: const Icon(
                     Icons.local_shipping_rounded,
@@ -338,7 +343,10 @@ class _LoginScreenState extends State<LoginScreen> {
                   runSpacing: 8,
                   children: const [
                     _HeroChip(icon: Icons.route_rounded, label: 'Live loads'),
-                    _HeroChip(icon: Icons.verified_user_rounded, label: 'JWT secure'),
+                    _HeroChip(
+                      icon: Icons.verified_user_rounded,
+                      label: 'JWT secure',
+                    ),
                     _HeroChip(icon: Icons.payments_rounded, label: 'Payments'),
                   ],
                 ),

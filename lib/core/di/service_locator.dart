@@ -146,7 +146,7 @@ Future<void> setupLocator() async {
       return PaymentScreen(
         shipmentId: params['shipmentId'] as int,
         amount: params['amount'] as double,
-        currency: params['currency'] as String? ?? 'USD',
+        currency: params['currency'] as String? ?? 'ETB',
       );
     },
     // RouteConstants.selectRole: (_) => const RoleSelectionScreen(), // REMOVED: Role now selected during registration
@@ -253,7 +253,7 @@ Future<void> setupLocator() async {
 
   // ShipmentOffer wiring
   final shipmentOfferApiService = ShipmentOfferApiService(apiClient);
-  final shipmentOfferProvider = ShipmentOfferProvider(shipmentOfferApiService);
+  final shipmentOfferProvider = ShipmentOfferProvider(shipmentOfferApiService, tokenStorage);
   _sl.registerSingleton<ShipmentOfferProvider>(shipmentOfferProvider);
 
   // Payment wiring

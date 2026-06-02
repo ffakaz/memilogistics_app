@@ -38,9 +38,10 @@ class _PremiumLoadBoardCardState extends State<PremiumLoadBoardCard>
       duration: const Duration(milliseconds: 150),
       vsync: this,
     );
-    _scaleAnimation = Tween<double>(begin: 1.0, end: 0.98).animate(
-      CurvedAnimation(parent: _controller, curve: Curves.easeInOut),
-    );
+    _scaleAnimation = Tween<double>(
+      begin: 1.0,
+      end: 0.98,
+    ).animate(CurvedAnimation(parent: _controller, curve: Curves.easeInOut));
   }
 
   @override
@@ -103,9 +104,7 @@ class _PremiumLoadBoardCardState extends State<PremiumLoadBoardCard>
                 Positioned.fill(
                   child: Opacity(
                     opacity: 0.02,
-                    child: CustomPaint(
-                      painter: _GridPatternPainter(),
-                    ),
+                    child: CustomPaint(painter: _GridPatternPainter()),
                   ),
                 ),
                 // Main content
@@ -115,11 +114,26 @@ class _PremiumLoadBoardCardState extends State<PremiumLoadBoardCard>
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
                       _buildHeader(context),
+                      if (widget.shipment.description != null &&
+                          widget.shipment.description!.trim().isNotEmpty) ...[
+                        const SizedBox(height: AppTheme.spacing8),
+                        Text(
+                          widget.shipment.description!,
+                          maxLines: 2,
+                          overflow: TextOverflow.ellipsis,
+                          style: Theme.of(context).textTheme.bodyMedium
+                              ?.copyWith(color: AppTheme.darkGray),
+                        ),
+                        const SizedBox(height: AppTheme.spacing12),
+                      ],
                       const SizedBox(height: AppTheme.spacing20),
                       _buildRouteSection(context),
                       const SizedBox(height: AppTheme.spacing20),
                       _buildInfoChips(context),
-                      if (widget.showOfferButton && widget.onOfferTap != null) ...[
+                      const SizedBox(height: AppTheme.spacing12),
+                      _buildScheduleRow(context),
+                      if (widget.showOfferButton &&
+                          widget.onOfferTap != null) ...[
                         const SizedBox(height: AppTheme.spacing20),
                         _buildOfferButton(context),
                       ],
@@ -176,12 +190,13 @@ class _PremiumLoadBoardCardState extends State<PremiumLoadBoardCard>
                 children: [
                   Expanded(
                     child: Text(
-                      widget.shipment.trackingNumber ?? 'SHIP-${widget.shipment.id}',
+                      widget.shipment.trackingNumber ??
+                          'SHIP-${widget.shipment.id}',
                       style: Theme.of(context).textTheme.titleLarge?.copyWith(
-                            fontWeight: FontWeight.w800,
-                            letterSpacing: -0.5,
-                            color: AppTheme.charcoal,
-                          ),
+                        fontWeight: FontWeight.w800,
+                        letterSpacing: -0.5,
+                        color: AppTheme.charcoal,
+                      ),
                       overflow: TextOverflow.ellipsis,
                     ),
                   ),
@@ -196,7 +211,9 @@ class _PremiumLoadBoardCardState extends State<PremiumLoadBoardCard>
                       vertical: 4,
                     ),
                     decoration: BoxDecoration(
-                      color: AppTheme.primaryBlue.withAlpha((0.08 * 255).round()),
+                      color: AppTheme.primaryBlue.withAlpha(
+                        (0.08 * 255).round(),
+                      ),
                       borderRadius: BorderRadius.circular(6),
                     ),
                     child: Row(
@@ -210,7 +227,8 @@ class _PremiumLoadBoardCardState extends State<PremiumLoadBoardCard>
                         const SizedBox(width: 4),
                         Text(
                           widget.shipment.shipmentItem ?? 'General Cargo',
-                          style: Theme.of(context).textTheme.labelSmall?.copyWith(
+                          style: Theme.of(context).textTheme.labelSmall
+                              ?.copyWith(
                                 color: AppTheme.primaryBlue,
                                 fontWeight: FontWeight.w600,
                                 fontSize: 11,
@@ -222,10 +240,7 @@ class _PremiumLoadBoardCardState extends State<PremiumLoadBoardCard>
                   const SizedBox(width: AppTheme.spacing8),
                   Text(
                     '•',
-                    style: TextStyle(
-                      color: AppTheme.lightGray,
-                      fontSize: 12,
-                    ),
+                    style: TextStyle(color: AppTheme.lightGray, fontSize: 12),
                   ),
                   const SizedBox(width: AppTheme.spacing8),
                   Icon(
@@ -239,12 +254,37 @@ class _PremiumLoadBoardCardState extends State<PremiumLoadBoardCard>
                         ? _timeAgo(widget.shipment.createdAt!)
                         : 'Posted recently',
                     style: Theme.of(context).textTheme.labelSmall?.copyWith(
-                          color: AppTheme.darkGray,
-                          fontSize: 11,
-                        ),
+                      color: AppTheme.darkGray,
+                      fontSize: 11,
+                    ),
                   ),
                 ],
               ),
+              // Assigned carrier (if any)
+              if (widget.shipment.assignedCarrierName != null &&
+                  widget.shipment.assignedCarrierName!.trim().isNotEmpty) ...[
+                const SizedBox(height: AppTheme.spacing8),
+                Row(
+                  children: [
+                    const Icon(
+                      Icons.business,
+                      size: 14,
+                      color: AppTheme.darkGray,
+                    ),
+                    const SizedBox(width: 6),
+                    Expanded(
+                      child: Text(
+                        'Assigned to ${widget.shipment.assignedCarrierName}',
+                        style: Theme.of(context).textTheme.bodySmall?.copyWith(
+                          color: AppTheme.darkGray,
+                          fontWeight: FontWeight.w600,
+                        ),
+                        overflow: TextOverflow.ellipsis,
+                      ),
+                    ),
+                  ],
+                ),
+              ],
             ],
           ),
         ),
@@ -257,12 +297,9 @@ class _PremiumLoadBoardCardState extends State<PremiumLoadBoardCard>
 
   Widget _buildStatusBadge(BuildContext context) {
     final statusConfig = _getStatusConfig(widget.shipment.status);
-    
+
     return Container(
-      padding: const EdgeInsets.symmetric(
-        horizontal: 14,
-        vertical: 8,
-      ),
+      padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 8),
       decoration: BoxDecoration(
         gradient: LinearGradient(
           colors: [
@@ -307,11 +344,11 @@ class _PremiumLoadBoardCardState extends State<PremiumLoadBoardCard>
           Text(
             statusConfig.label,
             style: Theme.of(context).textTheme.labelSmall?.copyWith(
-                  color: statusConfig.color,
-                  fontWeight: FontWeight.w700,
-                  fontSize: 11,
-                  letterSpacing: 0.3,
-                ),
+              color: statusConfig.color,
+              fontWeight: FontWeight.w700,
+              fontSize: 11,
+              letterSpacing: 0.3,
+            ),
           ),
         ],
       ),
@@ -342,18 +379,16 @@ class _PremiumLoadBoardCardState extends State<PremiumLoadBoardCard>
                   shape: BoxShape.circle,
                   boxShadow: [
                     BoxShadow(
-                      color: const Color(0xFF10B981).withAlpha((0.4 * 255).round()),
+                      color: const Color(
+                        0xFF10B981,
+                      ).withAlpha((0.4 * 255).round()),
                       blurRadius: 8,
                       spreadRadius: 2,
                     ),
                   ],
                 ),
                 child: const Center(
-                  child: Icon(
-                    Icons.circle,
-                    size: 6,
-                    color: Colors.white,
-                  ),
+                  child: Icon(Icons.circle, size: 6, color: Colors.white),
                 ),
               ),
               // Animated route line
@@ -381,24 +416,19 @@ class _PremiumLoadBoardCardState extends State<PremiumLoadBoardCard>
                 decoration: BoxDecoration(
                   color: const Color(0xFFEF4444), // Red
                   shape: BoxShape.circle,
-                  border: Border.all(
-                    color: Colors.white,
-                    width: 2.5,
-                  ),
+                  border: Border.all(color: Colors.white, width: 2.5),
                   boxShadow: [
                     BoxShadow(
-                      color: const Color(0xFFEF4444).withAlpha((0.4 * 255).round()),
+                      color: const Color(
+                        0xFFEF4444,
+                      ).withAlpha((0.4 * 255).round()),
                       blurRadius: 8,
                       spreadRadius: 2,
                     ),
                   ],
                 ),
                 child: const Center(
-                  child: Icon(
-                    Icons.location_on,
-                    size: 10,
-                    color: Colors.white,
-                  ),
+                  child: Icon(Icons.location_on, size: 10, color: Colors.white),
                 ),
               ),
             ],
@@ -413,11 +443,11 @@ class _PremiumLoadBoardCardState extends State<PremiumLoadBoardCard>
                 Text(
                   'ORIGIN',
                   style: Theme.of(context).textTheme.labelSmall?.copyWith(
-                        color: AppTheme.darkGray,
-                        fontWeight: FontWeight.w600,
-                        fontSize: 10,
-                        letterSpacing: 1.2,
-                      ),
+                    color: AppTheme.darkGray,
+                    fontWeight: FontWeight.w600,
+                    fontSize: 10,
+                    letterSpacing: 1.2,
+                  ),
                 ),
                 const SizedBox(height: 6),
                 Row(
@@ -431,7 +461,8 @@ class _PremiumLoadBoardCardState extends State<PremiumLoadBoardCard>
                     Expanded(
                       child: Text(
                         widget.shipment.origin,
-                        style: Theme.of(context).textTheme.titleMedium?.copyWith(
+                        style: Theme.of(context).textTheme.titleMedium
+                            ?.copyWith(
                               fontWeight: FontWeight.w700,
                               color: AppTheme.charcoal,
                               letterSpacing: -0.3,
@@ -446,11 +477,11 @@ class _PremiumLoadBoardCardState extends State<PremiumLoadBoardCard>
                 Text(
                   'DESTINATION',
                   style: Theme.of(context).textTheme.labelSmall?.copyWith(
-                        color: AppTheme.darkGray,
-                        fontWeight: FontWeight.w600,
-                        fontSize: 10,
-                        letterSpacing: 1.2,
-                      ),
+                    color: AppTheme.darkGray,
+                    fontWeight: FontWeight.w600,
+                    fontSize: 10,
+                    letterSpacing: 1.2,
+                  ),
                 ),
                 const SizedBox(height: 6),
                 Row(
@@ -464,7 +495,8 @@ class _PremiumLoadBoardCardState extends State<PremiumLoadBoardCard>
                     Expanded(
                       child: Text(
                         widget.shipment.destination,
-                        style: Theme.of(context).textTheme.titleMedium?.copyWith(
+                        style: Theme.of(context).textTheme.titleMedium
+                            ?.copyWith(
                               fontWeight: FontWeight.w700,
                               color: AppTheme.charcoal,
                               letterSpacing: -0.3,
@@ -497,10 +529,12 @@ class _PremiumLoadBoardCardState extends State<PremiumLoadBoardCard>
           context,
           icon: Icons.calendar_today_rounded,
           label: widget.shipment.estimatedDeliveryDate != null
-              ? DateFormat('MMM dd').format(widget.shipment.estimatedDeliveryDate!)
+              ? DateFormat(
+                  'MMM dd',
+                ).format(widget.shipment.estimatedDeliveryDate!)
               : (widget.shipment.pickupDate != null
-                  ? DateFormat('MMM dd').format(widget.shipment.pickupDate!)
-                  : 'TBD'),
+                    ? DateFormat('MMM dd').format(widget.shipment.pickupDate!)
+                    : 'TBD'),
           color: AppTheme.accentOrange,
         ),
         _buildInfoChip(
@@ -524,6 +558,70 @@ class _PremiumLoadBoardCardState extends State<PremiumLoadBoardCard>
     );
   }
 
+  Widget _buildScheduleRow(BuildContext context) {
+    final pickup = widget.shipment.pickupDate != null
+        ? DateFormat('MMM dd, yyyy').format(widget.shipment.pickupDate!)
+        : 'N/A';
+    final eta = widget.shipment.estimatedDeliveryDate != null
+        ? DateFormat(
+            'MMM dd, yyyy',
+          ).format(widget.shipment.estimatedDeliveryDate!)
+        : 'N/A';
+
+    return Row(
+      children: [
+        Expanded(
+          child: _buildScheduleItem(
+            context,
+            icon: Icons.calendar_today_rounded,
+            label: 'Pickup',
+            value: pickup,
+          ),
+        ),
+        const SizedBox(width: AppTheme.spacing12),
+        Expanded(
+          child: _buildScheduleItem(
+            context,
+            icon: Icons.event_available_rounded,
+            label: 'Delivery',
+            value: eta,
+          ),
+        ),
+      ],
+    );
+  }
+
+  Widget _buildScheduleItem(
+    BuildContext context, {
+    required IconData icon,
+    required String label,
+    required String value,
+  }) {
+    return Row(
+      children: [
+        Icon(icon, size: 16, color: AppTheme.darkGray),
+        const SizedBox(width: 8),
+        Expanded(
+          child: RichText(
+            overflow: TextOverflow.ellipsis,
+            text: TextSpan(
+              style: Theme.of(
+                context,
+              ).textTheme.bodySmall?.copyWith(color: AppTheme.charcoal),
+              children: [
+                TextSpan(
+                  text: '$label: ',
+                  style: const TextStyle(fontWeight: FontWeight.w600),
+                ),
+                TextSpan(text: value),
+              ],
+            ),
+          ),
+        ),
+      ],
+    );
+  }
+
   Widget _buildInfoChip(
     BuildContext context, {
     required IconData icon,
@@ -531,10 +629,7 @@ class _PremiumLoadBoardCardState extends State<PremiumLoadBoardCard>
     required Color color,
   }) {
     return Container(
-      padding: const EdgeInsets.symmetric(
-        horizontal: 12,
-        vertical: 10,
-      ),
+      padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
       decoration: BoxDecoration(
         color: color.withAlpha((0.08 * 255).round()),
         borderRadius: BorderRadius.circular(12),
@@ -552,20 +647,16 @@ class _PremiumLoadBoardCardState extends State<PremiumLoadBoardCard>
               color: color.withAlpha((0.15 * 255).round()),
               borderRadius: BorderRadius.circular(8),
             ),
-            child: Icon(
-              icon,
-              size: 14,
-              color: color,
-            ),
+            child: Icon(icon, size: 14, color: color),
           ),
           const SizedBox(width: 8),
           Text(
             label,
             style: Theme.of(context).textTheme.labelMedium?.copyWith(
-                  fontWeight: FontWeight.w600,
-                  color: color,
-                  fontSize: 12,
-                ),
+              fontWeight: FontWeight.w600,
+              color: color,
+              fontSize: 12,
+            ),
           ),
         ],
       ),
@@ -675,7 +766,7 @@ class _PremiumLoadBoardCardState extends State<PremiumLoadBoardCard>
         );
       case ShipmentStatus.paymentPending:
         return _StatusConfig(
-          label: 'PAYMENT DUE',
+          label: 'PAYMENT PENDING',
           color: const Color(0xFFF59E0B), // Amber
         );
       case ShipmentStatus.completed:
@@ -706,20 +797,12 @@ class _GridPatternPainter extends CustomPainter {
 
     // Draw vertical lines
     for (double x = 0; x < size.width; x += spacing) {
-      canvas.drawLine(
-        Offset(x, 0),
-        Offset(x, size.height),
-        paint,
-      );
+      canvas.drawLine(Offset(x, 0), Offset(x, size.height), paint);
     }
 
     // Draw horizontal lines
     for (double y = 0; y < size.height; y += spacing) {
-      canvas.drawLine(
-        Offset(0, y),
-        Offset(size.width, y),
-        paint,
-      );
+      canvas.drawLine(Offset(0, y), Offset(size.width, y), paint);
     }
   }
 

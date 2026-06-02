@@ -39,12 +39,14 @@ class AuthProvider extends ChangeNotifier {
   bool get isAuthenticated => _isLoggedIn; // Alias
   String? get error => _errorMessage; // Alias
 
+  String? _normalizeRole(String? role) => role?.trim().toUpperCase();
+
   Future<void> init() async {
     _isLoggedIn = await isLoggedInUseCase.call();
     if (_isLoggedIn) {
       final token = await getCurrentTokenUseCase.call();
       _currentToken = token?.accessToken;
-      _userRole = token?.role; // Load user role
+      _userRole = _normalizeRole(token?.role); // Load user role
     }
     _initialized = true;
     notifyListeners();
@@ -59,7 +61,7 @@ class AuthProvider extends ChangeNotifier {
       final credentials = UserCredentials(email: email, password: password);
       final token = await loginUseCase.call(credentials);
       _currentToken = token.accessToken;
-      _userRole = token.role; // Store user role
+      _userRole = _normalizeRole(token.role); // Store user role
       _isLoggedIn = true;
     } catch (e) {
       _errorMessage = 'Login failed: $e';
@@ -101,7 +103,7 @@ class AuthProvider extends ChangeNotifier {
       print('  Role: ${token.role}');
       
       _currentToken = token.accessToken;
-      _userRole = token.role; // Store user role
+      _userRole = _normalizeRole(token.role); // Store user role
       _isLoggedIn = true;
     } catch (e) {
       print('📱 AuthProvider: Registration failed');

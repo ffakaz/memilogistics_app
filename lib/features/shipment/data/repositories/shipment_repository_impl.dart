@@ -37,6 +37,7 @@ class ShipmentRepositoryImpl implements ShipmentRepository {
     return ShipmentMapper.toEntity(model);
   }
 
+  @override
   Future<List<Shipment>> listShipments({int page = 0, int size = 20}) async {
     final accessToken = await tokenStorage.getAccessToken();
     if (accessToken == null || accessToken.isEmpty) {
@@ -44,6 +45,22 @@ class ShipmentRepositoryImpl implements ShipmentRepository {
     }
 
     final models = await apiService.listShipments(page: page, size: size);
+    return models.map((model) => ShipmentMapper.toEntity(model)).toList();
+  }
+
+  @override
+  Future<List<Shipment>> getMyShipmentsByStatus({
+    required ShipmentStatus status,
+    int page = 0,
+    int size = 20,
+  }) async {
+    await _requireAccessToken('view your shipments');
+
+    final models = await apiService.getMyShipmentsByStatus(
+      status: status.backendValue,
+      page: page,
+      size: size,
+    );
     return models.map((model) => ShipmentMapper.toEntity(model)).toList();
   }
 
@@ -103,6 +120,7 @@ class ShipmentRepositoryImpl implements ShipmentRepository {
     );
   }
 
+  @override
   Future<Shipment> getShipment(int shipmentId) async {
     final accessToken = await tokenStorage.getAccessToken();
     if (accessToken == null || accessToken.isEmpty) {
@@ -113,6 +131,7 @@ class ShipmentRepositoryImpl implements ShipmentRepository {
     return ShipmentMapper.toEntity(model);
   }
 
+  @override
   Future<void> deleteShipment(int shipmentId) async {
     final accessToken = await tokenStorage.getAccessToken();
     if (accessToken == null || accessToken.isEmpty) {
@@ -143,10 +162,31 @@ class ShipmentRepositoryImpl implements ShipmentRepository {
     required int carrierId,
   }) async {
     await _requireAccessToken('assign a carrier');
-    await apiService.assignCarrier(
-      shipmentId: shipmentId,
-      carrierId: carrierId,
-    );
+
+    // Log role and inputs to help trace unintended assignments during debugging.
+    String? role;
+    try {
+      role = await tokenStorage.getUserRole();
+      print('🔒 assignCarrier called. shipmentId=$shipmentId, carrierId=$carrierId, role=${role ?? 'UNKNOWN'}');
+      if (role == null || role.toUpperCase() != 'SHIPPER') {
+        throw Exception('Only shippers can accept offers and assign carriers.');
+      }
+    } catch (e) {
+      // If tokenStorage fails, fail-safe: do not proceed with assignment
+      print('⚠️ assignCarrier aborted; unable to verify user role: $e');
+      throw Exception('Unable to verify user role before assigning carrier: ${e.toString()}');
+    }
+
+    try {
+      await apiService.assignCarrier(
+        shipmentId: shipmentId,
+        carrierId: carrierId,
+      );
+      print('✅ assignCarrier request completed for shipmentId=$shipmentId');
+    } catch (e) {
+      print('❌ assignCarrier request failed for shipmentId=$shipmentId: $e');
+      rethrow;
+    }
   }
 
   @override

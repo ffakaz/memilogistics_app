@@ -18,7 +18,10 @@ class TokenStorage {
         await storage.write(key: StorageKeys.refreshToken, value: refreshToken);
       }
       if (role != null) {
-        await storage.write(key: StorageKeys.userRole, value: role);
+        await storage.write(
+          key: StorageKeys.userRole,
+          value: role.trim().toUpperCase(),
+        );
       }
     } catch (e) {
       throw StorageException('Failed to save tokens: $e');

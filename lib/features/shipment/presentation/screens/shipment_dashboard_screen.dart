@@ -258,28 +258,28 @@ class _DashboardStatsGrid extends StatelessWidget {
   Widget build(BuildContext context) {
     final cards = [
       _StatCard(
-        title: 'Pending',
+        title: 'Pending Shipments',
         value: info.pendingShipments.toString(),
         icon: Icons.schedule,
         color: const Color(0xFFB26A00),
       ),
       _StatCard(
-        title: 'Completed',
-        value: info.completedShipments.toString(),
-        icon: Icons.verified_outlined,
+        title: 'Assigned Shipments',
+        value: info.assignedShipments.toString(),
+        icon: Icons.assignment_turned_in_outlined,
+        color: const Color(0xFF1E5AA8),
+      ),
+      _StatCard(
+        title: 'Delivered Shipments',
+        value: info.deliveredShipments.toString(),
+        icon: Icons.inventory_2_outlined,
         color: const Color(0xFF16794C),
       ),
       _StatCard(
-        title: 'Fragile',
-        value: info.fragileShipments.toString(),
-        icon: Icons.inventory_2_outlined,
-        color: const Color(0xFF8B3A8F),
-      ),
-      _StatCard(
-        title: 'Standard',
-        value: info.nonFragileShipments.toString(),
-        icon: Icons.local_shipping_outlined,
-        color: const Color(0xFF1E5AA8),
+        title: 'Completed Shipments',
+        value: info.completedShipments.toString(),
+        icon: Icons.verified_outlined,
+        color: const Color(0xFF16794C),
       ),
     ];
 

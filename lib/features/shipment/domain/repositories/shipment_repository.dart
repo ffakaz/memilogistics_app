@@ -8,6 +8,11 @@ import '../../data/models/shipment_statistics_model.dart';
 abstract class ShipmentRepository {
   Future<Shipment> createShipment(Shipment shipment, {int? shipperId});
   Future<List<Shipment>> listShipments({int page = 0, int size = 20});
+  Future<List<Shipment>> getMyShipmentsByStatus({
+    required ShipmentStatus status,
+    int page = 0,
+    int size = 20,
+  });
   
   // Paginated methods
   Future<PaginatedShipments> listShipmentsPaginated({int page = 0, int size = 20});

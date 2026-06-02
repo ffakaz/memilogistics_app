@@ -1,6 +1,6 @@
 enum ShipmentStatus {
   pending('PENDING'),
-  accepted('ACCEPTED'),        // NEW
+  accepted('ACCEPTED'), // NEW
   assigned('ASSIGNED'),
   pickedUp('PICKED_UP'),
   inTransit('IN_TRANSIT'),
@@ -8,10 +8,10 @@ enum ShipmentStatus {
   delivered('DELIVERED'),
   paymentPending('PAYMENT_PENDING'),
   completed('COMPLETED');
-  
+
   final String backendValue;
   const ShipmentStatus(this.backendValue);
-  
+
   String get displayName {
     switch (this) {
       case ShipmentStatus.pending:

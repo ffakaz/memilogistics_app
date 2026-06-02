@@ -19,6 +19,9 @@ class ShipmentModel {
   final DateTime? completedAt;
   final int? shipperId;
   final int? assignedCarrierId;
+  final String? assignedCarrierName;
+  final String? assignedCarrierCompany;
+  final String? assignedCarrierPhone;
 
   const ShipmentModel({
     required this.id,
@@ -38,27 +41,53 @@ class ShipmentModel {
     this.completedAt,
     this.shipperId,
     this.assignedCarrierId,
+    this.assignedCarrierName,
+    this.assignedCarrierCompany,
+    this.assignedCarrierPhone,
   });
 
   factory ShipmentModel.fromJson(Map<String, dynamic> json) {
     return ShipmentModel(
-      id: JsonParsing.asInt(json['id'] ?? json['shipmentId']),  // Handle both 'id' and 'shipmentId'
+      id: JsonParsing.asInt(
+        json['id'] ?? json['shipmentId'],
+      ), // Handle both 'id' and 'shipmentId'
       trackingNumber: json['trackingNumber'] as String?,
       origin: json['origin'] as String? ?? '',
       destination: json['destination'] as String? ?? '',
       weightKg: JsonParsing.asDouble(json['weightKg']),
-      volume: json['volume'] != null ? JsonParsing.asDouble(json['volume']) : null,
-      status: _parseStatus(JsonParsing.asString(json['status'], fallback: 'PENDING')),
+      volume: json['volume'] != null
+          ? JsonParsing.asDouble(json['volume'])
+          : null,
+      status: _parseStatus(
+        JsonParsing.asString(json['status'], fallback: 'PENDING'),
+      ),
       pickupDate: json['pickupDate'] as String?,
       estimatedDeliveryDate: json['estimatedDeliveryDate'] as String?,
       shipmentItem: json['shipmentItem'] as String?,
       description: json['description'] as String?,
       fragile: json['fragile'] as bool? ?? false,
-      createdAt: json['createdAt'] != null ? DateTime.parse(json['createdAt'] as String) : null,
-      updatedAt: json['updatedAt'] != null ? DateTime.parse(json['updatedAt'] as String) : null,
-      completedAt: json['completedAt'] != null ? DateTime.parse(json['completedAt'] as String) : null,
+      createdAt: json['createdAt'] != null
+          ? DateTime.parse(json['createdAt'] as String)
+          : null,
+      updatedAt: json['updatedAt'] != null
+          ? DateTime.parse(json['updatedAt'] as String)
+          : null,
+      completedAt: json['completedAt'] != null
+          ? DateTime.parse(json['completedAt'] as String)
+          : null,
       shipperId: JsonParsing.asIntOrNull(json['shipperId']),
-      assignedCarrierId: JsonParsing.asIntOrNull(json['assignedCarrierId']),
+        assignedCarrierId: JsonParsing.asIntOrNull(json['assignedCarrierId']),
+        assignedCarrierName: json['assignedCarrier'] is Map
+          ? (json['assignedCarrier']['companyName'] as String?)
+          : json['assignedCarrierName'] as String?,
+        assignedCarrierCompany: json['assignedCarrier'] is Map
+          ? (json['assignedCarrier']['company'] as String?)
+          : json['assignedCarrierCompany'] as String?,
+        assignedCarrierPhone: json['assignedCarrier'] is Map
+          ? (json['assignedCarrier']['phone'] as String?)
+            ?? (json['assignedCarrier']['companyPhone'] as String?)
+            ?? (json['assignedCarrier']['phoneNumber'] as String?)
+          : json['assignedCarrierPhone'] as String?,
     );
   }
 
@@ -72,7 +101,8 @@ class ShipmentModel {
       if (volume != null) 'volume': volume,
       'status': status.backendValue,
       if (pickupDate != null) 'pickupDate': pickupDate,
-      if (estimatedDeliveryDate != null) 'estimatedDeliveryDate': estimatedDeliveryDate,
+      if (estimatedDeliveryDate != null)
+        'estimatedDeliveryDate': estimatedDeliveryDate,
       if (shipmentItem != null) 'shipmentItem': shipmentItem,
       if (description != null) 'description': description,
       'fragile': fragile,
@@ -81,11 +111,21 @@ class ShipmentModel {
       if (completedAt != null) 'completedAt': completedAt!.toIso8601String(),
       if (shipperId != null) 'shipperId': shipperId,
       if (assignedCarrierId != null) 'assignedCarrierId': assignedCarrierId,
+      if (assignedCarrierName != null)
+        'assignedCarrierName': assignedCarrierName,
+      if (assignedCarrierCompany != null)
+        'assignedCarrierCompany': assignedCarrierCompany,
+      if (assignedCarrierPhone != null)
+        'assignedCarrierPhone': assignedCarrierPhone,
     };
   }
 
   static ShipmentStatus _parseStatus(String status) {
     final normalized = status.toUpperCase().replaceAll('-', '_');
+    if (normalized == 'PAYMENT_INITIATED' ||
+        normalized == 'PAYMENT_CONFIRMED') {
+      return ShipmentStatus.paymentPending;
+    }
     return ShipmentStatus.values.firstWhere(
       (e) => e.backendValue == normalized,
       orElse: () => ShipmentStatus.pending,

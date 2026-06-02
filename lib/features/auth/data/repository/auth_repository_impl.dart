@@ -16,10 +16,7 @@ class AuthRepositoryImpl implements AuthRepository {
   final AuthApiServiceReal apiService;
   final TokenStorage tokenStorage;
 
-  AuthRepositoryImpl({
-    required this.apiService,
-    required this.tokenStorage,
-  });
+  AuthRepositoryImpl({required this.apiService, required this.tokenStorage});
 
   @override
   Future<Either<AuthFailure, AuthToken>> login(
@@ -33,6 +30,7 @@ class AuthRepositoryImpl implements AuthRepository {
       await tokenStorage.saveTokens(
         accessToken: token.accessToken,
         refreshToken: token.refreshToken,
+        role: token.role,
       );
 
       return Right(token);
@@ -47,7 +45,10 @@ class AuthRepositoryImpl implements AuthRepository {
   ) async {
     try {
       final request = RegisterRequestModel.fromEntity(credentials);
-      await apiService.register(request.toJson(), role: request.role.name.toUpperCase());
+      await apiService.register(
+        request.toJson(),
+        role: request.role.name.toUpperCase(),
+      );
 
       // After successful registration backend requires login to obtain tokens
       final loginRequest = LoginRequestModel(request.email, request.password);
@@ -57,6 +58,7 @@ class AuthRepositoryImpl implements AuthRepository {
       await tokenStorage.saveTokens(
         accessToken: token.accessToken,
         refreshToken: token.refreshToken,
+        role: token.role,
       );
 
       return Right(token);
@@ -83,10 +85,12 @@ class AuthRepositoryImpl implements AuthRepository {
       final refreshToken = await tokenStorage.getRefreshToken();
 
       if (accessToken != null) {
+        final role = await tokenStorage.getUserRole();
         return Right(
           AuthToken(
             accessToken: accessToken,
             refreshToken: refreshToken,
+            role: role,
           ),
         );
       }

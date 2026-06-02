@@ -31,8 +31,10 @@ class DioApiClient implements ApiClient {
           'Content-Type': 'application/json',
           'Accept': 'application/json',
         },
-        // Treat everything below 500 as a valid response for the interceptor
-        validateStatus: (status) => status != null && status < 500,
+        // Treat only 2xx responses as valid. This ensures 401/403/etc
+        // produce DioExceptions so the `AuthDioInterceptor.onError`
+        // can catch them and run the refresh / session-expired logic.
+        validateStatus: (status) => status != null && status >= 200 && status < 300,
       ),
     );
 

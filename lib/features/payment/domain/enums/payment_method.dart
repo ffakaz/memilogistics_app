@@ -65,8 +65,6 @@ enum PaymentMethod {
 
   /// Check if method is instant
   bool get isInstant {
-    return this == PaymentMethod.cash ||
-        this == PaymentMethod.cryptoTransfer ||
-        this == PaymentMethod.walletTransfer;
+    return this == PaymentMethod.cash || this == PaymentMethod.walletTransfer;
   }
 }

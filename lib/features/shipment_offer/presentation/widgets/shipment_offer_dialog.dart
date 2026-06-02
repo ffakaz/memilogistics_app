@@ -4,7 +4,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:provider/provider.dart';
 import '../../../shipment/domain/entities/shipment.dart';
-import '../../../shipment/domain/enums/shipment_status.dart';
+// shipment_status import removed — we check assignedCarrierId instead of status
 import '../../../carrier/presentation/providers/carrier_company_provider.dart';
 import '../providers/shipment_offer_provider.dart';
 
@@ -13,10 +13,7 @@ import '../providers/shipment_offer_provider.dart';
 class ShipmentOfferDialog extends StatefulWidget {
   final Shipment shipment;
 
-  const ShipmentOfferDialog({
-    super.key,
-    required this.shipment,
-  });
+  const ShipmentOfferDialog({super.key, required this.shipment});
 
   @override
   State<ShipmentOfferDialog> createState() => _ShipmentOfferDialogState();
@@ -36,9 +33,7 @@ class _ShipmentOfferDialogState extends State<ShipmentOfferDialog> {
   @override
   Widget build(BuildContext context) {
     return Dialog(
-      shape: RoundedRectangleBorder(
-        borderRadius: BorderRadius.circular(16),
-      ),
+      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
       child: SingleChildScrollView(
         child: Padding(
           padding: const EdgeInsets.all(24),
@@ -126,17 +121,18 @@ class _ShipmentOfferDialogState extends State<ShipmentOfferDialog> {
                 // Price Input
                 const Text(
                   'Your Offer Price',
-                  style: TextStyle(
-                    fontSize: 16,
-                    fontWeight: FontWeight.w600,
-                  ),
+                  style: TextStyle(fontSize: 16, fontWeight: FontWeight.w600),
                 ),
                 const SizedBox(height: 8),
                 TextFormField(
                   controller: _priceController,
-                  keyboardType: const TextInputType.numberWithOptions(decimal: true),
+                  keyboardType: const TextInputType.numberWithOptions(
+                    decimal: true,
+                  ),
                   inputFormatters: [
-                    FilteringTextInputFormatter.allow(RegExp(r'^\d+\.?\d{0,2}')),
+                    FilteringTextInputFormatter.allow(
+                      RegExp(r'^\d+\.?\d{0,2}'),
+                    ),
                   ],
                   decoration: InputDecoration(
                     prefixIcon: const Icon(Icons.attach_money),
@@ -164,10 +160,7 @@ class _ShipmentOfferDialogState extends State<ShipmentOfferDialog> {
                 const SizedBox(height: 8),
                 Text(
                   'Enter the amount you would charge for this shipment',
-                  style: TextStyle(
-                    fontSize: 12,
-                    color: Colors.grey.shade600,
-                  ),
+                  style: TextStyle(fontSize: 12, color: Colors.grey.shade600),
                 ),
                 const SizedBox(height: 24),
 
@@ -229,18 +222,12 @@ class _ShipmentOfferDialogState extends State<ShipmentOfferDialog> {
         const SizedBox(width: 8),
         Text(
           '$label: ',
-          style: TextStyle(
-            fontSize: 13,
-            color: Colors.grey.shade600,
-          ),
+          style: TextStyle(fontSize: 13, color: Colors.grey.shade600),
         ),
         Expanded(
           child: Text(
             value,
-            style: const TextStyle(
-              fontSize: 13,
-              fontWeight: FontWeight.w500,
-            ),
+            style: const TextStyle(fontSize: 13, fontWeight: FontWeight.w500),
           ),
         ),
       ],
@@ -252,13 +239,13 @@ class _ShipmentOfferDialogState extends State<ShipmentOfferDialog> {
       return;
     }
 
-    // Validate shipment is still pending
-    if (widget.shipment.status != ShipmentStatus.pending) {
+    // Validate shipment is still unassigned
+    if (widget.shipment.assignedCarrierId != null) {
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
             content: Text(
-              'This shipment is no longer available for offers. Status: ${widget.shipment.status.displayName}',
+              'This shipment is no longer available for offers (already assigned).',
             ),
             backgroundColor: Colors.orange,
             duration: const Duration(seconds: 4),
@@ -276,7 +263,7 @@ class _ShipmentOfferDialogState extends State<ShipmentOfferDialog> {
 
       // Get carrier company provider to fetch carrier company ID
       final carrierProvider = context.read<CarrierCompanyProvider>();
-      
+
       // Ensure carrier profile is loaded
       if (carrierProvider.state.company == null) {
         print('📋 Carrier profile not loaded, fetching...');
@@ -317,9 +304,9 @@ class _ShipmentOfferDialogState extends State<ShipmentOfferDialog> {
       if (mounted) {
         Navigator.pop(context);
         ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(
+          const SnackBar(
             content: Text(
-              'Offer of \$${price.toStringAsFixed(2)} submitted successfully!',
+              'Your offer has been submitted successfully. The shipper will review your offer and notify you once a decision is made.',
             ),
             backgroundColor: Colors.green,
           ),
@@ -330,7 +317,9 @@ class _ShipmentOfferDialogState extends State<ShipmentOfferDialog> {
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
-            content: Text('Failed to submit offer: ${e.toString().replaceAll('Exception: ', '')}'),
+            content: Text(
+              'Failed to submit offer: ${e.toString().replaceAll('Exception: ', '')}',
+            ),
             backgroundColor: Colors.red,
             duration: const Duration(seconds: 4),
           ),

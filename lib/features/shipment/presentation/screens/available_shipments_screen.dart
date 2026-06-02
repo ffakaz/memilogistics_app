@@ -3,9 +3,10 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import '../../domain/entities/shipment.dart';
-import '../../domain/enums/shipment_status.dart';
+// note: shipment_status import removed — filtering now uses assignedCarrierId
 import '../providers/shipment_provider.dart';
 import 'shipment_details_screen.dart';
+import '../../../shipment_offer/presentation/widgets/shipment_offer_dialog.dart';
 
 class AvailableShipmentsScreen extends StatefulWidget {
   const AvailableShipmentsScreen({super.key});
@@ -70,9 +71,9 @@ class _AvailableShipmentsScreenState extends State<AvailableShipmentsScreen> {
             );
           }
 
-          // Filter only POSTED (pending) shipments
-          final availableShipments = provider.shipments
-              .where((s) => s.status == ShipmentStatus.pending)
+            // Show unassigned shipments (available for bidding)
+            final availableShipments = provider.shipments
+              .where((s) => s.assignedCarrierId == null)
               .toList();
 
           if (availableShipments.isEmpty) {
@@ -213,16 +214,15 @@ class _AvailableShipmentsScreenState extends State<AvailableShipmentsScreen> {
 
               const SizedBox(height: 16),
 
-              // Accept Button
+              // Offer Button
               SizedBox(
                 width: double.infinity,
                 child: ElevatedButton.icon(
-                  onPressed: () =>
-                      _showAcceptDialog(context, shipment, provider),
-                  icon: const Icon(Icons.check_circle),
-                  label: const Text('Accept Shipment'),
+                  onPressed: () => _showOfferDialog(context, shipment),
+                  icon: const Icon(Icons.local_offer),
+                  label: const Text('Make Offer'),
                   style: ElevatedButton.styleFrom(
-                    backgroundColor: Colors.green,
+                    backgroundColor: const Color(0xFF2C3E50),
                     foregroundColor: Colors.white,
                     padding: const EdgeInsets.symmetric(vertical: 12),
                   ),
@@ -235,55 +235,10 @@ class _AvailableShipmentsScreenState extends State<AvailableShipmentsScreen> {
     );
   }
 
-  void _showAcceptDialog(
-    BuildContext context,
-    Shipment shipment,
-    ShipmentProvider provider,
-  ) {
+  void _showOfferDialog(BuildContext context, Shipment shipment) {
     showDialog(
       context: context,
-      builder: (context) => AlertDialog(
-        title: const Text('Accept Shipment'),
-        content: Text(
-          'Do you want to accept this shipment from ${shipment.origin} to ${shipment.destination}?',
-        ),
-        actions: [
-          TextButton(
-            onPressed: () => Navigator.pop(context),
-            child: const Text('Cancel'),
-          ),
-          ElevatedButton(
-            onPressed: () async {
-              Navigator.pop(context);
-              try {
-                await provider.acceptShipment(shipment.id!);
-                if (context.mounted) {
-                  ScaffoldMessenger.of(context).showSnackBar(
-                    const SnackBar(
-                      content: Text('Shipment accepted successfully!'),
-                      backgroundColor: Colors.green,
-                    ),
-                  );
-                }
-              } catch (e) {
-                if (context.mounted) {
-                  ScaffoldMessenger.of(context).showSnackBar(
-                    SnackBar(
-                      content: Text('Failed to accept: ${e.toString()}'),
-                      backgroundColor: Colors.red,
-                    ),
-                  );
-                }
-              }
-            },
-            style: ElevatedButton.styleFrom(
-              backgroundColor: Colors.green,
-              foregroundColor: Colors.white,
-            ),
-            child: const Text('Accept'),
-          ),
-        ],
-      ),
+      builder: (context) => ShipmentOfferDialog(shipment: shipment),
     );
   }
 }

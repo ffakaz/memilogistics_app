@@ -34,8 +34,7 @@ class _CarrierProfileGateState extends State<CarrierProfileGate> {
         final state = provider.state;
 
         if (state.status == CarrierProfileStatus.initial ||
-            state.status == CarrierProfileStatus.loading ||
-            state.status == CarrierProfileStatus.loggedOut) {
+            state.status == CarrierProfileStatus.loading) {
           return const Scaffold(
             body: Center(child: CircularProgressIndicator()),
           );

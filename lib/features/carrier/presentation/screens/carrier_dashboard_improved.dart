@@ -11,6 +11,7 @@ import '../pages/edit_carrier_company_page.dart';
 import '../widgets/carrier_profile_avatar.dart';
 import '../../../../core/utils/constants/route_constants.dart';
 import '../../../shipment/domain/entities/shipment.dart';
+import '../../../shipment/domain/enums/shipment_status.dart';
 import '../../domain/entities/carrier_company.dart';
 
 class CarrierDashboardImproved extends StatefulWidget {
@@ -154,7 +155,8 @@ class _CarrierDashboardImprovedState extends State<CarrierDashboardImproved> {
           shipments = shipments.where((s) {
             final tn = (s.trackingNumber ?? '').toLowerCase();
             final pick = (s.pickupLocation?.address ?? s.origin).toLowerCase();
-            final dest = (s.destinationLocation?.address ?? s.destination).toLowerCase();
+            final dest = (s.destinationLocation?.address ?? s.destination)
+                .toLowerCase();
             return tn.contains(query) ||
                 pick.contains(query) ||
                 dest.contains(query);
@@ -251,22 +253,37 @@ class _CarrierDashboardImprovedState extends State<CarrierDashboardImproved> {
 
         return Column(
           children: [
+            _buildCarrierStats(provider),
             // Assigned shipments summary (if any)
             if (context.watch<ShipmentProvider>().assignedShipments.isNotEmpty)
               Padding(
-                padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+                padding: const EdgeInsets.symmetric(
+                  horizontal: 12,
+                  vertical: 8,
+                ),
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
-                    const Text('Assigned to you', style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold)),
+                    const Text(
+                      'Assigned to you',
+                      style: TextStyle(
+                        fontSize: 16,
+                        fontWeight: FontWeight.bold,
+                      ),
+                    ),
                     const SizedBox(height: 8),
                     SizedBox(
                       height: 100,
                       child: ListView.builder(
                         scrollDirection: Axis.horizontal,
-                        itemCount: context.watch<ShipmentProvider>().assignedShipments.length,
+                        itemCount: context
+                            .watch<ShipmentProvider>()
+                            .assignedShipments
+                            .length,
                         itemBuilder: (context, idx) {
-                          final s = context.read<ShipmentProvider>().assignedShipments[idx];
+                          final s = context
+                              .read<ShipmentProvider>()
+                              .assignedShipments[idx];
                           return Container(
                             width: 260,
                             margin: const EdgeInsets.only(right: 12),
@@ -276,11 +293,24 @@ class _CarrierDashboardImprovedState extends State<CarrierDashboardImproved> {
                                 child: Column(
                                   crossAxisAlignment: CrossAxisAlignment.start,
                                   children: [
-                                    Text(s.trackingNumber ?? 'N/A', style: const TextStyle(fontWeight: FontWeight.bold)),
+                                    Text(
+                                      s.trackingNumber ?? 'N/A',
+                                      style: const TextStyle(
+                                        fontWeight: FontWeight.bold,
+                                      ),
+                                    ),
                                     const SizedBox(height: 6),
-                                    Text('${s.origin} → ${s.destination}', maxLines: 1, overflow: TextOverflow.ellipsis),
+                                    Text(
+                                      '${s.origin} → ${s.destination}',
+                                      maxLines: 1,
+                                      overflow: TextOverflow.ellipsis,
+                                    ),
                                     const SizedBox(height: 6),
-                                    Text(s.pickupDate != null ? _formatDate(s.pickupDate!) : 'Pickup: —'),
+                                    Text(
+                                      s.pickupDate != null
+                                          ? _formatDate(s.pickupDate!)
+                                          : 'Pickup: —',
+                                    ),
                                   ],
                                 ),
                               ),
@@ -539,18 +569,16 @@ class _CarrierDashboardImprovedState extends State<CarrierDashboardImproved> {
                   Expanded(
                     child: _buildDetailChip(
                       Icons.calendar_today,
-                      shipment.pickupDate != null ? _formatDate(shipment.pickupDate!) : 'Not set',
+                      shipment.pickupDate != null
+                          ? _formatDate(shipment.pickupDate!)
+                          : 'N/A',
                     ),
                   ),
                   const SizedBox(width: 8),
                   Expanded(
                     child: _buildDetailChip(
-                      shipment.fragile
-                          ? Icons.warning
-                          : Icons.check_circle,
-                      shipment.fragile
-                          ? 'Fragile'
-                          : 'Standard',
+                      shipment.fragile ? Icons.warning : Icons.check_circle,
+                      shipment.fragile ? 'Fragile' : 'Standard',
                     ),
                   ),
                 ],
@@ -578,6 +606,98 @@ class _CarrierDashboardImprovedState extends State<CarrierDashboardImproved> {
             ],
           ),
         ),
+      ),
+    );
+  }
+
+  Widget _buildCarrierStats(ShipmentProvider provider) {
+    final assigned = provider.assignedShipments;
+    final active = assigned
+        .where(
+          (shipment) =>
+              shipment.status == ShipmentStatus.assigned ||
+              shipment.status == ShipmentStatus.pickedUp ||
+              shipment.status == ShipmentStatus.inTransit ||
+              shipment.status == ShipmentStatus.arrivedAtDestination ||
+              shipment.status == ShipmentStatus.paymentPending,
+        )
+        .length;
+    final delivered = assigned
+        .where((shipment) => shipment.status == ShipmentStatus.delivered)
+        .length;
+    final completed = assigned
+        .where((shipment) => shipment.status == ShipmentStatus.completed)
+        .length;
+
+    return Padding(
+      padding: const EdgeInsets.fromLTRB(12, 12, 12, 0),
+      child: Row(
+        children: [
+          Expanded(
+            child: _buildStatPill(
+              'Available Loads',
+              provider.shipments.length.toString(),
+              Icons.inventory_2_outlined,
+            ),
+          ),
+          const SizedBox(width: 8),
+          Expanded(
+            child: _buildStatPill(
+              'Active Loads',
+              active.toString(),
+              Icons.local_shipping_outlined,
+            ),
+          ),
+          const SizedBox(width: 8),
+          Expanded(
+            child: _buildStatPill(
+              'Delivered',
+              delivered.toString(),
+              Icons.check_circle_outline,
+            ),
+          ),
+          const SizedBox(width: 8),
+          Expanded(
+            child: _buildStatPill(
+              'Completed',
+              completed.toString(),
+              Icons.done_all_outlined,
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildStatPill(String label, String value, IconData icon) {
+    return Container(
+      padding: const EdgeInsets.all(10),
+      decoration: BoxDecoration(
+        color: const Color(0xFFF5F7FA),
+        borderRadius: BorderRadius.circular(10),
+        border: Border.all(color: Colors.grey.shade300),
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Icon(icon, size: 18, color: const Color(0xFF2C3E50)),
+          const SizedBox(height: 8),
+          Text(
+            value,
+            style: const TextStyle(
+              fontSize: 18,
+              fontWeight: FontWeight.w800,
+              color: Color(0xFF2C3E50),
+            ),
+          ),
+          const SizedBox(height: 2),
+          Text(
+            label,
+            maxLines: 2,
+            overflow: TextOverflow.ellipsis,
+            style: TextStyle(fontSize: 11, color: Colors.grey.shade700),
+          ),
+        ],
       ),
     );
   }
@@ -1058,8 +1178,9 @@ class _CarrierDashboardImprovedState extends State<CarrierDashboardImproved> {
 
                 try {
                   // Get carrier company provider to fetch carrier company ID
-                  final carrierProvider = context.read<CarrierCompanyProvider>();
-                  
+                  final carrierProvider = context
+                      .read<CarrierCompanyProvider>();
+
                   // Ensure carrier profile is loaded
                   if (carrierProvider.state.company == null) {
                     print('📋 Carrier profile not loaded, fetching...');
@@ -1084,7 +1205,9 @@ class _CarrierDashboardImprovedState extends State<CarrierDashboardImproved> {
                     return;
                   }
 
-                  print('📋 Submitting offer with Carrier Company ID: $carrierCompanyId');
+                  print(
+                    '📋 Submitting offer with Carrier Company ID: $carrierCompanyId',
+                  );
                   print('📋 Shipment ID: ${shipment.id}');
                   print('📋 Price: \$${price.toStringAsFixed(2)}');
 
@@ -1097,8 +1220,10 @@ class _CarrierDashboardImprovedState extends State<CarrierDashboardImproved> {
 
                   if (mounted) {
                     ScaffoldMessenger.of(context).showSnackBar(
-                      SnackBar(
-                        content: Text('Offer of \$${price.toStringAsFixed(2)} submitted successfully!'),
+                      const SnackBar(
+                        content: Text(
+                          'Your offer has been submitted successfully. Please wait for shipper review.',
+                        ),
                         backgroundColor: Colors.green,
                       ),
                     );
@@ -1110,7 +1235,9 @@ class _CarrierDashboardImprovedState extends State<CarrierDashboardImproved> {
                   if (mounted) {
                     ScaffoldMessenger.of(context).showSnackBar(
                       SnackBar(
-                        content: Text('Failed to submit offer: ${e.toString().replaceAll('Exception: ', '')}'),
+                        content: Text(
+                          'Failed to submit offer: ${e.toString().replaceAll('Exception: ', '')}',
+                        ),
                         backgroundColor: Colors.red,
                         duration: const Duration(seconds: 4),
                       ),
