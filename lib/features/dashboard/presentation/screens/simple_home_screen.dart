@@ -90,7 +90,8 @@ class _SimpleHomeScreenState extends State<SimpleHomeScreen> {
                   ? const Center(
                       child: Text('No loads available'),
                     )
-                  : ListView.builder(
+                    : ListView.builder(
+                      padding: EdgeInsets.only(bottom: kBottomNavigationBarHeight + 16),
                       itemCount: _loads.length,
                       itemBuilder: (context, index) {
                         final load = _loads[index];

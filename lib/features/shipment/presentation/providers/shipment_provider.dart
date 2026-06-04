@@ -1,3 +1,4 @@
+import 'dart:async';
 import 'package:flutter/material.dart';
 import '../../domain/entities/dashboard_information.dart';
 import '../../domain/entities/shipment.dart';
@@ -151,6 +152,10 @@ class ShipmentProvider extends ChangeNotifier {
       // Add to local list
       _shipments.add(createdShipment);
       notifyListeners();
+      // Trigger background refresh of related lists to synchronize UI across tabs
+      unawaited(getCarrierAssignedShipments());
+      unawaited(getMyShipments());
+      unawaited(getDashboardInformation());
     } catch (e) {
       _setError('Failed to create shipment: ${e.toString()}');
       rethrow;
@@ -341,6 +346,28 @@ class ShipmentProvider extends ChangeNotifier {
     }
   }
 
+  /// Add an optimistic (temporary) offer to the local offers cache without
+  /// making an API call. Used when another flow already submitted the offer
+  /// to the backend but we want the UI to reflect the new offer immediately.
+  void addOptimisticOffer({
+    required int shipmentId,
+    required double price,
+  }) {
+    final tempOffer = ShipmentOfferModel(
+      id: DateTime.now().millisecondsSinceEpoch * -1,
+      createdAt: DateTime.now().toUtc(),
+      price: price,
+      shipmentId: shipmentId,
+      shipmentTrackingNumber: _activeShipment?.trackingNumber ?? '',
+      carrierCompanyId: null,
+      carrierCompany: null,
+    );
+
+    _offersCache.putIfAbsent(shipmentId, () => []);
+    _offersCache[shipmentId] = [tempOffer, ..._offersCache[shipmentId]!];
+    notifyListeners();
+  }
+
   Future<void> assignCarrier({
     required int shipmentId,
     required int carrierId,
@@ -353,7 +380,9 @@ class ShipmentProvider extends ChangeNotifier {
   // Update shipment status (carrier action)
   Future<void> updateShipmentStatus(
     int shipmentId,
-    ShipmentStatus newStatus,
+    ShipmentStatus newStatus, {
+    String? location,
+  }
   ) async {
     _setLoading(true);
     _clearError();
@@ -362,11 +391,17 @@ class ShipmentProvider extends ChangeNotifier {
       final updatedShipment = await repository.updateShipmentStatus(
         shipmentId: shipmentId,
         status: newStatus,
-        location: _activeShipment?.destination ?? 'Unknown',
+        location: location ?? _activeShipment?.destination ?? 'Unknown',
       );
       final index = _shipments.indexWhere((s) => s.id == shipmentId);
       if (index != -1) {
         _shipments[index] = updatedShipment;
+      }
+      final assignedIndex = _assignedShipments.indexWhere(
+        (s) => s.id == shipmentId,
+      );
+      if (assignedIndex != -1) {
+        _assignedShipments[assignedIndex] = updatedShipment;
       }
       if (_activeShipment?.id == shipmentId) {
         _activeShipment = updatedShipment;

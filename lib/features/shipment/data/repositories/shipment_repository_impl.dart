@@ -37,7 +37,6 @@ class ShipmentRepositoryImpl implements ShipmentRepository {
     return ShipmentMapper.toEntity(model);
   }
 
-  @override
   Future<List<Shipment>> listShipments({int page = 0, int size = 20}) async {
     final accessToken = await tokenStorage.getAccessToken();
     if (accessToken == null || accessToken.isEmpty) {
@@ -45,22 +44,6 @@ class ShipmentRepositoryImpl implements ShipmentRepository {
     }
 
     final models = await apiService.listShipments(page: page, size: size);
-    return models.map((model) => ShipmentMapper.toEntity(model)).toList();
-  }
-
-  @override
-  Future<List<Shipment>> getMyShipmentsByStatus({
-    required ShipmentStatus status,
-    int page = 0,
-    int size = 20,
-  }) async {
-    await _requireAccessToken('view your shipments');
-
-    final models = await apiService.getMyShipmentsByStatus(
-      status: status.backendValue,
-      page: page,
-      size: size,
-    );
     return models.map((model) => ShipmentMapper.toEntity(model)).toList();
   }
 
@@ -121,6 +104,20 @@ class ShipmentRepositoryImpl implements ShipmentRepository {
   }
 
   @override
+  Future<List<Shipment>> getMyShipmentsByStatus({
+    required ShipmentStatus status,
+    int page = 0,
+    int size = 20,
+  }) async {
+    await _requireAccessToken('view shipments by status');
+    final models = await apiService.getMyShipmentsByStatus(
+      status: status.backendValue,
+      page: page,
+      size: size,
+    );
+    return models.map((m) => ShipmentMapper.toEntity(m)).toList();
+  }
+
   Future<Shipment> getShipment(int shipmentId) async {
     final accessToken = await tokenStorage.getAccessToken();
     if (accessToken == null || accessToken.isEmpty) {
@@ -131,7 +128,6 @@ class ShipmentRepositoryImpl implements ShipmentRepository {
     return ShipmentMapper.toEntity(model);
   }
 
-  @override
   Future<void> deleteShipment(int shipmentId) async {
     final accessToken = await tokenStorage.getAccessToken();
     if (accessToken == null || accessToken.isEmpty) {

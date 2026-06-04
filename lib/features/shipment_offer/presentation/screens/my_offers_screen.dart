@@ -142,7 +142,7 @@ class _MyOffersScreenState extends State<MyOffersScreen> {
                     vertical: 6,
                   ),
                   decoration: BoxDecoration(
-                    color: Colors.blue.withValues(alpha: 0.1),
+                    color: Colors.blue.shade50,
                     borderRadius: BorderRadius.circular(20),
                     border: Border.all(color: Colors.blue),
                   ),
@@ -163,12 +163,19 @@ class _MyOffersScreenState extends State<MyOffersScreen> {
             Container(
               padding: const EdgeInsets.all(12),
               decoration: BoxDecoration(
-                color: Colors.green.withValues(alpha: 0.1),
+                color: Colors.green.shade50,
                 borderRadius: BorderRadius.circular(8),
               ),
               child: Row(
                 children: [
-                  const Icon(Icons.attach_money, color: Colors.green),
+                  Container(
+                    padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
+                    decoration: BoxDecoration(
+                      color: Colors.green.shade700,
+                      borderRadius: BorderRadius.circular(4),
+                    ),
+                    child: const Text('ETB', style: TextStyle(color: Colors.white, fontWeight: FontWeight.bold)),
+                  ),
                   const SizedBox(width: 8),
                   Column(
                     crossAxisAlignment: CrossAxisAlignment.start,
@@ -182,7 +189,7 @@ class _MyOffersScreenState extends State<MyOffersScreen> {
                       ),
                       const SizedBox(height: 2),
                       Text(
-                        '\$${offer.price.toStringAsFixed(2)}',
+                        'ETB ${offer.price.toStringAsFixed(2)}',
                         style: const TextStyle(
                           fontSize: 20,
                           fontWeight: FontWeight.bold,
@@ -261,7 +268,7 @@ class _MyOffersScreenState extends State<MyOffersScreen> {
       builder: (context) => AlertDialog(
         title: const Text('Cancel Offer?'),
         content: Text(
-          'Are you sure you want to cancel your offer of \$${offer.price.toStringAsFixed(2)}?',
+          'Are you sure you want to cancel your offer of ETB ${offer.price.toStringAsFixed(2)}?',
         ),
         actions: [
           TextButton(

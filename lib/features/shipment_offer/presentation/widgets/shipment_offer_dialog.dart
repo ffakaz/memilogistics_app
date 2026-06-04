@@ -3,10 +3,12 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:provider/provider.dart';
+import 'package:intl/intl.dart';
 import '../../../shipment/domain/entities/shipment.dart';
 // shipment_status import removed — we check assignedCarrierId instead of status
 import '../../../carrier/presentation/providers/carrier_company_provider.dart';
 import '../providers/shipment_offer_provider.dart';
+import '../../../shipment/presentation/providers/shipment_provider.dart';
 
 /// Dialog for carriers to submit a shipment offer
 /// Simplified from ShipmentBidDialog - only requires price
@@ -88,31 +90,176 @@ class _ShipmentOfferDialogState extends State<ShipmentOfferDialog> {
                   child: Column(
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
-                      Text(
-                        'Shipment #${widget.shipment.id}',
-                        style: const TextStyle(
-                          fontWeight: FontWeight.bold,
-                          fontSize: 16,
+                      Row(
+                        children: [
+                          Expanded(
+                            child: Text(
+                              widget.shipment.trackingNumber ?? 'Shipment #${widget.shipment.id}',
+                              style: const TextStyle(
+                                fontWeight: FontWeight.bold,
+                                fontSize: 16,
+                              ),
+                            ),
+                          ),
+                          if (widget.shipment.fragile)
+                            Container(
+                              padding: const EdgeInsets.symmetric(
+                                horizontal: 8,
+                                vertical: 4,
+                              ),
+                              decoration: BoxDecoration(
+                                color: Colors.orange.shade100,
+                                borderRadius: BorderRadius.circular(6),
+                                border: Border.all(color: Colors.orange),
+                              ),
+                              child: Row(
+                                mainAxisSize: MainAxisSize.min,
+                                children: const [
+                                  Icon(
+                                    Icons.warning_amber_rounded,
+                                    size: 14,
+                                    color: Colors.orange,
+                                  ),
+                                  SizedBox(width: 4),
+                                  Text(
+                                    'Fragile',
+                                    style: TextStyle(
+                                      fontSize: 11,
+                                      fontWeight: FontWeight.bold,
+                                      color: Colors.orange,
+                                    ),
+                                  ),
+                                ],
+                              ),
+                            ),
+                        ],
+                      ),
+                      const Divider(height: 24),
+                      
+                      // Route Information
+                      Row(
+                        children: [
+                          Expanded(
+                            child: Column(
+                              crossAxisAlignment: CrossAxisAlignment.start,
+                              children: [
+                                Row(
+                                  children: [
+                                    Icon(Icons.trip_origin, size: 14, color: Colors.blue),
+                                    const SizedBox(width: 6),
+                                    Text(
+                                      'ORIGIN',
+                                      style: TextStyle(
+                                        fontSize: 10,
+                                        fontWeight: FontWeight.bold,
+                                        color: Colors.grey.shade600,
+                                      ),
+                                    ),
+                                  ],
+                                ),
+                                const SizedBox(height: 4),
+                                Text(
+                                  widget.shipment.origin,
+                                  style: const TextStyle(
+                                    fontSize: 14,
+                                    fontWeight: FontWeight.w600,
+                                  ),
+                                ),
+                              ],
+                            ),
+                          ),
+                          Icon(Icons.arrow_forward, size: 20, color: Colors.grey.shade400),
+                          const SizedBox(width: 8),
+                          Expanded(
+                            child: Column(
+                              crossAxisAlignment: CrossAxisAlignment.start,
+                              children: [
+                                Row(
+                                  children: [
+                                    Icon(Icons.location_on, size: 14, color: Colors.red),
+                                    const SizedBox(width: 6),
+                                    Text(
+                                      'DESTINATION',
+                                      style: TextStyle(
+                                        fontSize: 10,
+                                        fontWeight: FontWeight.bold,
+                                        color: Colors.grey.shade600,
+                                      ),
+                                    ),
+                                  ],
+                                ),
+                                const SizedBox(height: 4),
+                                Text(
+                                  widget.shipment.destination,
+                                  style: const TextStyle(
+                                    fontSize: 14,
+                                    fontWeight: FontWeight.w600,
+                                  ),
+                                ),
+                              ],
+                            ),
+                          ),
+                        ],
+                      ),
+                      
+                      const Divider(height: 24),
+                      
+                      // Shipment Details Grid
+                      Row(
+                        children: [
+                          Expanded(
+                            child: _buildDetailChip(
+                              Icons.scale,
+                              'Weight',
+                              '${widget.shipment.weightKg} kg',
+                            ),
+                          ),
+                          const SizedBox(width: 8),
+                          Expanded(
+                            child: _buildDetailChip(
+                              Icons.local_shipping,
+                              'Type',
+                              widget.shipment.shipmentType?.displayName ?? 'Standard',
+                            ),
+                          ),
+                        ],
+                      ),
+                      const SizedBox(height: 8),
+                      if (widget.shipment.pickupDate != null)
+                        _buildDetailChip(
+                          Icons.calendar_today,
+                          'Pickup Date',
+                          _formatDate(widget.shipment.pickupDate!),
                         ),
-                      ),
-                      const SizedBox(height: 12),
-                      _buildInfoRow(
-                        Icons.location_on,
-                        'From',
-                        widget.shipment.origin,
-                      ),
-                      const SizedBox(width: 8),
-                      _buildInfoRow(
-                        Icons.flag,
-                        'To',
-                        widget.shipment.destination,
-                      ),
-                      const SizedBox(width: 8),
-                      _buildInfoRow(
-                        Icons.scale,
-                        'Weight',
-                        '${widget.shipment.weightKg} kg',
-                      ),
+                      const SizedBox(height: 8),
+                      if (widget.shipment.estimatedDeliveryDate != null)
+                        _buildDetailChip(
+                          Icons.event_available,
+                          'Est. Delivery',
+                          _formatDate(widget.shipment.estimatedDeliveryDate!),
+                        ),
+                      
+                      // Additional Details
+                      if (widget.shipment.description != null && 
+                          widget.shipment.description!.isNotEmpty) ...[
+                        const Divider(height: 24),
+                        Text(
+                          'Description:',
+                          style: TextStyle(
+                            fontSize: 12,
+                            fontWeight: FontWeight.bold,
+                            color: Colors.grey.shade700,
+                          ),
+                        ),
+                        const SizedBox(height: 4),
+                        Text(
+                          widget.shipment.description!,
+                          style: TextStyle(
+                            fontSize: 12,
+                            color: Colors.grey.shade600,
+                          ),
+                        ),
+                      ],
                     ],
                   ),
                 ),
@@ -135,8 +282,11 @@ class _ShipmentOfferDialogState extends State<ShipmentOfferDialog> {
                     ),
                   ],
                   decoration: InputDecoration(
-                    prefixIcon: const Icon(Icons.attach_money),
-                    hintText: 'Enter your offer price',
+                    prefixIcon: Container(
+                      padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
+                      child: const Text('ETB', style: TextStyle(color: Colors.green, fontWeight: FontWeight.bold)),
+                    ),
+                    hintText: 'Enter your offer price (ETB)',
                     border: OutlineInputBorder(
                       borderRadius: BorderRadius.circular(10),
                     ),
@@ -215,23 +365,47 @@ class _ShipmentOfferDialogState extends State<ShipmentOfferDialog> {
     );
   }
 
-  Widget _buildInfoRow(IconData icon, String label, String value) {
-    return Row(
-      children: [
-        Icon(icon, size: 16, color: Colors.grey.shade600),
-        const SizedBox(width: 8),
-        Text(
-          '$label: ',
-          style: TextStyle(fontSize: 13, color: Colors.grey.shade600),
-        ),
-        Expanded(
-          child: Text(
-            value,
-            style: const TextStyle(fontSize: 13, fontWeight: FontWeight.w500),
+  Widget _buildDetailChip(IconData icon, String label, String value) {
+    return Container(
+      padding: const EdgeInsets.all(10),
+      decoration: BoxDecoration(
+        color: Colors.white,
+        borderRadius: BorderRadius.circular(8),
+        border: Border.all(color: Colors.grey.shade300),
+      ),
+      child: Row(
+        children: [
+          Icon(icon, size: 16, color: Colors.grey.shade700),
+          const SizedBox(width: 8),
+          Expanded(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(
+                  label,
+                  style: TextStyle(
+                    fontSize: 10,
+                    color: Colors.grey.shade600,
+                  ),
+                ),
+                const SizedBox(height: 2),
+                Text(
+                  value,
+                  style: const TextStyle(
+                    fontSize: 13,
+                    fontWeight: FontWeight.w600,
+                  ),
+                ),
+              ],
+            ),
           ),
-        ),
-      ],
+        ],
+      ),
     );
+  }
+
+  String _formatDate(DateTime date) {
+    return DateFormat('MMM dd, yyyy').format(date);
   }
 
   Future<void> _submitOffer() async {
@@ -292,7 +466,7 @@ class _ShipmentOfferDialogState extends State<ShipmentOfferDialog> {
       print('📋 Submitting offer with Carrier Company ID: $carrierCompanyId');
       print('📋 Shipment ID: ${widget.shipment.id}');
       print('📋 Shipment Status: ${widget.shipment.status.displayName}');
-      print('📋 Price: \$${price.toStringAsFixed(2)}');
+      print('📋 Price: ETB ${price.toStringAsFixed(2)}');
 
       // Call API to submit offer with carrier company ID
       await context.read<ShipmentOfferProvider>().createOffer(
@@ -300,6 +474,19 @@ class _ShipmentOfferDialogState extends State<ShipmentOfferDialog> {
         carrierCompanyId,
         price,
       );
+
+      // Update local shipment offers cache optimistically so the shipper
+      // review screen (which reads from ShipmentProvider.offersCache) sees
+      // the newly created offer immediately without an extra refresh.
+      try {
+        context.read<ShipmentProvider>().addOptimisticOffer(
+          shipmentId: widget.shipment.id!,
+          price: price,
+        );
+      } catch (_) {
+        // Non-fatal: if ShipmentProvider isn't available in this context
+        // just ignore and rely on the backend refresh path.
+      }
 
       if (mounted) {
         Navigator.pop(context);

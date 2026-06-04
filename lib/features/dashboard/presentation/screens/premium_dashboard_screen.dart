@@ -137,9 +137,13 @@ class _PremiumDashboardScreenState extends State<PremiumDashboardScreen> {
 
             // Dashboard Content
             SliverToBoxAdapter(
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
+              child: Padding(
+                padding: EdgeInsets.only(
+                  bottom: MediaQuery.of(context).padding.bottom + kBottomNavigationBarHeight + AppTheme.spacing24,
+                ),
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
                   const SizedBox(height: AppTheme.spacing24),
 
                   // Statistics Grid
@@ -197,6 +201,7 @@ class _PremiumDashboardScreenState extends State<PremiumDashboardScreen> {
                 ],
               ),
             ),
+          ),
           ],
         ),
       ),

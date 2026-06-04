@@ -9,6 +9,9 @@ import '../../../payment/presentation/states/payment_state.dart';
 import '../../domain/entities/shipment.dart';
 import '../../domain/enums/shipment_status.dart';
 import '../providers/shipment_provider.dart';
+import '../widgets/interactive_shipment_timeline.dart';
+import 'package:memilogistics_app/features/carrier/presentation/providers/carrier_company_provider.dart';
+import 'in_transit_screen.dart';
 
 class ShipmentDetailsScreen extends StatefulWidget {
   final int shipmentId;
@@ -84,7 +87,15 @@ class _ShipmentDetailsScreenState extends State<ShipmentDetailsScreen>
                   pinned: true,
                   backgroundColor: const Color(0xFF2C3E50),
                   flexibleSpace: FlexibleSpaceBar(
-                    title: Text(shipment.trackingNumber ?? 'Shipment'),
+                    title: Text(
+                      shipment.trackingNumber ?? 'Shipment',
+                      maxLines: 1,
+                      overflow: TextOverflow.ellipsis,
+                      style: const TextStyle(
+                        color: Colors.white,
+                        fontWeight: FontWeight.w700,
+                      ),
+                    ),
                   ),
                 ),
                 SliverToBoxAdapter(
@@ -137,6 +148,18 @@ class _ShipmentDetailsScreenState extends State<ShipmentDetailsScreen>
                         ],
                         const SizedBox(height: 8),
                         Text('Status: ${_getStatusLabel(shipment.status)}'),
+                        const SizedBox(height: 16),
+                        // Interactive Timeline - allows assigned carrier to progress shipment
+                        InteractiveShipmentTimeline(
+                          shipment: shipment,
+                          onStatusUpdated: () {
+                            // Refresh shipment data after status update
+                            context.read<ShipmentProvider>().loadShipmentDetail(widget.shipmentId);
+                            setState(() {
+                              _eventsFuture = context.read<ShipmentProvider>().getShipmentEvents(widget.shipmentId);
+                            });
+                          },
+                        ),
                         const SizedBox(height: 18),
                         const Text(
                           'Shipment Timeline',
@@ -215,6 +238,79 @@ class _ShipmentDetailsScreenState extends State<ShipmentDetailsScreen>
                           },
                         ),
                         const SizedBox(height: 16),
+                        // Carrier action buttons (Pick Up / Start Transit / Update Location / Mark Delivered)
+                        Builder(
+                          builder: (context) {
+                            final role = context.watch<AuthProvider>().userRole?.toUpperCase();
+                            final carrierCompanyId = context.read<CarrierCompanyProvider>().state.company?.id;
+                            final isAssignedCarrier = shipment.assignedCarrierId != null && carrierCompanyId != null && shipment.assignedCarrierId == carrierCompanyId;
+
+                            if (role == 'CARRIER' && isAssignedCarrier) {
+                              if (shipment.status == ShipmentStatus.assigned) {
+                                return SizedBox(
+                                  width: double.infinity,
+                                  child: ElevatedButton(
+                                    onPressed: () async {
+                                      await context.read<ShipmentProvider>().updateShipmentStatus(shipment.id!, ShipmentStatus.pickedUp);
+                                      setState(() { _eventsFuture = context.read<ShipmentProvider>().getShipmentEvents(widget.shipmentId); });
+                                    },
+                                    style: ElevatedButton.styleFrom(backgroundColor: Colors.purple.shade700),
+                                    child: const Text('Pick Up Shipment'),
+                                  ),
+                                );
+                              }
+
+                              if (shipment.status == ShipmentStatus.pickedUp) {
+                                return SizedBox(
+                                  width: double.infinity,
+                                  child: ElevatedButton(
+                                    onPressed: () async {
+                                      await context.read<ShipmentProvider>().updateShipmentStatus(shipment.id!, ShipmentStatus.inTransit);
+                                      setState(() { _eventsFuture = context.read<ShipmentProvider>().getShipmentEvents(widget.shipmentId); });
+                                    },
+                                    style: ElevatedButton.styleFrom(backgroundColor: Colors.indigo.shade700),
+                                    child: const Text('Start Transit'),
+                                  ),
+                                );
+                              }
+
+                              if (shipment.status == ShipmentStatus.inTransit) {
+                                return Column(
+                                  crossAxisAlignment: CrossAxisAlignment.stretch,
+                                  children: [
+                                    SizedBox(
+                                      width: double.infinity,
+                                      child: ElevatedButton(
+                                        onPressed: () {
+                                          Navigator.push(
+                                            context,
+                                            MaterialPageRoute(builder: (_) => InTransitScreen(shipment: shipment)),
+                                          );
+                                        },
+                                        style: ElevatedButton.styleFrom(backgroundColor: Colors.indigo.shade700),
+                                        child: const Text('Open Tracking / Update Location'),
+                                      ),
+                                    ),
+                                    const SizedBox(height: 8),
+                                    SizedBox(
+                                      width: double.infinity,
+                                      child: ElevatedButton(
+                                        onPressed: () async {
+                                          await context.read<ShipmentProvider>().updateShipmentStatus(shipment.id!, ShipmentStatus.delivered);
+                                          setState(() { _eventsFuture = context.read<ShipmentProvider>().getShipmentEvents(widget.shipmentId); });
+                                        },
+                                        style: ElevatedButton.styleFrom(backgroundColor: Colors.green.shade700),
+                                        child: const Text('Mark Delivered'),
+                                      ),
+                                    ),
+                                  ],
+                                );
+                              }
+                            }
+
+                            return const SizedBox.shrink();
+                          },
+                        ),
                         // Payment summary (if available)
                         Consumer<PaymentProvider>(
                           builder: (context, paymentProv, _) {
@@ -302,8 +398,9 @@ class _ShipmentDetailsScreenState extends State<ShipmentDetailsScreen>
                             }
 
                             // Carrier can confirm payment after the shipper initiates it.
-                            if (role == 'CARRIER' &&
-                                s.status == ShipmentStatus.paymentPending) {
+                            final carrierCompanyId = context.read<CarrierCompanyProvider>().state.company?.id;
+                            final isAssignedCarrierForPayment = role == 'CARRIER' && carrierCompanyId != null && s.assignedCarrierId == carrierCompanyId;
+                            if (isAssignedCarrierForPayment && s.status == ShipmentStatus.paymentPending) {
                               return SizedBox(
                                 width: double.infinity,
                                 child: ElevatedButton(
@@ -381,16 +478,16 @@ class _ShipmentDetailsScreenState extends State<ShipmentDetailsScreen>
           );
         },
       ),
-      floatingActionButton: Consumer2<ShipmentProvider, AuthProvider>(
+          floatingActionButton: Consumer2<ShipmentProvider, AuthProvider>(
         builder: (context, provider, authProvider, _) {
           final activeShipment = provider.activeShipment;
           final shipment = activeShipment?.id == widget.shipmentId
               ? activeShipment
               : provider.getShipmentById(widget.shipmentId);
           final role = authProvider.userRole?.toUpperCase();
-          if (role == 'CARRIER' &&
-              shipment != null &&
-              _canUpdateStatus(shipment)) {
+          final carrierCompanyId = context.read<CarrierCompanyProvider>().state.company?.id;
+          final isAssignedCarrier = shipment != null && shipment.assignedCarrierId != null && carrierCompanyId != null && shipment.assignedCarrierId == carrierCompanyId;
+          if (role == 'CARRIER' && shipment != null && _canUpdateStatus(shipment) && isAssignedCarrier) {
             return FloatingActionButton.extended(
               onPressed: () => _showUpdateStatusDialog(shipment),
               backgroundColor: const Color(0xFF2C3E50),
@@ -534,8 +631,6 @@ class _ShipmentDetailsScreenState extends State<ShipmentDetailsScreen>
       case ShipmentStatus.pickedUp:
         return [ShipmentStatus.inTransit];
       case ShipmentStatus.inTransit:
-        return [ShipmentStatus.arrivedAtDestination];
-      case ShipmentStatus.arrivedAtDestination:
         return [ShipmentStatus.delivered];
       default:
         return [];
@@ -547,9 +642,25 @@ class _ShipmentDetailsScreenState extends State<ShipmentDetailsScreen>
     ShipmentStatus newStatus,
   ) async {
     try {
+      String location = '';
+      switch (newStatus) {
+        case ShipmentStatus.pickedUp:
+          location = shipment.pickupLocation?.address ?? shipment.origin;
+          break;
+        case ShipmentStatus.inTransit:
+          location = 'On route'; // TODO: replace with GPS-derived location
+          break;
+        case ShipmentStatus.delivered:
+          location = shipment.destinationLocation?.address ?? shipment.destination;
+          break;
+        default:
+          location = shipment.destinationLocation?.address ?? shipment.destination;
+      }
+
       await context.read<ShipmentProvider>().updateShipmentStatus(
         shipment.id!,
         newStatus,
+        location: location,
       );
       // Refresh timeline after successful status update
       setState(() {

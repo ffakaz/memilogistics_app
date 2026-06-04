@@ -62,7 +62,7 @@ class _ShipmentOffersScreenState extends State<ShipmentOffersScreen> {
     final confirmed = await _confirmOfferAction(
       title: 'Accept Offer?',
       message:
-          'Assign this shipment to ${_carrierName(offer)} for \$${offer.price.toStringAsFixed(2)}?',
+          'Assign this shipment to ${_carrierName(offer)} for ETB ${offer.price.toStringAsFixed(2)}?',
       confirmLabel: 'Accept',
     );
     if (!confirmed || !mounted) return;
@@ -102,7 +102,7 @@ class _ShipmentOffersScreenState extends State<ShipmentOffersScreen> {
     final confirmed = await _confirmOfferAction(
       title: 'Reject Offer?',
       message:
-          'Reject the \$${offer.price.toStringAsFixed(2)} offer from ${_carrierName(offer)}?',
+          'Reject the ETB ${offer.price.toStringAsFixed(2)} offer from ${_carrierName(offer)}?',
       confirmLabel: 'Reject',
       destructive: true,
     );
@@ -298,7 +298,7 @@ class _ShipmentOffersScreenState extends State<ShipmentOffersScreen> {
             ),
             const SizedBox(height: 12),
             Text(
-              '\$${offer.price.toStringAsFixed(2)}',
+              'ETB ${offer.price.toStringAsFixed(2)}',
               style: const TextStyle(
                 fontSize: 20,
                 fontWeight: FontWeight.bold,

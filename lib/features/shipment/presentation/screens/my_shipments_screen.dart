@@ -22,7 +22,7 @@ class _MyShipmentsScreenState extends State<MyShipmentsScreen>
   @override
   void initState() {
     super.initState();
-    _tabController = TabController(length: 4, vsync: this);
+    _tabController = TabController(length: 8, vsync: this);
     _scrollController.addListener(_onScroll);
 
     WidgetsBinding.instance.addPostFrameCallback((_) {
@@ -61,16 +61,21 @@ class _MyShipmentsScreenState extends State<MyShipmentsScreen>
         return shipments;
       case 1: // Pending
         return shipments.where((s) => s.status == ShipmentStatus.pending).toList();
-      case 2: // In Transit
+      case 2: // Assigned
+        return shipments.where((s) => s.status == ShipmentStatus.assigned).toList();
+      case 3: // In Transit
         return shipments.where((s) => 
           s.status == ShipmentStatus.inTransit || 
           s.status == ShipmentStatus.pickedUp
         ).toList();
-      case 3: // Completed
-        return shipments.where((s) => 
-          s.status == ShipmentStatus.completed || 
-          s.status == ShipmentStatus.delivered
-        ).toList();
+      case 4: // Arrived
+        return shipments.where((s) => s.status == ShipmentStatus.arrivedAtDestination).toList();
+      case 5: // Delivered
+        return shipments.where((s) => s.status == ShipmentStatus.delivered).toList();
+      case 6: // Payment Pending
+        return shipments.where((s) => s.status == ShipmentStatus.paymentPending).toList();
+      case 7: // Completed
+        return shipments.where((s) => s.status == ShipmentStatus.completed).toList();
       default:
         return shipments;
     }
@@ -83,10 +88,15 @@ class _MyShipmentsScreenState extends State<MyShipmentsScreen>
         title: const Text('My Shipments'),
         bottom: TabBar(
           controller: _tabController,
+          isScrollable: true,
           tabs: const [
             Tab(text: 'All'),
             Tab(text: 'Pending'),
+            Tab(text: 'Assigned'),
             Tab(text: 'In Transit'),
+            Tab(text: 'Arrived'),
+            Tab(text: 'Delivered'),
+            Tab(text: 'Payment'),
             Tab(text: 'Completed'),
           ],
         ),
@@ -96,8 +106,12 @@ class _MyShipmentsScreenState extends State<MyShipmentsScreen>
         children: [
           _buildShipmentList(0), // All
           _buildShipmentList(1), // Pending
-          _buildShipmentList(2), // In Transit
-          _buildShipmentList(3), // Completed
+          _buildShipmentList(2), // Assigned
+          _buildShipmentList(3), // In Transit
+          _buildShipmentList(4), // Arrived
+          _buildShipmentList(5), // Delivered
+          _buildShipmentList(6), // Payment Pending
+          _buildShipmentList(7), // Completed
         ],
       ),
     );
@@ -227,10 +241,18 @@ class _MyShipmentsScreenState extends State<MyShipmentsScreen>
       case 0:
         return 'No shipments yet.\nCreate your first shipment to get started!';
       case 1:
-        return 'No pending shipments.\nAll shipments have been assigned or completed.';
+        return 'No pending shipments.\nAll shipments have been assigned.';
       case 2:
-        return 'No shipments in transit.\nShipments will appear here once picked up.';
+        return 'No assigned shipments.\nShipments appear here after carrier assignment.';
       case 3:
+        return 'No shipments in transit.\nShipments appear here once picked up.';
+      case 4:
+        return 'No arrived shipments.\nShipments appear here upon arrival at destination.';
+      case 5:
+        return 'No delivered shipments.\nShipments appear here after delivery.';
+      case 6:
+        return 'No payments pending.\nShipments appear here after payment initiation.';
+      case 7:
         return 'No completed shipments.\nCompleted shipments will appear here.';
       default:
         return 'No shipments found.';

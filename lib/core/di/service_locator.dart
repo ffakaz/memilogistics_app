@@ -29,7 +29,7 @@ import 'package:memilogistics_app/features/carrier/domain/usecases/get_carrier_c
 import 'package:memilogistics_app/features/carrier/domain/usecases/update_carrier_company.dart';
 import 'package:memilogistics_app/features/carrier/presentation/pages/carrier_company_page.dart';
 import 'package:memilogistics_app/features/carrier/presentation/providers/carrier_company_provider.dart';
-import 'package:memilogistics_app/features/carrier/presentation/screens/carrier_dashboard_improved.dart';
+import 'package:memilogistics_app/features/carrier/presentation/screens/carrier_dashboard_refactored.dart';
 import 'package:memilogistics_app/features/carrier/presentation/widgets/carrier_profile_gate.dart';
 
 import 'package:memilogistics_app/features/shipper/data/datasources/shipper_company_remote_datasource_impl.dart';
@@ -122,7 +122,7 @@ Future<void> setupLocator() async {
     RouteConstants.dashboard: (_) =>
         const ShipperProfileGate(child: ShipmentDashboardScreen()),
     RouteConstants.carrierDashboard: (_) =>
-        const CarrierProfileGate(child: CarrierDashboardImproved()),
+      const CarrierProfileGate(child: CarrierDashboardRefactored()),
     RouteConstants.carrierProfile: (_) => const CarrierCompanyPage(),
     RouteConstants.createShipment: (_) =>
         const ShipperProfileGate(child: CreateShipmentScreen()),
