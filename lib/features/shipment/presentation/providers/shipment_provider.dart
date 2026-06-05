@@ -193,9 +193,35 @@ class ShipmentProvider extends ChangeNotifier {
         print('   ${status.displayName}: $count');
       });
 
+      // CRITICAL: Deduplicate shipments by ID to prevent duplicate offers
+      // Backend might return duplicates due to database joins or pagination issues
+      final uniqueShipmentsMap = <int, Shipment>{};
+      final shipmentsWithoutId = <Shipment>[];
+      
+      for (final shipment in allShipments) {
+        if (shipment.id != null) {
+          // Only keep the first occurrence of each shipment ID
+          if (!uniqueShipmentsMap.containsKey(shipment.id!)) {
+            uniqueShipmentsMap[shipment.id!] = shipment;
+          } else {
+            print('⚠️ Duplicate shipment detected and removed: ID=${shipment.id}');
+          }
+        } else {
+          // Shipments without IDs (should not happen, but handle gracefully)
+          shipmentsWithoutId.add(shipment);
+        }
+      }
+
+      final deduplicatedShipments = [
+        ...uniqueShipmentsMap.values,
+        ...shipmentsWithoutId,
+      ];
+
+      print('📦 After deduplication: ${deduplicatedShipments.length} unique shipments');
+
       // Filter to only show unassigned shipments (available for bidding)
       // Business rule: show shipments where assignedCarrierId == null
-      final unassignedShipments = allShipments
+      final unassignedShipments = deduplicatedShipments
           .where((s) => s.assignedCarrierId == null)
           .toList();
 
@@ -639,6 +665,7 @@ class ShipmentProvider extends ChangeNotifier {
   }
 
   /// Accept a carrier offer from the shipper offer review screen.
+  /// CRITICAL BUSINESS RULE: Only one carrier can be assigned per shipment.
   Future<void> acceptShipmentOffer({
     required int shipmentId,
     required int shipmentOfferId,
@@ -654,17 +681,50 @@ class ShipmentProvider extends ChangeNotifier {
     notifyListeners();
 
     try {
+      // CRITICAL: Verify shipment is still unassigned before attempting assignment
+      // This prevents race condition where multiple carriers could be assigned
+      print('🔒 Pre-assignment check: verifying shipment $shipmentId is still unassigned');
+      final currentShipment = await repository.getShipment(shipmentId);
+      
+      if (currentShipment.assignedCarrierId != null) {
+        print('⚠️ Assignment blocked: shipment $shipmentId already has assignedCarrierId=${currentShipment.assignedCarrierId}');
+        throw Exception(
+          'This shipment has already been assigned to another carrier. '
+          'Only one carrier can be assigned per shipment.',
+        );
+      }
+      
+      if (currentShipment.status == ShipmentStatus.assigned) {
+        print('⚠️ Assignment blocked: shipment $shipmentId status is already ASSIGNED');
+        throw Exception(
+          'This shipment status is already ASSIGNED. '
+          'Cannot accept additional offers.',
+        );
+      }
+
+      print('✅ Pre-assignment check passed: shipment is unassigned, proceeding with assignment');
+
+      // Proceed with assignment
       await repository.assignCarrier(
         shipmentId: shipmentId,
         carrierId: carrierId,
       );
 
+      // Refresh shipment to get updated state from backend
       final refreshedShipment = await repository.getShipment(shipmentId);
       _upsertShipment(refreshedShipment);
       _activeShipment = refreshedShipment;
+      
+      // Clear offers cache - backend should auto-reject other offers
       _offersCache.remove(shipmentId);
+      
+      print('✅ Assignment completed: shipment $shipmentId assigned to carrier $carrierId');
+      print('   Shipment assignedCarrierId: ${refreshedShipment.assignedCarrierId}');
+      print('   Shipment status: ${refreshedShipment.status.displayName}');
+      
       notifyListeners();
     } catch (e) {
+      print('❌ Assignment failed for shipment $shipmentId: $e');
       _setError('Failed to accept offer: ${e.toString()}');
       rethrow;
     } finally {

@@ -64,17 +64,20 @@ class _ShipmentDashboardScreenState extends State<ShipmentDashboardScreen> {
               children: [
                 _WelcomePanel(profile: profile),
                 const SizedBox(height: 18),
-                _SectionTitle(
-                  title: 'Shipment Overview',
-                  actionLabel: shipmentProvider.isDashboardLoading
-                      ? 'Loading'
-                      : null,
-                ),
-                const SizedBox(height: 12),
-                _DashboardStatsGrid(
-                  info: shipmentProvider.dashboardInformation,
-                ),
-                const SizedBox(height: 20),
+                if (shipmentProvider.isDashboardLoading ||
+                    !shipmentProvider.dashboardInformation.isEmpty) ...[
+                  _SectionTitle(
+                    title: 'Shipment Overview',
+                    actionLabel: shipmentProvider.isDashboardLoading
+                        ? 'Loading'
+                        : null,
+                  ),
+                  const SizedBox(height: 12),
+                  _DashboardStatsGrid(
+                    info: shipmentProvider.dashboardInformation,
+                  ),
+                  const SizedBox(height: 20),
+                ],
                 _SectionTitle(title: 'Quick Actions'),
                 const SizedBox(height: 12),
                 _QuickActions(

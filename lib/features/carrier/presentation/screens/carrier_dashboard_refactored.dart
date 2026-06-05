@@ -208,7 +208,10 @@ class _CarrierDashboardRefactoredState
         
         return Column(
           children: [
-            _buildStatisticsCards(shipmentProvider),
+            if (shipmentProvider.isDashboardLoading ||
+                shipmentProvider.shipments.isNotEmpty ||
+                shipmentProvider.assignedShipments.isNotEmpty)
+              _buildStatisticsCards(shipmentProvider),
             _buildAssignedToYouSection(shipmentProvider),
             _buildSearchAndFilter(),
             Expanded(

@@ -367,26 +367,32 @@ class _ShipmentDetailsScreenState extends State<ShipmentDetailsScreen>
                                                 ),
                                               );
                                           if (res == true) {
+                                            // CRITICAL: Refresh shipment data from backend after payment initiation
+                                            // Backend updates shipment status to PAYMENT_PENDING
+                                            print('💳 Payment initiated successfully, refreshing shipment data...');
+                                            
                                             // Show standardized success message
-                                            if (mounted)
-                                              ScaffoldMessenger.of(
-                                                context,
-                                              ).showSnackBar(
+                                            if (mounted) {
+                                              ScaffoldMessenger.of(context).showSnackBar(
                                                 const SnackBar(
                                                   content: Text(
                                                     'Payment initiated successfully. Waiting for carrier confirmation.',
                                                   ),
                                                   backgroundColor: Colors.green,
+                                                  duration: Duration(seconds: 4),
                                                 ),
                                               );
-                                            await shipmentProv
-                                                .loadShipmentDetail(s.id!);
+                                            }
+                                            
+                                            // Reload shipment detail to get updated status
+                                            await shipmentProv.loadShipmentDetail(s.id!);
+                                            
+                                            // Refresh events timeline
                                             setState(() {
-                                              _eventsFuture = shipmentProv
-                                                  .getShipmentEvents(
-                                                    widget.shipmentId,
-                                                  );
+                                              _eventsFuture = shipmentProv.getShipmentEvents(widget.shipmentId);
                                             });
+                                            
+                                            print('✅ Shipment data refreshed after payment initiation');
                                           }
                                         },
                                   style: ElevatedButton.styleFrom(
@@ -408,42 +414,48 @@ class _ShipmentDetailsScreenState extends State<ShipmentDetailsScreen>
                                       ? null
                                       : () async {
                                           try {
-                                            final success = await paymentProv
-                                                .confirmPayment(
-                                                  shipmentId: s.id!,
-                                                  transactionId: '',
-                                                );
+                                            print('💰 Confirming payment for shipment ${s.id}...');
+                                            
+                                            final success = await paymentProv.confirmPayment(
+                                              shipmentId: s.id!,
+                                              transactionId: '',
+                                            );
+                                            
                                             if (success) {
-                                              await shipmentProv
-                                                  .loadShipmentDetail(s.id!);
+                                              print('✅ Payment confirmed, refreshing shipment data...');
+                                              
+                                              // Reload shipment to get updated status (should be COMPLETED)
+                                              await shipmentProv.loadShipmentDetail(s.id!);
+                                              
+                                              // Refresh events timeline
                                               setState(() {
-                                                _eventsFuture = shipmentProv
-                                                    .getShipmentEvents(
-                                                      widget.shipmentId,
-                                                    );
+                                                _eventsFuture = shipmentProv.getShipmentEvents(widget.shipmentId);
                                               });
-                                              if (mounted)
-                                                ScaffoldMessenger.of(
-                                                  context,
-                                                ).showSnackBar(
+                                              
+                                              if (mounted) {
+                                                ScaffoldMessenger.of(context).showSnackBar(
                                                   const SnackBar(
                                                     content: Text(
                                                       'Payment confirmed successfully. Shipment completed.',
                                                     ),
+                                                    backgroundColor: Colors.green,
+                                                    duration: Duration(seconds: 4),
                                                   ),
                                                 );
+                                              }
+                                              
+                                              print('✅ Shipment data refreshed after payment confirmation');
                                             }
                                           } catch (e) {
-                                            if (mounted)
-                                              ScaffoldMessenger.of(
-                                                context,
-                                              ).showSnackBar(
+                                            print('❌ Error confirming payment: $e');
+                                            if (mounted) {
+                                              ScaffoldMessenger.of(context).showSnackBar(
                                                 SnackBar(
-                                                  content: Text(
-                                                    'Failed to confirm payment: $e',
-                                                  ),
+                                                  content: Text('Failed to confirm payment: $e'),
+                                                  backgroundColor: Colors.red,
                                                 ),
                                               );
+                                            }
                                           }
                                         },
                                   style: ElevatedButton.styleFrom(

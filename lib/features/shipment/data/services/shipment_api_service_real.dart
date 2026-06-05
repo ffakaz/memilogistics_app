@@ -254,9 +254,26 @@ class ShipmentApiServiceReal {
 
   Future<void> cancelShipmentOffer(int shipmentOfferId) async {
     // OpenAPI: POST /api/shipments/{shipmentOfferId}/cancel-shipment-offer
+    // Log the endpoint and parameters for debugging 400 errors
+    print('🔵 [API] cancelShipmentOffer called');
+    print('   shipmentOfferId: $shipmentOfferId');
+    print('   Endpoint template: ${ApiRoutes.cancelOffer}');
+    
     final url = RequestBuilder.buildFullUrl(ApiRoutes.cancelOffer, {'shipmentOfferId': shipmentOfferId});
-    final response = await _apiClient.post<dynamic>(url);
-    _ensureSuccess(response);
+    print('   Built URL: $url');
+    
+    try {
+      final response = await _apiClient.post<dynamic>(url);
+      print('   Response status: ${response.statusCode}');
+      print('   Response data: ${response.data}');
+      _ensureSuccess(response);
+      print('   ✅ cancelShipmentOffer succeeded for shipmentOfferId=$shipmentOfferId');
+    } catch (e) {
+      print('   ❌ cancelShipmentOffer failed for shipmentOfferId=$shipmentOfferId');
+      print('   Error: $e');
+      print('   Error type: ${e.runtimeType}');
+      rethrow;
+    }
   }
 
   Future<void> assignCarrier({required int shipmentId, required int carrierId}) async {

@@ -33,6 +33,18 @@ class DashboardInformation {
       fragileShipments +
       nonFragileShipments;
 
+    bool get isEmpty =>
+      pendingShipments == 0 &&
+      assignedShipments == 0 &&
+      deliveredShipments == 0 &&
+      completedShipments == 0 &&
+      inTransitShipments == 0 &&
+      paymentPendingShipments == 0 &&
+      availableLoads == 0 &&
+      activeLoads == 0 &&
+      fragileShipments == 0 &&
+      nonFragileShipments == 0;
+
   static const empty = DashboardInformation(
     pendingShipments: 0,
     assignedShipments: 0,

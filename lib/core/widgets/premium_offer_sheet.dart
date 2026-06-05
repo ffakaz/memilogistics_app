@@ -104,7 +104,7 @@ class _PremiumOfferSheetState extends State<PremiumOfferSheet> {
       ),
       child: Padding(
         padding: EdgeInsets.only(
-          bottom: MediaQuery.of(context).viewInsets.bottom,
+          bottom: MediaQuery.of(context).viewInsets.bottom + MediaQuery.of(context).padding.bottom + 12,
         ),
         child: SingleChildScrollView(
           child: Column(
@@ -297,33 +297,41 @@ class _PremiumOfferSheetState extends State<PremiumOfferSheet> {
 
                     const SizedBox(height: AppTheme.spacing24),
 
-                    // Action Buttons
-                    Row(
-                      children: [
-                        Expanded(
-                          child: OutlinedButton(
-                            onPressed: _isSubmitting ? null : () => Navigator.pop(context),
-                            child: const Text('Cancel'),
+                    // Action Buttons (stacked for full-width submit + safe area)
+                    Padding(
+                      padding: EdgeInsets.only(bottom: MediaQuery.of(context).padding.bottom + 12),
+                      child: Column(
+                        children: [
+                          SizedBox(
+                            width: double.infinity,
+                            child: OutlinedButton(
+                              onPressed: _isSubmitting ? null : () => Navigator.pop(context),
+                              child: const Text('Cancel'),
+                            ),
                           ),
-                        ),
-                        const SizedBox(width: AppTheme.spacing12),
-                        Expanded(
-                          flex: 2,
-                          child: ElevatedButton(
-                            onPressed: _isSubmitting ? null : _handleSubmit,
-                            child: _isSubmitting
-                                ? const SizedBox(
-                                    height: 20,
-                                    width: 20,
-                                    child: CircularProgressIndicator(
-                                      strokeWidth: 2,
-                                      valueColor: AlwaysStoppedAnimation<Color>(Colors.white),
-                                    ),
-                                  )
-                                : const Text('Submit Offer'),
+                          const SizedBox(height: AppTheme.spacing12),
+                          SizedBox(
+                            width: double.infinity,
+                            child: ElevatedButton(
+                              style: ElevatedButton.styleFrom(
+                                minimumSize: const Size.fromHeight(48),
+                                padding: const EdgeInsets.symmetric(vertical: 14),
+                              ),
+                              onPressed: _isSubmitting ? null : _handleSubmit,
+                              child: _isSubmitting
+                                  ? const SizedBox(
+                                      height: 20,
+                                      width: 20,
+                                      child: CircularProgressIndicator(
+                                        strokeWidth: 2,
+                                        valueColor: AlwaysStoppedAnimation<Color>(Colors.white),
+                                      ),
+                                    )
+                                  : const Text('Submit Offer'),
+                            ),
                           ),
-                        ),
-                      ],
+                        ],
+                      ),
                     ),
                   ],
                 ),

@@ -151,11 +151,13 @@ class _PremiumDashboardScreenState extends State<PremiumDashboardScreen> {
                     padding: const EdgeInsets.symmetric(horizontal: AppTheme.spacing16),
                     child: shipmentProvider.isDashboardLoading
                         ? _buildLoadingStats()
-                        : _buildStatisticsGrid(
-                            context,
-                            shipmentProvider.dashboardInformation,
-                            isShipper,
-                          ),
+                        : (shipmentProvider.dashboardInformation.isEmpty
+                            ? const SizedBox.shrink()
+                            : _buildStatisticsGrid(
+                                context,
+                                shipmentProvider.dashboardInformation,
+                                isShipper,
+                              )),
                   ),
 
                   const SizedBox(height: AppTheme.spacing32),

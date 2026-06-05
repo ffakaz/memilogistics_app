@@ -73,13 +73,29 @@ class ShipmentOfferApiService {
   /// Cancel a shipment offer
   /// POST /api/shipments/{shipmentOfferId}/cancel-shipment-offer
   Future<void> cancelOffer(int shipmentOfferId) async {
+    print('🔵 [ShipmentOfferAPI] cancelOffer called');
+    print('   shipmentOfferId: $shipmentOfferId');
+    print('   Endpoint template: ${ApiRoutes.cancelOffer}');
+    
     final url = RequestBuilder.buildFullUrl(
       ApiRoutes.cancelOffer,
       {'shipmentOfferId': shipmentOfferId},
     );
 
-    final response = await _apiClient.post<dynamic>(url);
-    _ensureSuccess(response, 'Failed to cancel offer');
+    print('   Built URL: $url');
+    
+    try {
+      final response = await _apiClient.post<dynamic>(url);
+      print('   Response status: ${response.statusCode}');
+      print('   Response data: ${response.data}');
+      _ensureSuccess(response, 'Failed to cancel offer');
+      print('   ✅ cancelOffer succeeded for shipmentOfferId=$shipmentOfferId');
+    } catch (e) {
+      print('   ❌ cancelOffer failed for shipmentOfferId=$shipmentOfferId');
+      print('   Error: $e');
+      print('   Error type: ${e.runtimeType}');
+      rethrow;
+    }
   }
 
   /// Assign carrier to shipment (accept offer)

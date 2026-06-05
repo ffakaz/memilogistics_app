@@ -74,15 +74,23 @@ class _ShipmentOffersScreenState extends State<ShipmentOffersScreen> {
         carrierId: carrierId,
       );
       if (!mounted) return;
-      setState(() {
-        _shipment =
-            provider.activeShipment ??
-            provider.getShipmentById(widget.shipmentId);
-      });
+      
+      // Refresh shipment state and offers to reflect backend changes
+      _shipment = provider.activeShipment ?? provider.getShipmentById(widget.shipmentId);
+      
+      // Force refresh offers list to show backend state (other offers should be auto-rejected)
+      await provider.fetchShipmentOffers(widget.shipmentId);
+      
+      setState(() {});
+      
       ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(
-          content: Text('Your offer has been accepted. Shipment assigned successfully.'),
+        SnackBar(
+          content: Text(
+            'Offer accepted successfully! Shipment assigned to ${_carrierName(offer)}. '
+            'All other offers have been automatically rejected.',
+          ),
           backgroundColor: Colors.green,
+          duration: const Duration(seconds: 4),
         ),
       );
     } catch (e) {
@@ -109,19 +117,26 @@ class _ShipmentOffersScreenState extends State<ShipmentOffersScreen> {
     if (!confirmed || !mounted) return;
 
     try {
+      print('🔴 [UI] Rejecting offer ${offer.id} for shipment ${widget.shipmentId}');
+      
       await provider.cancelShipmentOffer(
         shipmentId: widget.shipmentId,
         shipmentOfferId: offer.id,
       );
+      
       if (!mounted) return;
+      
+      print('✅ [UI] Offer ${offer.id} rejected successfully');
+      
       ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(
-          content: Text('Your offer was not selected by the shipper.'),
+        SnackBar(
+          content: Text('Offer from ${_carrierName(offer)} has been rejected.'),
           backgroundColor: Colors.orange,
         ),
       );
     } catch (e) {
       if (!mounted) return;
+      print('❌ [UI] Failed to reject offer ${offer.id}: $e');
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(
           content: Text('Failed to reject offer: $e'),
