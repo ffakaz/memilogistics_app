@@ -667,7 +667,7 @@ class _CarrierDashboardRefactoredState
                 // Action Button
                 SizedBox(
                   width: double.infinity,
-                  height: 40,
+                  height: 56,
                   child: ElevatedButton.icon(
                     onPressed: hasSubmitted ? null : () => _showOfferDialog(shipment),
                     style: ElevatedButton.styleFrom(
@@ -675,6 +675,7 @@ class _CarrierDashboardRefactoredState
                           ? Colors.green
                           : const Color(0xFFFF6B35),
                       foregroundColor: Colors.white,
+                      padding: const EdgeInsets.symmetric(vertical: 16, horizontal: 24),
                       shape: RoundedRectangleBorder(
                         borderRadius: BorderRadius.circular(8),
                       ),
@@ -686,7 +687,10 @@ class _CarrierDashboardRefactoredState
                     ),
                     label: Text(
                       hasSubmitted ? 'Offer Submitted' : 'Submit Offer',
-                      style: const TextStyle(fontWeight: FontWeight.w600),
+                      style: const TextStyle(
+                        fontWeight: FontWeight.w600,
+                        fontSize: 16,
+                      ),
                     ),
                   ),
                 ),

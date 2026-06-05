@@ -314,8 +314,8 @@ class _PremiumOfferSheetState extends State<PremiumOfferSheet> {
                             width: double.infinity,
                             child: ElevatedButton(
                               style: ElevatedButton.styleFrom(
-                                minimumSize: const Size.fromHeight(48),
-                                padding: const EdgeInsets.symmetric(vertical: 14),
+                                minimumSize: const Size.fromHeight(56),
+                                padding: const EdgeInsets.symmetric(vertical: 16, horizontal: 24),
                               ),
                               onPressed: _isSubmitting ? null : _handleSubmit,
                               child: _isSubmitting
@@ -327,7 +327,13 @@ class _PremiumOfferSheetState extends State<PremiumOfferSheet> {
                                         valueColor: AlwaysStoppedAnimation<Color>(Colors.white),
                                       ),
                                     )
-                                  : const Text('Submit Offer'),
+                                  : const Text(
+                                      'Submit Offer',
+                                      style: TextStyle(
+                                        fontSize: 16,
+                                        fontWeight: FontWeight.w600,
+                                      ),
+                                    ),
                             ),
                           ),
                         ],
