@@ -6,7 +6,7 @@ import '../../../shipment_offer/data/models/shipment_offer_model.dart';
 import '../../data/models/shipment_statistics_model.dart';
 
 abstract class ShipmentRepository {
-  Future<Shipment> createShipment(Shipment shipment, {int? shipperId});
+  Future<Shipment> createShipment(Shipment shipment, {int? shipperId, String? idempotencyKey});
   Future<List<Shipment>> listShipments({int page = 0, int size = 20});
   Future<List<Shipment>> getMyShipmentsByStatus({
     required ShipmentStatus status,

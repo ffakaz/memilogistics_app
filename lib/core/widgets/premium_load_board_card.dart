@@ -675,8 +675,8 @@ class _PremiumLoadBoardCardState extends State<PremiumLoadBoardCard>
           decoration: BoxDecoration(
             gradient: LinearGradient(
               colors: [
-                AppTheme.accentOrange,
-                AppTheme.accentOrange.withAlpha((0.85 * 255).round()),
+                Color(0xFF2196F3), // Blue
+                Color(0xFF1976D2), // Darker blue
               ],
               begin: Alignment.topLeft,
               end: Alignment.bottomRight,
@@ -684,12 +684,12 @@ class _PremiumLoadBoardCardState extends State<PremiumLoadBoardCard>
             borderRadius: BorderRadius.circular(16),
             boxShadow: [
               BoxShadow(
-                color: AppTheme.accentOrange.withAlpha((0.35 * 255).round()),
+                color: Color(0xFF2196F3).withAlpha((0.35 * 255).round()),
                 blurRadius: 16,
                 offset: const Offset(0, 6),
               ),
               BoxShadow(
-                color: AppTheme.accentOrange.withAlpha((0.2 * 255).round()),
+                color: Color(0xFF2196F3).withAlpha((0.2 * 255).round()),
                 blurRadius: 8,
                 offset: const Offset(0, 2),
               ),

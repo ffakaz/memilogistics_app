@@ -128,6 +128,7 @@ class ShipmentProvider extends ChangeNotifier {
     required DateTime pickupDate,
     required bool fragile,
     String? description,
+    String? idempotencyKey,
   }) async {
     _setLoading(true);
     _clearError();
@@ -147,10 +148,23 @@ class ShipmentProvider extends ChangeNotifier {
       final createdShipment = await repository.createShipment(
         shipment,
         shipperId: shipperId,
+        idempotencyKey: idempotencyKey,
       );
 
-      // Add to local list
-      _shipments.add(createdShipment);
+      // Add to local list using upsert to avoid duplicates and keep latest data
+      if (createdShipment.id != null) {
+        final existingIndex = _shipments.indexWhere((s) => s.id == createdShipment.id);
+        if (existingIndex == -1) {
+          _shipments.add(createdShipment);
+        } else {
+          _shipments[existingIndex] = createdShipment;
+        }
+      } else {
+        // Fallback: append if no id provided
+        _shipments.add(createdShipment);
+      }
+      // Deduplicate by id to guard against backend or pagination duplicates
+      _dedupeShipmentsById();
       notifyListeners();
       // Trigger background refresh of related lists to synchronize UI across tabs
       unawaited(getCarrierAssignedShipments());
@@ -219,10 +233,15 @@ class ShipmentProvider extends ChangeNotifier {
 
       print('📦 After deduplication: ${deduplicatedShipments.length} unique shipments');
 
-      // Filter to only show unassigned shipments (available for bidding)
-      // Business rule: show shipments where assignedCarrierId == null
-      final unassignedShipments = deduplicatedShipments
-          .where((s) => s.assignedCarrierId == null)
+        // Filter to show unassigned shipments that are available for offers
+        // Business rule: Show shipments where assignedCarrierId == null
+        // Status can be PENDING (no offers yet) or ACCEPTED (offer accepted but not yet assigned)
+        // Only hide shipments that are ASSIGNED (assignedCarrierId != null)
+        final unassignedShipments = deduplicatedShipments
+          .where((s) => 
+            s.assignedCarrierId == null && 
+            (s.status == ShipmentStatus.pending || s.status == ShipmentStatus.accepted)
+          )
           .toList();
 
       print(
@@ -285,6 +304,27 @@ class ShipmentProvider extends ChangeNotifier {
 
   void _clearError() {
     _errorMessage = null;
+  }
+
+  // Remove duplicate shipments by numeric id while preserving order.
+  // Logs duplicates for diagnostics.
+  void _dedupeShipmentsById() {
+    final seen = <int>{};
+    final unique = <Shipment>[];
+    for (final s in _shipments) {
+      final id = s.id;
+      if (id == null) {
+        unique.add(s);
+        continue;
+      }
+      if (!seen.contains(id)) {
+        seen.add(id);
+        unique.add(s);
+      } else {
+        print('⚠️ ShipmentProvider: removed duplicate shipment id=$id');
+      }
+    }
+    _shipments = unique;
   }
 
   // Set active shipment for detail view
@@ -359,6 +399,27 @@ class ShipmentProvider extends ChangeNotifier {
       // On success, refresh offers from backend to reconcile
       final fresh = await repository.getShipmentOffers(shipmentId);
       _offersCache[shipmentId] = fresh;
+
+      // Defensive check: ensure backend did NOT mutate the shipment state
+      // during offer creation (it should only create an offer record).
+      try {
+        final latestShipment = await repository.getShipment(shipmentId);
+        // If backend unexpectedly assigned the shipment or changed status
+        // away from PENDING, surface a diagnostic and update local state.
+        if (latestShipment.assignedCarrierId != null) {
+          print('❗️[Defensive] Backend assigned carrier during offer submission for shipment $shipmentId - assignedCarrierId=${latestShipment.assignedCarrierId}');
+          _upsertShipment(latestShipment);
+          _setError('Backend assigned a carrier during offer submission. Contact support.');
+        } else if (latestShipment.status != ShipmentStatus.pending) {
+          print('❗️[Defensive] Backend changed shipment status during offer submission for shipment $shipmentId -> ${latestShipment.status.displayName}');
+          _upsertShipment(latestShipment);
+          _setError('Shipment status changed during offer submission: ${latestShipment.status.displayName}');
+        }
+      } catch (e) {
+        // If we cannot fetch the shipment, log but don't block the offer flow.
+        print('⚠️ [Defensive] Failed to re-fetch shipment $shipmentId after offer creation: $e');
+      }
+
       notifyListeners();
     } catch (e) {
       // Rollback optimistic update
@@ -532,9 +593,12 @@ class ShipmentProvider extends ChangeNotifier {
       if (append) {
         // Append to existing list
         _shipments.addAll(paginatedResponse.shipments);
+        // Deduplicate after appending pages to avoid pagination overlap duplicates
+        _dedupeShipmentsById();
       } else {
         // Replace list
         _shipments = paginatedResponse.shipments;
+        _dedupeShipmentsById();
       }
 
       _currentPage = paginatedResponse.currentPage;

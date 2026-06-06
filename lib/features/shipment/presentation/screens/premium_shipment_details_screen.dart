@@ -504,18 +504,42 @@ class _TimelineItem extends StatelessWidget {
             Container(
               padding: const EdgeInsets.all(AppTheme.spacing8),
               decoration: BoxDecoration(
-                color: step.isCompleted
-                    ? AppTheme.statusDelivered
+                gradient: step.isCompleted
+                    ? LinearGradient(
+                        colors: [
+                          AppTheme.statusDelivered,
+                          AppTheme.statusDelivered,
+                        ],
+                      )
                     : step.isActive
-                        ? AppTheme.electricOrange
-                        : AppTheme.lightGray.withAlpha((0.3 * 255).round()),
+                        ? LinearGradient(
+                            colors: [
+                              Color(0xFF2196F3), // Blue for review/offer steps
+                              Color(0xFF1976D2), // Darker blue
+                            ],
+                            begin: Alignment.topLeft,
+                            end: Alignment.bottomRight,
+                          )
+                        : null,
+                color: !step.isCompleted && !step.isActive
+                    ? Color(0xFFECEFF1) // Light blue-gray for inactive
+                    : null,
                 shape: BoxShape.circle,
+                boxShadow: step.isActive
+                    ? [
+                        BoxShadow(
+                          color: Color(0xFF2196F3).withValues(alpha: 0.4),
+                          blurRadius: 8,
+                          offset: Offset(0, 2),
+                        ),
+                      ]
+                    : null,
               ),
               child: Icon(
                 step.icon,
                 color: step.isCompleted || step.isActive
                     ? Colors.white
-                    : AppTheme.darkGray,
+                    : Color(0xFF78909C), // Blue-gray for inactive icons
                 size: 20,
               ),
             ),

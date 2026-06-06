@@ -205,6 +205,15 @@ class _CarrierDashboardRefactoredState
     return Consumer2<ShipmentProvider, ShipmentOfferProvider>(
       builder: (context, shipmentProvider, offerProvider, _) {
         final filteredShipments = _filterOfferableShipments(shipmentProvider.shipments);
+        // Diagnostic logging: list shipments about to be rendered in Offerable tab
+        try {
+          for (final s in filteredShipments) {
+            print('🔎 Offerable Shipment -> id=${s.id}, tracking=${s.trackingNumber}, status=${s.status.displayName}, createdAt=${s.createdAt}');
+          }
+          print('🔎 Offerable total: ${filteredShipments.length}');
+        } catch (e) {
+          print('🔎 Failed to log offerable shipments: $e');
+        }
         
         return Column(
           children: [
@@ -297,22 +306,61 @@ class _CarrierDashboardRefactoredState
   }
 
   Widget _buildStatCard(IconData icon, String count, String label) {
+    // Use blue gradient for offer-related icons
+    final isOfferIcon = (icon == Icons.local_offer);
+    
     return Container(
       padding: const EdgeInsets.all(12),
       decoration: BoxDecoration(
-        color: Colors.grey.shade50,
+        color: isOfferIcon 
+            ? Color(0xFFE3F2FD) // Light blue background for offers
+            : Colors.grey.shade50,
         borderRadius: BorderRadius.circular(12),
-        border: Border.all(color: Colors.grey.shade200),
+        border: Border.all(
+          color: isOfferIcon 
+              ? Color(0xFF90CAF9) // Blue border for offers
+              : Colors.grey.shade200,
+        ),
       ),
       child: Column(
         children: [
-          Icon(icon, size: 24, color: Colors.grey.shade700),
+          Container(
+            padding: isOfferIcon ? const EdgeInsets.all(8) : null,
+            decoration: isOfferIcon
+                ? BoxDecoration(
+                    gradient: LinearGradient(
+                      colors: [
+                        Color(0xFF2196F3), // Blue
+                        Color(0xFF1976D2), // Darker blue
+                      ],
+                      begin: Alignment.topLeft,
+                      end: Alignment.bottomRight,
+                    ),
+                    shape: BoxShape.circle,
+                    boxShadow: [
+                      BoxShadow(
+                        color: Color(0xFF2196F3).withValues(alpha: 0.3),
+                        blurRadius: 6,
+                        offset: Offset(0, 2),
+                      ),
+                    ],
+                  )
+                : null,
+            child: Icon(
+              icon, 
+              size: 24, 
+              color: isOfferIcon 
+                  ? Colors.white 
+                  : Colors.grey.shade700,
+            ),
+          ),
           const SizedBox(height: 8),
           Text(
             count,
-            style: const TextStyle(
+            style: TextStyle(
               fontSize: 20,
               fontWeight: FontWeight.bold,
+              color: isOfferIcon ? Color(0xFF1976D2) : null,
             ),
           ),
           const SizedBox(height: 4),
@@ -321,7 +369,10 @@ class _CarrierDashboardRefactoredState
             textAlign: TextAlign.center,
             style: TextStyle(
               fontSize: 11,
-              color: Colors.grey.shade600,
+              color: isOfferIcon 
+                  ? Color(0xFF1976D2) 
+                  : Colors.grey.shade600,
+              fontWeight: isOfferIcon ? FontWeight.w600 : null,
             ),
           ),
         ],
@@ -498,8 +549,13 @@ class _CarrierDashboardRefactoredState
   Widget _buildOfferableShipmentCard(Shipment shipment) {
     return Consumer<ShipmentOfferProvider>(
       builder: (context, offerProvider, _) {
-        final hasSubmitted =
-            offerProvider.hasSubmittedOfferForShipment(shipment.id ?? 0);
+
+        // Determine final disabled state: only disable per-carrier (hasSubmitted)
+        // or when shipment is already assigned. Do NOT globally disable because
+        // other carriers must still be able to submit offers.
+        final isAssigned = shipment.assignedCarrierId != null;
+        final hasSubmitted = offerProvider.hasSubmittedOfferForShipment(shipment.id ?? 0);
+        final disableOfferButton = hasSubmitted || isAssigned;
 
         return Card(
           margin: const EdgeInsets.only(bottom: 16),
@@ -522,7 +578,7 @@ class _CarrierDashboardRefactoredState
                         vertical: 6,
                       ),
                       decoration: BoxDecoration(
-                        color: const Color(0xFF2C5E78).withValues(alpha: 0.1),
+                        color: Color(0xFF2C5E78).withValues(alpha: 0.1),
                         borderRadius: BorderRadius.circular(6),
                       ),
                       child: Text(
@@ -669,7 +725,7 @@ class _CarrierDashboardRefactoredState
                   width: double.infinity,
                   height: 56,
                   child: ElevatedButton.icon(
-                    onPressed: hasSubmitted ? null : () => _showOfferDialog(shipment),
+                    onPressed: disableOfferButton ? null : () => _showOfferDialog(shipment),
                     style: ElevatedButton.styleFrom(
                       backgroundColor: hasSubmitted
                           ? Colors.green
@@ -682,11 +738,13 @@ class _CarrierDashboardRefactoredState
                       elevation: hasSubmitted ? 0 : 2,
                     ),
                     icon: Icon(
-                      hasSubmitted ? Icons.check_circle : Icons.local_offer,
+                      disableOfferButton ? Icons.check_circle : Icons.local_offer,
                       size: 18,
                     ),
                     label: Text(
-                      hasSubmitted ? 'Offer Submitted' : 'Submit Offer',
+                      disableOfferButton
+                          ? (isAssigned ? 'Assigned' : 'Offer Submitted')
+                          : 'Submit Offer',
                       style: const TextStyle(
                         fontWeight: FontWeight.w600,
                         fontSize: 16,
@@ -707,7 +765,10 @@ class _CarrierDashboardRefactoredState
       // CRITICAL: Only show unassigned shipments in offerable section
       if (s.assignedCarrierId != null) return false;
       
-      // CRITICAL: Show shipments that are PENDING or ACCEPTED (not yet assigned)
+      // CRITICAL: Show PENDING and ACCEPTED shipments that are not yet assigned.
+      // Business rule: shipments remain open for offers until assignedCarrierId is set.
+      // PENDING = no offers yet accepted
+      // ACCEPTED = offer accepted but carrier not yet assigned (in transition state)
       if (s.status != ShipmentStatus.pending && 
           s.status != ShipmentStatus.accepted) {
         return false;
@@ -1080,24 +1141,60 @@ class _CarrierDashboardRefactoredState
     required String title,
     required String subtitle,
   }) {
+    // Use blue styling for offer-related empty states
+    final isOfferIcon = (icon == Icons.local_offer || 
+                         icon == Icons.local_offer_outlined);
+    
     return Center(
       child: Column(
         mainAxisAlignment: MainAxisAlignment.center,
         children: [
-          Icon(icon, size: 64, color: Colors.grey.shade400),
+          Container(
+            padding: isOfferIcon ? const EdgeInsets.all(20) : null,
+            decoration: isOfferIcon
+                ? BoxDecoration(
+                    gradient: LinearGradient(
+                      colors: [
+                        Color(0xFF2196F3).withValues(alpha: 0.1),
+                        Color(0xFF1976D2).withValues(alpha: 0.05),
+                      ],
+                      begin: Alignment.topLeft,
+                      end: Alignment.bottomRight,
+                    ),
+                    shape: BoxShape.circle,
+                    border: Border.all(
+                      color: Color(0xFF90CAF9).withValues(alpha: 0.3),
+                      width: 2,
+                    ),
+                  )
+                : null,
+            child: Icon(
+              icon, 
+              size: 64, 
+              color: isOfferIcon 
+                  ? Color(0xFF64B5F6) // Light blue for offer icons
+                  : Colors.grey.shade400,
+            ),
+          ),
           const SizedBox(height: 16),
           Text(
             title,
             style: TextStyle(
               fontSize: 18,
               fontWeight: FontWeight.bold,
-              color: Colors.grey.shade700,
+              color: isOfferIcon 
+                  ? Color(0xFF1976D2) 
+                  : Colors.grey.shade700,
             ),
           ),
           const SizedBox(height: 8),
           Text(
             subtitle,
-            style: TextStyle(color: Colors.grey.shade600),
+            style: TextStyle(
+              color: isOfferIcon 
+                  ? Color(0xFF64B5F6) 
+                  : Colors.grey.shade600,
+            ),
           ),
         ],
       ),

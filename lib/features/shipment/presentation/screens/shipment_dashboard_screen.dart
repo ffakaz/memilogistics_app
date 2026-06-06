@@ -464,7 +464,7 @@ class _RecentShipments extends StatelessWidget {
           ].where((part) => part.trim().isNotEmpty).join(' to ');
 
           return ListTile(
-            leading: CircleAvatar(
+              leading: CircleAvatar(
               backgroundColor: Theme.of(
                 context,
               ).colorScheme.primary.withValues(alpha: 0.12),

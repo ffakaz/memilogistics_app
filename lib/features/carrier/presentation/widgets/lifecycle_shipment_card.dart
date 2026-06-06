@@ -199,7 +199,7 @@ class LifecycleShipmentCard extends StatelessWidget {
   Widget _buildDetailChip(IconData icon, String label, [Color? color]) {
     return Container(
       padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
-      decoration: BoxDecoration(
+        decoration: BoxDecoration(
         color: (color ?? Colors.grey).withValues(alpha: 0.1),
         borderRadius: BorderRadius.circular(6),
       ),

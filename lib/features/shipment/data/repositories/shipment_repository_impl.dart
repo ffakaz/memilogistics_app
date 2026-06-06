@@ -21,7 +21,7 @@ class ShipmentRepositoryImpl implements ShipmentRepository {
   });
 
   @override
-  Future<Shipment> createShipment(Shipment shipment, {int? shipperId}) async {
+  Future<Shipment> createShipment(Shipment shipment, {int? shipperId, String? idempotencyKey}) async {
     final accessToken = await tokenStorage.getAccessToken();
     if (accessToken == null || accessToken.isEmpty) {
       throw Exception('You must be logged in to create a shipment');
@@ -31,7 +31,13 @@ class ShipmentRepositoryImpl implements ShipmentRepository {
     final request = _toCreateRequest(shipment);
 
     // Call backend API
-    final model = await apiService.createShipment(request);
+    final headers = <String, String>{};
+    if (idempotencyKey != null && idempotencyKey.isNotEmpty) {
+      headers['Idempotency-Key'] = idempotencyKey;
+      print('🔐 createShipment: sending Idempotency-Key=$idempotencyKey');
+    }
+
+    final model = await apiService.createShipment(request, headers: headers.isEmpty ? null : headers);
 
     // Convert ShipmentModel to Shipment entity
     return ShipmentMapper.toEntity(model);

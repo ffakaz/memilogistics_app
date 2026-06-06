@@ -15,7 +15,7 @@ class ShipmentApiServiceReal {
 
   ShipmentApiServiceReal(this._apiClient);
 
-  Future<ShipmentModel> createShipment(CreateShipmentRequest request) async {
+  Future<ShipmentModel> createShipment(CreateShipmentRequest request, {Map<String, String>? headers}) async {
     // Debug logging
     print('=== CREATE SHIPMENT DEBUG ===');
     print('Endpoint: ${ApiConstants.apiPrefix}${ShipmentEndpoints.create}');
@@ -24,6 +24,7 @@ class ShipmentApiServiceReal {
     final response = await _apiClient.post<dynamic>(
       '${ApiConstants.apiPrefix}${ShipmentEndpoints.create}',
       data: request.toJson(),
+      headers: headers,
     );
     
     print('Response status: ${response.statusCode}');

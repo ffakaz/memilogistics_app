@@ -22,6 +22,7 @@ class _CreateShipmentScreenState extends State<CreateShipmentScreen> {
 
   DateTime? _pickupDate;
   bool _fragile = false;
+  bool _isSubmitting = false;
 
   @override
   void dispose() {
@@ -90,6 +91,10 @@ class _CreateShipmentScreenState extends State<CreateShipmentScreen> {
     print('📋 Creating shipment with Shipper ID: $shipperId');
 
     try {
+      setState(() { _isSubmitting = true; });
+      // Generate a client-side idempotency key to prevent duplicate creations
+      final idempotencyKey = '${DateTime.now().millisecondsSinceEpoch}-${_shipmentItemController.text.hashCode}-${_originController.text.hashCode}';
+      print('🔐 create_shipment: idempotencyKey=$idempotencyKey');
       await provider.createShipment(
         shipperId: shipperId,  // Include shipper ID
         shipmentItem: _shipmentItemController.text.trim(),
@@ -101,6 +106,7 @@ class _CreateShipmentScreenState extends State<CreateShipmentScreen> {
         description: _descriptionController.text.trim().isEmpty 
             ? null 
             : _descriptionController.text.trim(),
+        idempotencyKey: idempotencyKey,
       );
 
       if (!mounted) return;
@@ -131,6 +137,9 @@ class _CreateShipmentScreenState extends State<CreateShipmentScreen> {
           duration: const Duration(seconds: 4),
         ),
       );
+    }
+    finally {
+      if (mounted) setState(() { _isSubmitting = false; });
     }
   }
 
@@ -308,12 +317,12 @@ class _CreateShipmentScreenState extends State<CreateShipmentScreen> {
                 width: double.infinity,
                 height: 50,
                 child: ElevatedButton(
-                  onPressed: provider.isLoading ? null : _submit,
+                  onPressed: (provider.isLoading || _isSubmitting) ? null : _submit,
                   style: ElevatedButton.styleFrom(
                     backgroundColor: const Color(0xFF2C3E50),
                     foregroundColor: Colors.white,
                   ),
-                  child: provider.isLoading
+                  child: (provider.isLoading || _isSubmitting)
                       ? const SizedBox(
                           width: 24,
                           height: 24,

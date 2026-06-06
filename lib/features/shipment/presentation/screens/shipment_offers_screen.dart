@@ -252,7 +252,7 @@ class _ShipmentOffersScreenState extends State<ShipmentOffersScreen> {
                           Icon(
                             Icons.local_offer_outlined,
                             size: 72,
-                            color: Colors.grey,
+                            color: Color(0xFF90A4AE), // Blue-gray
                           ),
                           SizedBox(height: 8),
                           Text('No offers yet'),
@@ -273,9 +273,15 @@ class _ShipmentOffersScreenState extends State<ShipmentOffersScreen> {
       (_shipment?.status == ShipmentStatus.assigned);
     final actionsDisabled = isSubmitting || shipmentAssigned;
     final carrierName = _carrierName(offer);
+    
+    // CRITICAL: Check if THIS specific carrier was assigned
+    final isThisCarrierAssigned = _shipment?.assignedCarrierId != null &&
+        _shipment!.assignedCarrierId == (offer.carrierCompanyId ?? offer.carrierCompany?.id);
 
     return Card(
       margin: const EdgeInsets.only(bottom: 12),
+      elevation: isThisCarrierAssigned ? 3 : 1,
+      color: isThisCarrierAssigned ? const Color(0xFFE8F5E9) : null, // Light green for winner
       child: Padding(
         padding: const EdgeInsets.all(12.0),
         child: Column(
@@ -284,25 +290,56 @@ class _ShipmentOffersScreenState extends State<ShipmentOffersScreen> {
             Row(
               children: [
                 CircleAvatar(
-                  backgroundColor: const Color(0xFF2C3E50),
-                  child: Text(
-                    carrierName.isEmpty
-                        ? 'C'
-                        : carrierName.substring(0, 1).toUpperCase(),
-                    style: const TextStyle(color: Colors.white),
-                  ),
+                  backgroundColor: isThisCarrierAssigned 
+                      ? const Color(0xFF27AE60) // Green for assigned carrier
+                      : const Color(0xFF2C3E50),
+                  child: isThisCarrierAssigned
+                      ? const Icon(Icons.check, color: Colors.white, size: 20)
+                      : Text(
+                          carrierName.isEmpty
+                              ? 'C'
+                              : carrierName.substring(0, 1).toUpperCase(),
+                          style: const TextStyle(color: Colors.white),
+                        ),
                 ),
                 const SizedBox(width: 12),
                 Expanded(
                   child: Column(
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
-                      Text(
-                        carrierName,
-                        style: const TextStyle(
-                          fontSize: 16,
-                          fontWeight: FontWeight.bold,
-                        ),
+                      Row(
+                        children: [
+                          Expanded(
+                            child: Text(
+                              carrierName,
+                              style: TextStyle(
+                                fontSize: 16,
+                                fontWeight: isThisCarrierAssigned 
+                                    ? FontWeight.w800 
+                                    : FontWeight.bold,
+                              ),
+                            ),
+                          ),
+                          if (isThisCarrierAssigned)
+                            Container(
+                              padding: const EdgeInsets.symmetric(
+                                horizontal: 8,
+                                vertical: 4,
+                              ),
+                              decoration: BoxDecoration(
+                                color: const Color(0xFF27AE60),
+                                borderRadius: BorderRadius.circular(12),
+                              ),
+                              child: const Text(
+                                'ASSIGNED',
+                                style: TextStyle(
+                                  color: Colors.white,
+                                  fontSize: 11,
+                                  fontWeight: FontWeight.bold,
+                                ),
+                              ),
+                            ),
+                        ],
                       ),
                       const SizedBox(height: 4),
                       Text(offer.carrierCompany?.companyEmail ?? ''),
@@ -314,10 +351,12 @@ class _ShipmentOffersScreenState extends State<ShipmentOffersScreen> {
             const SizedBox(height: 12),
             Text(
               'ETB ${offer.price.toStringAsFixed(2)}',
-              style: const TextStyle(
+              style: TextStyle(
                 fontSize: 20,
                 fontWeight: FontWeight.bold,
-                color: Color(0xFF27AE60),
+                color: isThisCarrierAssigned 
+                    ? const Color(0xFF27AE60) 
+                    : const Color(0xFF27AE60).withValues(alpha: 0.7),
               ),
             ),
             const SizedBox(height: 8),
@@ -327,9 +366,46 @@ class _ShipmentOffersScreenState extends State<ShipmentOffersScreen> {
             ),
             const SizedBox(height: 12),
             if (shipmentAssigned)
-              const Text(
-                'This shipment has already been assigned.',
-                style: TextStyle(fontWeight: FontWeight.w600),
+              Container(
+                padding: const EdgeInsets.all(12),
+                decoration: BoxDecoration(
+                  color: isThisCarrierAssigned 
+                      ? const Color(0xFF27AE60).withValues(alpha: 0.1)
+                      : Colors.grey.shade100,
+                  borderRadius: BorderRadius.circular(8),
+                  border: Border.all(
+                    color: isThisCarrierAssigned 
+                        ? const Color(0xFF27AE60)
+                        : Colors.grey.shade300,
+                  ),
+                ),
+                child: Row(
+                  children: [
+                    Icon(
+                      isThisCarrierAssigned 
+                          ? Icons.check_circle 
+                          : Icons.info_outline,
+                      color: isThisCarrierAssigned 
+                          ? const Color(0xFF27AE60) 
+                          : Colors.grey.shade600,
+                      size: 20,
+                    ),
+                    const SizedBox(width: 8),
+                    Expanded(
+                      child: Text(
+                        isThisCarrierAssigned
+                            ? '✅ This carrier has been assigned to the shipment.'
+                            : 'This shipment has been assigned to another carrier.',
+                        style: TextStyle(
+                          fontWeight: FontWeight.w600,
+                          color: isThisCarrierAssigned 
+                              ? const Color(0xFF27AE60) 
+                              : Colors.grey.shade700,
+                        ),
+                      ),
+                    ),
+                  ],
+                ),
               )
             else
               Row(

@@ -132,8 +132,22 @@ class _PremiumOfferSheetState extends State<PremiumOfferSheet> {
                         Container(
                           padding: const EdgeInsets.all(AppTheme.spacing12),
                           decoration: BoxDecoration(
-                            gradient: AppTheme.orangeGradient,
+                            gradient: LinearGradient(
+                              colors: [
+                                Color(0xFF2196F3), // Blue
+                                Color(0xFF1976D2), // Darker blue
+                              ],
+                              begin: Alignment.topLeft,
+                              end: Alignment.bottomRight,
+                            ),
                             borderRadius: BorderRadius.circular(AppTheme.radiusMedium),
+                            boxShadow: [
+                              BoxShadow(
+                                color: Color(0xFF2196F3).withValues(alpha: 0.3),
+                                blurRadius: 8,
+                                offset: Offset(0, 2),
+                              ),
+                            ],
                           ),
                           child: const Icon(
                             Icons.local_offer_rounded,

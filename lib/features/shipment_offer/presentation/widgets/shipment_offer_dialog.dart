@@ -51,12 +51,26 @@ class _ShipmentOfferDialogState extends State<ShipmentOfferDialog> {
                     Container(
                       padding: const EdgeInsets.all(10),
                       decoration: BoxDecoration(
-                        color: Colors.blue.withValues(alpha: 0.1),
+                        gradient: LinearGradient(
+                          colors: [
+                            Color(0xFF2196F3), // Blue
+                            Color(0xFF1976D2), // Darker blue
+                          ],
+                          begin: Alignment.topLeft,
+                          end: Alignment.bottomRight,
+                        ),
                         borderRadius: BorderRadius.circular(10),
+                        boxShadow: [
+                          BoxShadow(
+                            color: Color(0xFF2196F3).withValues(alpha: 0.3),
+                            blurRadius: 8,
+                            offset: Offset(0, 2),
+                          ),
+                        ],
                       ),
                       child: const Icon(
                         Icons.local_offer,
-                        color: Colors.blue,
+                        color: Colors.white,
                         size: 28,
                       ),
                     ),
